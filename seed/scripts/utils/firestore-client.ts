@@ -1,4 +1,4 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, Firestore, WriteBatch } from 'firebase-admin/firestore';
 
 let db: Firestore;

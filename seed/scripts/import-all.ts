@@ -1,4 +1,4 @@
-import { clearCollection, getDB } from './utils/firestore-client.js';
+import { clearCollection } from './utils/firestore-client.js';
 import { validateAll } from './validate-data.js';
 import { importCustomers } from './import-customers.js';
 import { importHelpers } from './import-helpers.js';
