@@ -1,55 +1,69 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-09（セッション2終了時）
-**現在のフェーズ**: Phase 0 完了 → Phase 1 開始前
+**最終更新**: 2026-02-09（Phase 1 完了時）
+**現在のフェーズ**: Phase 1 完了 → Phase 2a 開始前
 
 ## 完了済み
 
 ### Phase 0: プロジェクト基盤構築
-- Git初期化（main ブランチ、1コミット）
-- 環境分離設定（.envrc, .gitconfig.local, ~/.gitconfig includeIf）
-- GitHub: `yasushihonda-acg` / GCP: `yasushi.honda@aozora-cg.com`
-- GCP config `visitcare-shift-optimizer` 作成済み（APIは未有効化）
-- 要件ドキュメント保存:
-  - `docs/requirements/SOW.md` - 作業範囲
-  - `docs/requirements/PRD.md` - 製品要件
-  - `docs/requirements/current-workflow-analysis.md` - 現行業務分析（Excel実データ解析結果）
-- ADR 4件作成: 最適化エンジン選定、アーキテクチャ、移動時間計算、データストア選定
-- CLAUDE.md 作成（技術スタック、ドメイン用語、開発規約）
-- MEMORY.md 作成（セッション引継ぎ用）
+- Git初期化、環境分離設定
+- 要件ドキュメント保存（SOW, PRD, 現行業務分析）
+- ADR 4件作成
 
-## セッション2で決定した事項
-- ADR-004: Firestore + BigQuery採用（Cloud SQL不採用）
-- Phase 1スコープ: PRD規模（20名/50名）、サービス種別は身体/生活のみ
-- データ連携: Firestore中心（CSV→Firestore→最適化エンジン）
-- 方針: Excel運用をフルスクラッチWebアプリで一元化
+### Phase 1: データ設計 + Seedデータ
+- **Firebase初期化**: Emulator設定（Firestore:8080, UI:4000）
+- **TypeScript型定義**: `shared/types/` — 全5コレクションの型（strict mode）
+- **Firestoreルール**: 開発用allow all + 複合インデックス3件
+- **CSVデータ**: 鹿児島市中心部のデモデータ6ファイル
+  - customers: 50名（3世帯ペア、NG/推奨スタッフ設定含む）
+  - helpers: 20名（有資格16名/無資格4名）
+  - customer-services: 160件/週（身体58%/生活42%）
+  - helper-availability: 94エントリ
+  - staff-unavailability: 3名分サンプル
+  - customer-staff-constraints: NG7件/推奨12件
+- **インポートスクリプト**: バリデーション→クリア→順次投入
+- **移動時間**: Haversine距離×市街地係数1.3÷車速40km/h（`source: 'dummy'`）
+- **ドキュメント**: スキーマ定義書、ER図（Mermaid）、ADR-005
+- **テスト**: バリデーションunit + Emulator統合テスト
+- **Emulatorテスト確認済み**: 2,783ドキュメント正常投入
 
 ## 未着手
 
-### Phase 1: データ設計 + Seedデータ（次のアクション）
-- `/impl-plan` でPhase 1の詳細計画を策定
-- Firestoreスキーマ設計（ER図）
-- Seedデータ作成（正常系 + 異常系CSV）
-- CSVインポートスクリプト
+### Phase 2a: 最適化エンジン（次のアクション）
+- Python-MIP + CBC でシフト最適化
+- `shared/types/` を参照して Pydantic モデル作成
+- Emulator上の Seed データでアルゴリズム開発・テスト
+- `docs/schema/firestore-schema.md` のクエリパターン参照
 
-### Phase 2a: 最適化エンジン
 ### Phase 2b: API層 + Cloud Run
 ### Phase 3a: UI基盤 + ガントチャート
 ### Phase 3b: 統合 + バリデーション
 
 ## 次のアクション候補
-1. `/impl-plan` で Phase 1 の詳細計画を策定
-2. Firestoreスキーマ設計（Customer/Helper/Location/Order モデル）
-3. 実データ（Excel）からのSeedデータ変換
+1. Phase 2a の `/impl-plan` 策定
+2. Python 最適化エンジンの制約定義（TDD）
+3. Cloud Run Dockerfile + API設計
 
-## 重要な設計判断
-### 決定済み（セッション2）
-- **デモ規模**: PRD規模（20名/50名）で進める
-- **サービス種別**: Phase 1は身体/生活のみ
-- **データストア**: Firestore + BigQuery（ADR-004）
+## データアクセス方法
+```bash
+# Emulator起動
+firebase emulators:start --project demo-test
 
-### 未決定
-- **Locationマトリクス「5」の意味**: ダミー値 or 実測値？ユーザーに確認必要
+# Seed データ投入
+cd seed && FIRESTORE_EMULATOR_HOST=localhost:8080 npm run import:all
+
+# テスト実行
+npm run test
+
+# UI確認
+# http://localhost:4000/firestore
+```
+
+## 重要なドキュメント
+- `docs/schema/firestore-schema.md` — 全コレクション定義 + クエリパターン
+- `docs/schema/data-model.mermaid` — ER図
+- `docs/adr/ADR-005-firestore-schema-design.md` — スキーマ設計判断
+- `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
@@ -59,8 +73,3 @@
 - `時間繋がっている人 のコピー.xlsx` - 夫婦/兄弟連続訪問一覧
 - `希望休申請フォーム（訪問介護）のコピー.xlsx` - 希望休フォーム回答
 - `訪問介護　不定期 のコピー.xlsx` - 不定期パターン（利用者別シート）
-
-## 外部参考URL
-- SMS社技術ブログ（Python-MIP+CBC実績）: tech.bm-sms.co.jp
-- 統数研 池上敦子 介護スケジューリング研究: ism.ac.jp
-- 介護給付費サービスコード表: wam.go.jp（適宜最新検索）

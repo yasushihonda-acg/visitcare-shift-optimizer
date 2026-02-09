@@ -11,24 +11,36 @@ GCP Project ID: `visitcare-shift-optimizer`
 - **API**: Cloud Run (REST)
 - **移動時間**: Google Maps Distance Matrix API（Firestoreキャッシュ）
 
-## ディレクトリ構成（予定）
+## ディレクトリ構成
 ```
 visitcare-shift-optimizer/
 ├── docs/                    # 要件定義、ADR、分析ドキュメント
 │   ├── requirements/        # SOW, PRD, 現行業務分析
-│   └── adr/                 # Architecture Decision Records
-├── optimizer/               # Python最適化エンジン（Cloud Run）
-│   ├── src/
-│   ├── tests/
-│   ├── Dockerfile
-│   └── requirements.txt
-├── web/                     # Next.js フロントエンド
-│   ├── src/
-│   └── package.json
+│   ├── adr/                 # Architecture Decision Records
+│   └── schema/              # Firestoreスキーマ定義、ER図
+├── shared/                  # 共有TypeScript型定義
+│   └── types/               # Customer, Helper, Order, TravelTime, StaffUnavailability
 ├── seed/                    # Seedデータ（CSV）+ インポートスクリプト
+│   ├── data/                # CSVファイル
+│   ├── scripts/             # バリデーション・インポートスクリプト
+│   └── tests/               # Vitest テスト
 ├── firebase/                # Firestore rules, indexes
+├── optimizer/               # Python最適化エンジン（Cloud Run）※Phase 2a
+├── web/                     # Next.js フロントエンド ※Phase 3a
+├── firebase.json            # Firebase Emulator設定
 └── CLAUDE.md
 ```
+
+## Firestoreスキーマ
+詳細: `docs/schema/firestore-schema.md`
+
+| コレクション | 件数（Seed） | 説明 |
+|-------------|-------------|------|
+| customers | 50 | 利用者マスタ |
+| helpers | 20 | スタッフマスタ |
+| orders | ~160/週 | サービスオーダー |
+| travel_times | ~2,550 | 移動時間キャッシュ |
+| staff_unavailability | 随時 | 希望休 |
 
 ## 開発規約
 

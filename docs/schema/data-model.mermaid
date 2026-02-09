@@ -1,0 +1,70 @@
+erDiagram
+    customers ||--o{ orders : "has"
+    customers }o--o{ helpers : "ng_staff / preferred_staff"
+    helpers ||--o{ staff_unavailability : "has"
+    orders }o--o{ helpers : "assigned_staff_ids"
+    customers ||--o{ travel_times : "location pair"
+
+    customers {
+        string id PK
+        object name "family, given"
+        string address
+        object location "lat, lng"
+        array ng_staff_ids "FK helpers"
+        array preferred_staff_ids "FK helpers"
+        map weekly_services "DayOfWeek -> ServiceSlot[]"
+        string household_id "optional - linked household"
+        string service_manager
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    helpers {
+        string id PK
+        object name "family, given, short"
+        array qualifications
+        boolean can_physical_care
+        string transportation "car/bicycle/walk"
+        map weekly_availability "DayOfWeek -> AvailabilitySlot[]"
+        object preferred_hours "min, max"
+        object available_hours "min, max"
+        map customer_training_status "customerId -> status"
+        string employment_type "full_time/part_time"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    orders {
+        string id PK
+        string customer_id FK
+        timestamp week_start_date
+        timestamp date
+        string start_time "HH:MM"
+        string end_time "HH:MM"
+        string service_type "physical_care/daily_living"
+        array assigned_staff_ids "FK helpers"
+        string status "pending/assigned/completed/cancelled"
+        string linked_order_id "optional FK orders"
+        boolean manually_edited
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    travel_times {
+        string id PK "from_{id}_to_{id}"
+        object from_location "lat, lng"
+        object to_location "lat, lng"
+        number travel_time_minutes
+        number distance_meters
+        string source "dummy/google_maps"
+        timestamp cached_at
+    }
+
+    staff_unavailability {
+        string id PK
+        string staff_id FK
+        timestamp week_start_date
+        array unavailable_slots "date, all_day, time"
+        string notes
+        timestamp submitted_at
+    }
