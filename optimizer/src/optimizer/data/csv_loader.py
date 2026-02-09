@@ -1,6 +1,7 @@
 """CSV → Pydanticモデル変換ローダー"""
 
 import csv
+import math
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -154,8 +155,6 @@ def generate_orders(customers: list[Customer], week_start: date) -> list[Order]:
 
 def load_travel_times(data_dir: Path, customers: list[Customer]) -> list[TravelTime]:
     """Haversine距離ベースの移動時間を全ペアで計算（seed/dataにCSVがない場合のフォールバック）"""
-    import math
-
     travel_times: list[TravelTime] = []
     for i, c1 in enumerate(customers):
         for c2 in customers[i + 1 :]:
@@ -171,7 +170,6 @@ def load_travel_times(data_dir: Path, customers: list[Customer]) -> list[TravelT
 
 def _haversine_travel_minutes(loc1: GeoLocation, loc2: GeoLocation) -> float:
     """Haversine距離 × 市街地係数1.3 ÷ 車速40km/h → 分"""
-    import math
 
     R = 6371.0  # 地球半径 km
     lat1, lat2 = math.radians(loc1.lat), math.radians(loc2.lat)

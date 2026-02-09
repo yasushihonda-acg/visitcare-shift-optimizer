@@ -9,6 +9,7 @@ from optimizer.models import (
     OptimizationInput,
     OptimizationResult,
     Order,
+    StaffConstraintType,
 )
 
 
@@ -144,7 +145,7 @@ def _build_objective(
     # 推奨スタッフペアをセット化
     preferred_pairs: set[tuple[str, str]] = set()
     for sc in inp.staff_constraints:
-        if sc.constraint_type.value == "preferred":
+        if sc.constraint_type == StaffConstraintType.PREFERRED:
             preferred_pairs.add((sc.customer_id, sc.staff_id))
 
     # 推奨設定がある利用者のオーダーで、非推奨スタッフにペナルティ
