@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-09
+**最終更新**: 2026-02-09（セッション2終了時）
 **現在のフェーズ**: Phase 0 完了 → Phase 1 開始前
 
 ## 完了済み
@@ -14,13 +14,20 @@
   - `docs/requirements/SOW.md` - 作業範囲
   - `docs/requirements/PRD.md` - 製品要件
   - `docs/requirements/current-workflow-analysis.md` - 現行業務分析（Excel実データ解析結果）
-- ADR 3件作成: 最適化エンジン選定、アーキテクチャ、移動時間計算
+- ADR 4件作成: 最適化エンジン選定、アーキテクチャ、移動時間計算、データストア選定
 - CLAUDE.md 作成（技術スタック、ドメイン用語、開発規約）
 - MEMORY.md 作成（セッション引継ぎ用）
+
+## セッション2で決定した事項
+- ADR-004: Firestore + BigQuery採用（Cloud SQL不採用）
+- Phase 1スコープ: PRD規模（20名/50名）、サービス種別は身体/生活のみ
+- データ連携: Firestore中心（CSV→Firestore→最適化エンジン）
+- 方針: Excel運用をフルスクラッチWebアプリで一元化
 
 ## 未着手
 
 ### Phase 1: データ設計 + Seedデータ（次のアクション）
+- `/impl-plan` でPhase 1の詳細計画を策定
 - Firestoreスキーマ設計（ER図）
 - Seedデータ作成（正常系 + 異常系CSV）
 - CSVインポートスクリプト
@@ -35,10 +42,14 @@
 2. Firestoreスキーマ設計（Customer/Helper/Location/Order モデル）
 3. 実データ（Excel）からのSeedデータ変換
 
-## 重要な設計判断（未決定）
-- **デモ規模**: PRDの20名/50名 vs 実データ147名/2,394名 → どちらを先に対応？
+## 重要な設計判断
+### 決定済み（セッション2）
+- **デモ規模**: PRD規模（20名/50名）で進める
+- **サービス種別**: Phase 1は身体/生活のみ
+- **データストア**: Firestore + BigQuery（ADR-004）
+
+### 未決定
 - **Locationマトリクス「5」の意味**: ダミー値 or 実測値？ユーザーに確認必要
-- **サービス種別の範囲**: Phase 1で身体/生活のみか、全種別カバーか
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
