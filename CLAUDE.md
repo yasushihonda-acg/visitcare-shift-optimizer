@@ -7,7 +7,7 @@ GCP Project ID: `visitcare-shift-optimizer`
 ## 技術スタック
 - **Frontend**: React / Next.js (TypeScript) → Firebase Hosting
 - **Backend/DB**: Firebase Authentication + Cloud Firestore
-- **Optimization Engine**: Python 3.12+ / Python-MIP + CBC → Cloud Run
+- **Optimization Engine**: Python 3.12+ / PuLP 3.3.0 + CBC → Cloud Run（ADR-006）
 - **API**: Cloud Run (REST)
 - **移動時間**: Google Maps Distance Matrix API（Firestoreキャッシュ）
 
