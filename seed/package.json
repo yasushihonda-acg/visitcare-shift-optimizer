@@ -1,0 +1,24 @@
+{
+  "name": "@visitcare/seed",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Seed data and import scripts for visitcare-shift-optimizer",
+  "type": "module",
+  "scripts": {
+    "validate": "tsx scripts/validate-data.ts",
+    "import:all": "tsx scripts/import-all.ts",
+    "import:customers": "tsx scripts/import-customers.ts",
+    "import:helpers": "tsx scripts/import-helpers.ts",
+    "import:orders": "tsx scripts/import-orders.ts",
+    "import:travel-times": "tsx scripts/generate-travel-times.ts",
+    "import:unavailability": "tsx scripts/import-staff-unavailability.ts",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "csv-parse": "^5.6.0",
+    "firebase-admin": "^13.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
