@@ -1,0 +1,38 @@
+# Environment & Secrets
+.gh/
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Firebase
+.firebase/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Original Excel/Word files (too large for git)
+*.xlsx
+*.docx
+
+# Build
+build/
