@@ -1,9 +1,13 @@
 """最適化結果のFirestore書き戻し"""
 
+import logging
+
 from google.cloud import firestore  # type: ignore[attr-defined]
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP  # type: ignore[import-untyped]
 
 from optimizer.models import Assignment
+
+logger = logging.getLogger(__name__)
 
 
 def write_assignments(
@@ -36,8 +40,8 @@ def write_assignments(
                     "updated_at": SERVER_TIMESTAMP,
                 },
             )
-            updated += 1
 
         batch.commit()
+        updated += len(chunk)
 
     return updated

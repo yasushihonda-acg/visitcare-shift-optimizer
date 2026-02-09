@@ -1,5 +1,6 @@
 """Firestore → Pydanticモデル変換ローダー"""
 
+import os
 from datetime import date, datetime
 
 from google.cloud import firestore  # type: ignore[attr-defined]
@@ -38,7 +39,9 @@ def _ts_to_date_str(ts: datetime | object) -> str:
         return ts.strftime("%Y-%m-%d")
     if hasattr(ts, "to_pydatetime"):
         return ts.to_pydatetime().strftime("%Y-%m-%d")  # type: ignore[union-attr]
-    return str(ts)
+    if isinstance(ts, str):
+        return ts.split("T")[0]
+    raise ValueError(f"Unsupported timestamp type: {type(ts)}")
 
 
 def _date_to_day_of_week(date_str: str) -> DayOfWeek:
@@ -48,7 +51,8 @@ def _date_to_day_of_week(date_str: str) -> DayOfWeek:
 
 def get_firestore_client(project: str | None = None) -> firestore.Client:
     """Firestoreクライアント取得（FIRESTORE_EMULATOR_HOST設定時はEmulatorに接続）"""
-    return firestore.Client(project=project or "visitcare-shift-optimizer")
+    project_id = project or os.environ.get("GCP_PROJECT_ID", "visitcare-shift-optimizer")
+    return firestore.Client(project=project_id)
 
 
 def load_customers(db: firestore.Client) -> list[Customer]:

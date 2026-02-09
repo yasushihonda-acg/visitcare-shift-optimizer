@@ -47,8 +47,14 @@ def optimize(req: OptimizeRequest) -> OptimizeResponse:
         )
 
     # Firestoreからデータ読み込み
-    db = get_firestore_client()
-    inp = load_optimization_input(db, week_start)
+    try:
+        db = get_firestore_client()
+        inp = load_optimization_input(db, week_start)
+    except Exception as e:
+        logger.error("Firestore読み込み失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Firestore読み込みエラー: {e}"
+        ) from e
 
     if not inp.orders:
         raise HTTPException(
@@ -75,7 +81,13 @@ def optimize(req: OptimizeRequest) -> OptimizeResponse:
     # Firestore書き戻し
     orders_updated = 0
     if not req.dry_run and result.assignments:
-        orders_updated = write_assignments(db, result.assignments)
+        try:
+            orders_updated = write_assignments(db, result.assignments)
+        except Exception as e:
+            logger.error("Firestore書き戻し失敗: %s", e, exc_info=True)
+            raise HTTPException(
+                status_code=500, detail="割当の保存に失敗しました"
+            ) from e
         logger.info("Firestore書き戻し完了: %d件", orders_updated)
 
     return OptimizeResponse(
