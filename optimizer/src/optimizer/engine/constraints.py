@@ -1,0 +1,216 @@
+"""ハード制約の定義"""
+
+import pulp
+
+from optimizer.engine.solver import _orders_overlap, _time_to_minutes
+from optimizer.models import (
+    DayOfWeek,
+    OptimizationInput,
+    ServiceType,
+    StaffConstraintType,
+    TrainingStatus,
+)
+
+
+def add_all_hard_constraints(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+    travel_lookup: dict[tuple[str, str], float],
+) -> None:
+    """全ハード制約を追加"""
+    _add_qualification_constraint(prob, x, inp)
+    _add_no_overlap_constraint(prob, x, inp)
+    _add_ng_staff_constraint(prob, x, inp)
+    _add_availability_constraint(prob, x, inp)
+    _add_unavailability_constraint(prob, x, inp)
+    _add_travel_time_constraint(prob, x, inp, travel_lookup)
+    _add_household_constraint(prob, x, inp)
+    _add_training_constraint(prob, x, inp)
+
+
+def _add_qualification_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """E: 資格制約 — 身体介護に無資格者を割り当てない"""
+    for h in inp.helpers:
+        if not h.can_physical_care:
+            for o in inp.orders:
+                if o.service_type == ServiceType.PHYSICAL_CARE:
+                    prob += x[h.id, o.id] == 0, f"qual_{h.id}_{o.id}"
+
+
+def _add_no_overlap_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """F: 重複禁止 — 同一ヘルパーが同時刻に複数箇所にアサイン不可"""
+    orders = inp.orders
+    for h in inp.helpers:
+        for i, o1 in enumerate(orders):
+            for o2 in orders[i + 1 :]:
+                if _orders_overlap(o1, o2):
+                    prob += (
+                        x[h.id, o1.id] + x[h.id, o2.id] <= 1,
+                        f"no_overlap_{h.id}_{o1.id}_{o2.id}",
+                    )
+
+
+def _add_ng_staff_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """H: NGスタッフ回避 — staff_constraintsのNG組み合わせを禁止"""
+    ng_pairs: set[tuple[str, str]] = set()
+    for sc in inp.staff_constraints:
+        if sc.constraint_type == StaffConstraintType.NG:
+            ng_pairs.add((sc.customer_id, sc.staff_id))
+
+    for o in inp.orders:
+        for h in inp.helpers:
+            if (o.customer_id, h.id) in ng_pairs:
+                prob += x[h.id, o.id] == 0, f"ng_{h.id}_{o.id}"
+
+
+def _add_availability_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """I: 勤務可能時間制約 — availability外はアサイン不可"""
+    for h in inp.helpers:
+        if not h.weekly_availability:
+            continue  # 未定義 → 常時可能
+        for o in inp.orders:
+            dow = o.day_of_week
+            slots = h.weekly_availability.get(dow, [])
+            if not slots:
+                # この曜日に勤務設定がない → 割当不可
+                prob += x[h.id, o.id] == 0, f"avail_day_{h.id}_{o.id}"
+                continue
+
+            order_start = _time_to_minutes(o.start_time)
+            order_end = _time_to_minutes(o.end_time)
+            covered = any(
+                _time_to_minutes(s.start_time) <= order_start
+                and order_end <= _time_to_minutes(s.end_time)
+                for s in slots
+            )
+            if not covered:
+                prob += x[h.id, o.id] == 0, f"avail_time_{h.id}_{o.id}"
+
+
+def _add_unavailability_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """J: 希望休制約 — unavailable_slotsに該当する日時はアサイン不可"""
+    for su in inp.staff_unavailabilities:
+        for slot in su.unavailable_slots:
+            for o in inp.orders:
+                if o.date != slot.date:
+                    continue
+                if slot.all_day:
+                    prob += (
+                        x[su.staff_id, o.id] == 0,
+                        f"unavail_{su.staff_id}_{o.id}_{slot.date}",
+                    )
+                else:
+                    # 時間帯指定: 重複チェック
+                    if slot.start_time and slot.end_time:
+                        us = _time_to_minutes(slot.start_time)
+                        ue = _time_to_minutes(slot.end_time)
+                        os_ = _time_to_minutes(o.start_time)
+                        oe = _time_to_minutes(o.end_time)
+                        if os_ < ue and us < oe:  # 重複
+                            prob += (
+                                x[su.staff_id, o.id] == 0,
+                                f"unavail_t_{su.staff_id}_{o.id}_{slot.date}",
+                            )
+
+
+def _add_household_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """K: 世帯連続訪問制約 — linked_orderは同一ヘルパーが担当"""
+    order_map = {o.id: o for o in inp.orders}
+    seen: set[tuple[str, str]] = set()
+
+    for o in inp.orders:
+        if o.linked_order_id and o.linked_order_id in order_map:
+            pair = tuple(sorted([o.id, o.linked_order_id]))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            # 両オーダーに同じヘルパーを割当
+            for h in inp.helpers:
+                prob += (
+                    x[h.id, o.id] == x[h.id, o.linked_order_id],
+                    f"linked_{h.id}_{o.id}_{o.linked_order_id}",
+                )
+
+
+def _add_travel_time_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+    travel_lookup: dict[tuple[str, str], float],
+) -> None:
+    """G: 移動時間確保 — 連続訪問間の移動時間を確保
+
+    同一ヘルパーが異なる利用者のオーダーを連続で担当する場合、
+    前のオーダー終了時刻 + 移動時間 ≤ 次のオーダー開始時刻
+    でなければ、両方に割当不可。
+    """
+    orders = inp.orders
+    for h in inp.helpers:
+        for i, o1 in enumerate(orders):
+            for o2 in orders[i + 1 :]:
+                if o1.date != o2.date:
+                    continue
+                if o1.customer_id == o2.customer_id:
+                    continue  # 同一利用者 → 移動不要
+
+                # o1の後にo2（時間順）、またはo2の後にo1
+                e1 = _time_to_minutes(o1.end_time)
+                s2 = _time_to_minutes(o2.start_time)
+                e2 = _time_to_minutes(o2.end_time)
+                s1 = _time_to_minutes(o1.start_time)
+
+                tt_1to2 = travel_lookup.get((o1.customer_id, o2.customer_id), 0.0)
+                tt_2to1 = travel_lookup.get((o2.customer_id, o1.customer_id), 0.0)
+
+                # o1 → o2 の順: 間隔 = s2 - e1, 必要 = tt_1to2
+                if e1 <= s2 and (s2 - e1) < tt_1to2:
+                    prob += (
+                        x[h.id, o1.id] + x[h.id, o2.id] <= 1,
+                        f"travel_{h.id}_{o1.id}_{o2.id}",
+                    )
+                # o2 → o1 の順: 間隔 = s1 - e2, 必要 = tt_2to1
+                elif e2 <= s1 and (s1 - e2) < tt_2to1:
+                    prob += (
+                        x[h.id, o2.id] + x[h.id, o1.id] <= 1,
+                        f"travel_{h.id}_{o2.id}_{o1.id}",
+                    )
+
+
+def _add_training_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """L: 研修中スタッフ制約 — training状態は単独訪問不可（staff_count=1のオーダー）"""
+    for h in inp.helpers:
+        for o in inp.orders:
+            if o.staff_count > 1:
+                continue  # 複数人体制なら研修中でもOK
+            training = h.customer_training_status.get(o.customer_id)
+            if training == TrainingStatus.TRAINING:
+                prob += x[h.id, o.id] == 0, f"training_{h.id}_{o.id}"
