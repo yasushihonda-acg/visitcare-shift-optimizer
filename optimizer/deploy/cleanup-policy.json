@@ -1,0 +1,9 @@
+[
+  {
+    "name": "keep-latest-2",
+    "action": {"type": "Delete"},
+    "mostRecentVersions": {
+      "keepCount": 2
+    }
+  }
+]
