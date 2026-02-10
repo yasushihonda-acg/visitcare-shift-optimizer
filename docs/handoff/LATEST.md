@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-10（Phase 3a UI基盤完了）
-**現在のフェーズ**: Phase 3a 完了 → Phase 3b 統合前
+**最終更新**: 2026-02-10（Phase 3b 統合完了）
+**現在のフェーズ**: Phase 3b 完了
 
 ## 完了済み
 
@@ -11,7 +11,7 @@
 - ADR 4件作成
 
 ### Phase 1: データ設計 + Seedデータ
-- **Firebase初期化**: Emulator設定（Firestore:8080, UI:4000）
+- **Firebase初期化**: Emulator設定（Firestore:8080, Auth:9099, UI:4000）
 - **TypeScript型定義**: `shared/types/` — 全5コレクションの型（strict mode）
 - **Firestoreルール**: 開発用allow all + 複合インデックス3件
 - **CSVデータ**: 鹿児島市中心部のデモデータ6ファイル
@@ -60,22 +60,29 @@
 - **制約違反チェッカー**: NGスタッフ/資格不適合/時間重複/希望休/勤務時間外
 - **オーダー詳細パネル**: Sheet（スライドイン）
 - **未割当セクション**: ガント下部に表示
-- **テスト**: 29件全パス（constants 14 + checker 7 + API 4 + DayTabs 4）
-- **ビルド確認済み**: `next build` 成功
 
-## 未着手
+### Phase 3b: 統合 + バリデーション（ADR-009）
+- **FE-BE型統一**: `total_orders`, `assigned_count` をBEに追加、FEに`assignments`, `orders_updated`追加
+- **認証基盤**: Firebase Auth 2モード対応（required/demo）
+  - FE: AuthProvider（匿名認証/ログイン必須）、APIクライアントにAuthorizationヘッダー
+  - BE: firebase-admin認証ミドルウェア（ALLOW_UNAUTHENTICATED環境変数でスキップ可）
+- **ローカル開発環境**: `scripts/dev-start.sh`（Emulator + API + Next.js一括起動）
+- **Firebase Hosting**: `output: 'export'` + SPA rewrites設定
+- **CORS本番対応**: Firebase HostingドメインをCORS_ORIGINSに追加
+- **統合テスト**: API契約テスト3件 + 認証テスト12件 + AuthProviderテスト3件
+- **CI/CD**: GitHub Actions（PR時テスト並列、main pushでCloud Build + Firebase Hosting並列デプロイ）
+- **テスト合計**: BE 128件 + FE 32件 = **160件全パス**
 
-### Phase 3b: 統合 + バリデーション
-
-## 次のアクション候補
-1. `.env.local` 作成（Firebase API Key等）
-2. Firebase Emulator + Seedデータでの動作確認
-3. Cloud Run URLを`.env.local`のOPTIMIZER_API_URLに設定
-4. Firebase Hosting設定（`firebase.json`にhosting追加）
-5. Phase 3b: E2Eテスト + 統合バリデーション
+## デプロイURL
+- **Web App**: https://visitcare-shift-optimizer.web.app
+- **Optimizer API**: https://shift-optimizer-1045989697649.asia-northeast1.run.app
 
 ## データアクセス方法
 ```bash
+# 一括起動（推奨）
+./scripts/dev-start.sh
+
+# 個別起動:
 # Emulator起動
 firebase emulators:start --project demo-test
 
@@ -83,18 +90,24 @@ firebase emulators:start --project demo-test
 cd seed && FIRESTORE_EMULATOR_HOST=localhost:8080 npm run import:all
 
 # 最適化エンジン テスト
-cd optimizer && .venv/bin/pytest tests/ -v
+cd optimizer && .venv/bin/pytest tests/ -v  # 128件
 
 # 最適化API（ローカル、ポート8081）
-cd optimizer && .venv/bin/uvicorn optimizer.api.main:app --reload --port 8081
+cd optimizer && ALLOW_UNAUTHENTICATED=true .venv/bin/uvicorn optimizer.api.main:app --reload --port 8081
 
 # Next.js dev
 cd web && npm run dev  # → http://localhost:3000
 
 # テスト
-cd web && npm test          # Vitest (29件)
-cd optimizer && .venv/bin/pytest tests/ -v  # pytest (116件)
+cd web && npm test          # Vitest (32件)
+cd optimizer && .venv/bin/pytest tests/ -v  # pytest (128件)
 ```
+
+## CI/CD
+- **GitHub Actions**: `.github/workflows/ci.yml`
+- PR時: test-optimizer + test-web 並列実行
+- main push時: テスト通過後にCloud Build + Firebase Hosting 並列デプロイ
+- 必要なGitHub Secrets: `GCP_SA_KEY`, `FIREBASE_SERVICE_ACCOUNT`
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md` — 全コレクション定義 + クエリパターン
@@ -103,6 +116,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (116件)
 - `docs/adr/ADR-006-pulp-replaces-python-mip.md` — PuLP採用の経緯
 - `docs/adr/ADR-007-fastapi-cloud-run-api.md` — FastAPI + Cloud Run API層
 - `docs/adr/ADR-008-phase3a-ui-architecture.md` — Phase 3a UIアーキテクチャ
+- `docs/adr/ADR-009-phase3b-integration.md` — Phase 3b 統合・認証・CI/CD
 - `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
 - `web/src/` — Next.js フロントエンド
