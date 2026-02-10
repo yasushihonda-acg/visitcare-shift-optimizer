@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { convertTimestamps } from '@/lib/firestore-converter';
 import type { Order } from '@/types';
 
@@ -14,7 +14,7 @@ export function useOrders(weekStart: Date) {
   useEffect(() => {
     const weekStartTs = Timestamp.fromDate(weekStart);
     const q = query(
-      collection(db, 'orders'),
+      collection(getDb(), 'orders'),
       where('week_start_date', '==', weekStartTs)
     );
 

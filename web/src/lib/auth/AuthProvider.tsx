@@ -6,7 +6,7 @@ import {
   signInAnonymously,
   type User,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 type AuthMode = 'required' | 'demo';
 
@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(getFirebaseAuth(), (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // デモモード: 未認証なら匿名サインイン
   useEffect(() => {
     if (AUTH_MODE === 'demo' && !loading && !user) {
-      signInAnonymously(auth).catch(console.error);
+      signInAnonymously(getFirebaseAuth()).catch(console.error);
     }
   }, [loading, user]);
 

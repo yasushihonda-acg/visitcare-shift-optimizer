@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { convertTimestamps } from '@/lib/firestore-converter';
 import type { Customer } from '@/types';
 
@@ -13,7 +13,7 @@ export function useCustomers() {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
-      collection(db, 'customers'),
+      collection(getDb(), 'customers'),
       (snapshot) => {
         const map = new Map<string, Customer>();
         snapshot.forEach((doc) => {

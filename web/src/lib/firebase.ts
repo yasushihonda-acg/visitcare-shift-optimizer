@@ -57,19 +57,11 @@ function initAuth(): Auth {
   return _auth;
 }
 
-// Proxyで遅延初期化（SSRビルド時にFirebase初期化を回避）
-export const db: Firestore = new Proxy({} as Firestore, {
-  get(_target, prop) {
-    const instance = initDb();
-    const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
-    return typeof value === 'function' ? value.bind(instance) : value;
-  },
-});
+// 遅延初期化関数（SSRビルド時にFirebase初期化を回避）
+export function getDb(): Firestore {
+  return initDb();
+}
 
-export const auth: Auth = new Proxy({} as Auth, {
-  get(_target, prop) {
-    const instance = initAuth();
-    const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
-    return typeof value === 'function' ? value.bind(instance) : value;
-  },
-});
+export function getFirebaseAuth(): Auth {
+  return initAuth();
+}

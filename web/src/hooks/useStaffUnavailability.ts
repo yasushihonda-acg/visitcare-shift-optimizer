@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { convertTimestamps } from '@/lib/firestore-converter';
 import type { StaffUnavailability } from '@/types';
 
@@ -14,7 +14,7 @@ export function useStaffUnavailability(weekStart: Date) {
   useEffect(() => {
     const weekStartTs = Timestamp.fromDate(weekStart);
     const q = query(
-      collection(db, 'staff_unavailability'),
+      collection(getDb(), 'staff_unavailability'),
       where('week_start_date', '==', weekStartTs)
     );
 

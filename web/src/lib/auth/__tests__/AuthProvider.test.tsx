@@ -7,8 +7,8 @@ const mockOnAuthStateChanged = vi.fn();
 const mockSignInAnonymously = vi.fn();
 
 vi.mock('@/lib/firebase', () => ({
-  auth: {},
-  db: {},
+  getFirebaseAuth: () => ({}),
+  getDb: () => ({}),
 }));
 
 vi.mock('firebase/auth', () => ({
