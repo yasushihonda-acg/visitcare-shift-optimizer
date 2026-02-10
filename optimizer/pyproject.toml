@@ -10,6 +10,7 @@ dependencies = [
     "uvicorn[standard]>=0.34",
     "gunicorn>=23.0",
     "google-cloud-firestore>=2.19",
+    "firebase-admin>=6.6",
 ]
 
 [project.optional-dependencies]

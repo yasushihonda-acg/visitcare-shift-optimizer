@@ -1,5 +1,9 @@
 """共有フィクスチャ"""
 
+import os
+
+os.environ.setdefault("ALLOW_UNAUTHENTICATED", "true")
+
 from pathlib import Path
 
 import pytest

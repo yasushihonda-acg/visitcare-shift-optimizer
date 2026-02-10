@@ -33,6 +33,8 @@ class OptimizeResponse(BaseModel):
     solve_time_seconds: float
     status: str
     orders_updated: int = Field(description="Firestoreに書き戻したオーダー数")
+    total_orders: int = Field(description="最適化対象オーダー総数")
+    assigned_count: int = Field(description="割当成功オーダー数")
 
 
 class ErrorResponse(BaseModel):

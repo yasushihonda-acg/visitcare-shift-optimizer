@@ -55,6 +55,8 @@ class TestOptimizeEndpoint:
         assert data["assignments"][0]["order_id"] == "ORD0001"
         assert data["assignments"][0]["staff_ids"] == ["H001"]
         assert data["orders_updated"] == 1
+        assert data["total_orders"] == 1
+        assert data["assigned_count"] == 1
         mock_write.assert_called_once()
 
     @patch("optimizer.api.routes.solve")

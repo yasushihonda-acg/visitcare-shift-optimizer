@@ -27,7 +27,11 @@ visitcare-shift-optimizer/
 ├── firebase/                # Firestore rules, indexes
 ├── optimizer/               # Python最適化エンジン（Cloud Run）※Phase 2a
 ├── web/                     # Next.js フロントエンド ※Phase 3a
-├── firebase.json            # Firebase Emulator設定
+├── scripts/                 # 開発ツール
+│   └── dev-start.sh         # ローカル一括起動スクリプト
+├── .github/workflows/       # CI/CD
+│   └── ci.yml               # テスト + デプロイ
+├── firebase.json            # Firebase Emulator + Hosting設定
 └── CLAUDE.md
 ```
 
@@ -67,6 +71,16 @@ visitcare-shift-optimizer/
 | 身体介護 | physical_care | 身体介護サービス |
 | 生活援助 | daily_living | 生活援助サービス |
 | 予防 | prevention | 介護予防サービス |
+
+### デプロイ
+- **Web App**: https://visitcare-shift-optimizer.web.app（Firebase Hosting）
+- **Optimizer API**: https://shift-optimizer-1045989697649.asia-northeast1.run.app（Cloud Run）
+- **CI/CD**: GitHub Actions（PR時テスト、main pushでデプロイ）
+
+### ローカル開発
+```bash
+./scripts/dev-start.sh  # Emulator + API + Next.js 一括起動
+```
 
 ### 外部キー（将来連携用）
 - `kaiso_id`: 介ソルID
