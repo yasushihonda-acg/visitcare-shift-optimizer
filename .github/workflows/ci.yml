@@ -56,7 +56,9 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
       - name: Submit Cloud Build
         working-directory: optimizer
-        run: gcloud builds submit --config=cloudbuild.yaml .
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          gcloud builds submit --config=cloudbuild.yaml --substitutions=SHORT_SHA="${SHORT_SHA}" .
 
   deploy-hosting:
     name: Deploy Hosting (Firebase)
@@ -68,10 +70,12 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
+      - id: auth
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          token_format: access_token
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -83,4 +87,6 @@ jobs:
           npm ci
           npm run build
       - name: Deploy to Firebase Hosting
-        run: npx firebase-tools deploy --only hosting --project visitcare-shift-optimizer
+        run: npx firebase-tools@latest deploy --only hosting --project visitcare-shift-optimizer
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
