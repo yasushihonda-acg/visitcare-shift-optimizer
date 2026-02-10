@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-10（CI/CD WIF認証移行完了）
-**現在のフェーズ**: Phase 3b 完了 + CI/CDデプロイ修正済み
+**最終更新**: 2026-02-10（本番デプロイ修正完了）
+**現在のフェーズ**: Phase 3b 完了 + 本番環境動作確認済み
 
 ## 完了済み
 
@@ -49,7 +49,7 @@
 
 ### Phase 3a: UI基盤 + ガントチャート（ADR-008）
 - **Next.js 15 App Router** + Tailwind CSS v4 + shadcn/ui
-- **Firebase Client SDK**: `web/src/lib/firebase.ts`（エミュレータ対応）
+- **Firebase Client SDK**: `web/src/lib/firebase.ts`（関数ベース遅延初期化、エミュレータ対応）
 - **クライアント型定義**: `web/src/types/`（Timestamp→Date変換版）
 - **Firestoreリアルタイムフック**: useHelpers, useCustomers, useOrders, useStaffUnavailability
 - **スケジュールデータ統合**: useScheduleData（日別・ヘルパー別整形）
@@ -111,7 +111,13 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (128件)
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
-- **全4ジョブ成功確認済み**（PR #7, #8, #9）
+- **全4ジョブ成功確認済み**（PR #7〜#12）
+
+## 本番環境修正（2026-02-10）
+- **PR #11**: `.env.production`にFirebase SDK設定追加（auth/invalid-api-keyエラー修正）
+- **PR #12**: Proxy → `getDb()`/`getFirebaseAuth()`関数ベース遅延初期化（Firebase SDK v12互換性修正）
+- **GCP設定**: Firebase Webアプリ登録 + Auth Identity Platform初期化 + Anonymous sign-in有効化
+- **本番動作確認済み**: https://visitcare-shift-optimizer.web.app でエラーなし
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md` — 全コレクション定義 + クエリパターン
