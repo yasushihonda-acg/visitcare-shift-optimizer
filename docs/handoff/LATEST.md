@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-10（Phase 3b 統合完了）
-**現在のフェーズ**: Phase 3b 完了
+**最終更新**: 2026-02-10（CI/CD WIF認証移行完了）
+**現在のフェーズ**: Phase 3b 完了 + CI/CDデプロイ修正済み
 
 ## 完了済み
 
@@ -103,11 +103,15 @@ cd web && npm test          # Vitest (32件)
 cd optimizer && .venv/bin/pytest tests/ -v  # pytest (128件)
 ```
 
-## CI/CD
+## CI/CD（ADR-010）
 - **GitHub Actions**: `.github/workflows/ci.yml`
+- **認証**: Workload Identity Federation（JSON鍵不使用）
+  - SA: `github-actions@visitcare-shift-optimizer.iam.gserviceaccount.com`
+  - WIF Pool: `github-actions-pool` / OIDC Provider: `github-oidc`
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting 並列デプロイ
-- 必要なGitHub Secrets: `GCP_SA_KEY`, `FIREBASE_SERVICE_ACCOUNT`
+- 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+- **全4ジョブ成功確認済み**（PR #7, #8, #9）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md` — 全コレクション定義 + クエリパターン
@@ -117,6 +121,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (128件)
 - `docs/adr/ADR-007-fastapi-cloud-run-api.md` — FastAPI + Cloud Run API層
 - `docs/adr/ADR-008-phase3a-ui-architecture.md` — Phase 3a UIアーキテクチャ
 - `docs/adr/ADR-009-phase3b-integration.md` — Phase 3b 統合・認証・CI/CD
+- `docs/adr/ADR-010-workload-identity-federation.md` — WIF CI/CD認証
 - `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
 - `web/src/` — Next.js フロントエンド
