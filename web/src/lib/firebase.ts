@@ -61,13 +61,15 @@ function initAuth(): Auth {
 export const db: Firestore = new Proxy({} as Firestore, {
   get(_target, prop) {
     const instance = initDb();
-    return (instance as unknown as Record<string | symbol, unknown>)[prop];
+    const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
   },
 });
 
 export const auth: Auth = new Proxy({} as Auth, {
   get(_target, prop) {
     const instance = initAuth();
-    return (instance as unknown as Record<string | symbol, unknown>)[prop];
+    const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
+    return typeof value === 'function' ? value.bind(instance) : value;
   },
 });

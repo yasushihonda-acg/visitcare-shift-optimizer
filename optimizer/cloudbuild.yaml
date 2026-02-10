@@ -41,4 +41,4 @@ substitutions:
   _IMAGE_NAME: shift-optimizer
   _SERVICE_NAME: shift-optimizer
   _CORS_ORIGINS: 'https://visitcare-shift-optimizer.web.app,https://visitcare-shift-optimizer.firebaseapp.com,http://localhost:3000'
-  _ALLOW_UNAUTHENTICATED: 'true'
+  _ALLOW_UNAUTHENTICATED: 'false'

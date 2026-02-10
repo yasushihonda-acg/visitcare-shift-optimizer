@@ -1,10 +1,8 @@
 """認証ミドルウェアのテスト"""
 
-import os
 from unittest.mock import MagicMock, patch
 
-import pytest
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from optimizer.api.auth import _extract_token

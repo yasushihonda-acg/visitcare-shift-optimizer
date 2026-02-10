@@ -2,9 +2,10 @@
 
 import logging
 import os
+import threading
 
 import firebase_admin
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ ALLOW_UNAUTHENTICATED = os.getenv("ALLOW_UNAUTHENTICATED", "false").lower() == "
 
 # Firebase Admin初期化（アプリケーションデフォルト認証情報を使用）
 _firebase_app: firebase_admin.App | None = None
+_lock = threading.Lock()
 
 
 def _get_firebase_app() -> firebase_admin.App | None:
@@ -20,10 +22,12 @@ def _get_firebase_app() -> firebase_admin.App | None:
         return _firebase_app
     if ALLOW_UNAUTHENTICATED:
         return None
-    try:
-        _firebase_app = firebase_admin.get_app()
-    except ValueError:
-        _firebase_app = firebase_admin.initialize_app()
+    with _lock:
+        if _firebase_app is None:
+            try:
+                _firebase_app = firebase_admin.get_app()
+            except ValueError:
+                _firebase_app = firebase_admin.initialize_app()
     return _firebase_app
 
 
@@ -58,5 +62,5 @@ async def verify_auth(request: Request) -> dict | None:
         decoded = auth.verify_id_token(token)
         return decoded
     except Exception as e:
-        logger.warning("トークン検証失敗: %s", e)
-        raise HTTPException(status_code=401, detail="無効な認証トークンです") from e
+        logger.warning("トークン検証失敗: %s", type(e).__name__)
+        raise HTTPException(status_code=401, detail="無効な認証トークンです")
