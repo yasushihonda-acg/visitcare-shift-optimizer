@@ -80,36 +80,31 @@ def _filter_feasible_orders(inp: OptimizationInput) -> OptimizationInput:
 
 
 class TestIntegration:
-    def test_seed_data_has_infeasible_orders(self, seed_data_dir: Path) -> None:
-        """Seedデータの不整合検出: 勤務可能ヘルパー0人のオーダーが存在"""
+    def test_seed_data_all_feasible(self, seed_data_dir: Path) -> None:
+        """Seedデータの全オーダーが充足可能"""
         inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         filtered = _filter_feasible_orders(inp)
         infeasible_count = len(inp.orders) - len(filtered.orders)
-        assert infeasible_count > 0, "不整合オーダーが存在するはず"
-        print(f"\n  Infeasible orders: {infeasible_count} / {len(inp.orders)}")
+        assert infeasible_count == 0, f"不整合オーダーが {infeasible_count} 件存在"
+        print(f"\n  All {len(inp.orders)} orders are feasible")
 
-    def test_filtered_seed_data_solves(self, seed_data_dir: Path) -> None:
-        """Seedデータ（日曜除外）で解が得られる"""
+    def test_seed_data_solves(self, seed_data_dir: Path) -> None:
+        """Seedデータ全量で解が得られる"""
         inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
-        inp = _filter_feasible_orders(inp)
         result = solve(inp, time_limit_seconds=180)
         assert result.status in ("Optimal", "Feasible"), f"Status: {result.status}"
         assert len(result.assignments) == len(inp.orders)
 
     def test_performance_under_3_minutes(self, seed_data_dir: Path) -> None:
         """3分以内に完了"""
-        inp = _filter_feasible_orders(
-            load_optimization_input(seed_data_dir, date(2025, 1, 6))
-        )
+        inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         result = solve(inp, time_limit_seconds=180)
         assert result.solve_time_seconds < 180, f"Took {result.solve_time_seconds}s"
         print(f"\n  Solve time: {result.solve_time_seconds:.1f}s")
 
     def test_all_orders_assigned(self, seed_data_dir: Path) -> None:
         """全オーダーに必要人数分のスタッフが割り当てられている"""
-        inp = _filter_feasible_orders(
-            load_optimization_input(seed_data_dir, date(2025, 1, 6))
-        )
+        inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         result = solve(inp, time_limit_seconds=180)
         order_map = {o.id: o for o in inp.orders}
         for a in result.assignments:
@@ -120,9 +115,7 @@ class TestIntegration:
 
     def test_no_qualification_violation(self, seed_data_dir: Path) -> None:
         """身体介護に無資格者が割り当てられていない"""
-        inp = _filter_feasible_orders(
-            load_optimization_input(seed_data_dir, date(2025, 1, 6))
-        )
+        inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         result = solve(inp, time_limit_seconds=180)
         helper_map = {h.id: h for h in inp.helpers}
         order_map = {o.id: o for o in inp.orders}
@@ -136,9 +129,7 @@ class TestIntegration:
 
     def test_no_overlap_violation(self, seed_data_dir: Path) -> None:
         """同一ヘルパーの時間帯重複がない"""
-        inp = _filter_feasible_orders(
-            load_optimization_input(seed_data_dir, date(2025, 1, 6))
-        )
+        inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         result = solve(inp, time_limit_seconds=180)
         order_map = {o.id: o for o in inp.orders}
 
@@ -162,9 +153,7 @@ class TestIntegration:
 
     def test_no_ng_staff_violation(self, seed_data_dir: Path) -> None:
         """NGスタッフが割り当てられていない"""
-        inp = _filter_feasible_orders(
-            load_optimization_input(seed_data_dir, date(2025, 1, 6))
-        )
+        inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         result = solve(inp, time_limit_seconds=180)
         order_map = {o.id: o for o in inp.orders}
 
@@ -182,9 +171,7 @@ class TestIntegration:
 
     def test_result_summary(self, seed_data_dir: Path) -> None:
         """結果のサマリーを出力"""
-        inp = _filter_feasible_orders(
-            load_optimization_input(seed_data_dir, date(2025, 1, 6))
-        )
+        inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         result = solve(inp, time_limit_seconds=180)
 
         helper_counts: dict[str, int] = {}

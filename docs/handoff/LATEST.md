@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-10（Phase 2b 完了時）
+**最終更新**: 2026-02-10（Seedデータ不整合修正完了）
 **現在のフェーズ**: Phase 2b 完了 → Phase 3a 開始前
 
 ## 完了済み
@@ -61,7 +61,11 @@
 - **テスト**: 116件全パス（既存76件 + 新規40件）
   - Firestoreローダー: 28件（変換ロジック、staff_count導出、エッジケース）
   - API + 書き戻し: 12件（正常系、dry_run、409/422エラー、バッチ分割）
-- **既知の問題**: Seedデータ不整合（Phase 2aから継続）
+- **Seedデータ不整合修正**: 3つの問題を解消
+  - 日曜: H003/H005/H010/H012/H016に日曜シフト追加（5行）
+  - 早朝: H001(月水金)、H007(月-金)のstart_timeを07:00に変更
+  - 土曜午後: H003/H005/H008/H010のend_timeを17:00に延長（移動時間制約で4名必要）
+  - 統合テストからフィルタ除去、全160オーダーでOptimal（0.6秒）
 
 ## 未着手
 
@@ -71,8 +75,7 @@
 ## 次のアクション候補
 1. Artifact Registryセットアップ: `optimizer/deploy/setup-ar.sh` 実行
 2. Cloud Runデプロイ: `gcloud builds submit` でCI/CD実行
-3. Seedデータ不整合修正（日曜ヘルパー追加、早朝availability拡張）
-4. Phase 3a: Next.js UI基盤 + ガントチャート
+3. Phase 3a: Next.js UI基盤 + ガントチャート
 
 ## データアクセス方法
 ```bash
