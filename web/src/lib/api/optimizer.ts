@@ -5,12 +5,19 @@ export interface OptimizeRequest {
   dry_run?: boolean;
 }
 
+export interface AssignmentResult {
+  order_id: string;
+  staff_ids: string[];
+}
+
 export interface OptimizeResponse {
   status: string;
   total_orders: number;
   assigned_count: number;
   solve_time_seconds: number;
   objective_value: number;
+  assignments: AssignmentResult[];
+  orders_updated: number;
 }
 
 export interface OptimizeError {

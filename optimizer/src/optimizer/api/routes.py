@@ -99,4 +99,6 @@ def optimize(req: OptimizeRequest) -> OptimizeResponse:
         solve_time_seconds=result.solve_time_seconds,
         status=result.status,
         orders_updated=orders_updated,
+        total_orders=len(inp.orders),
+        assigned_count=len(result.assignments),
     )

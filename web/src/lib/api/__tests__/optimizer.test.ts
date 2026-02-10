@@ -18,12 +18,16 @@ describe('runOptimize', () => {
         assigned_count: 30,
         solve_time_seconds: 0.5,
         objective_value: 100,
+        assignments: [{ order_id: 'ORD0001', staff_ids: ['H001'] }],
+        orders_updated: 30,
       }),
     });
 
     const result = await runOptimize({ week_start_date: '2025-01-06' });
     expect(result.status).toBe('Optimal');
     expect(result.assigned_count).toBe(30);
+    expect(result.assignments).toHaveLength(1);
+    expect(result.orders_updated).toBe(30);
   });
 
   it('409: Infeasible', async () => {
@@ -57,6 +61,8 @@ describe('runOptimize', () => {
         assigned_count: 30,
         solve_time_seconds: 0.5,
         objective_value: 100,
+        assignments: [],
+        orders_updated: 0,
       }),
     });
 
