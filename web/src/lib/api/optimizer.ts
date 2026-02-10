@@ -1,3 +1,5 @@
+import { auth } from '@/lib/firebase';
+
 const API_URL = process.env.NEXT_PUBLIC_OPTIMIZER_API_URL ?? 'http://localhost:8081';
 
 export interface OptimizeRequest {
@@ -24,10 +26,21 @@ export interface OptimizeError {
   detail: string;
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export async function runOptimize(request: OptimizeRequest): Promise<OptimizeResponse> {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/optimize`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(request),
   });
 
