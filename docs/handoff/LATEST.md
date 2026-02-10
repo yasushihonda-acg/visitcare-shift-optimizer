@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-10（Seedデータ不整合修正完了）
-**現在のフェーズ**: Phase 2b 完了 → Phase 3a 開始前
+**最終更新**: 2026-02-10（Phase 3a UI基盤完了）
+**現在のフェーズ**: Phase 3a 完了 → Phase 3b 統合前
 
 ## 完了済み
 
@@ -41,41 +41,38 @@
 - **REST API**: FastAPI（ADR-007）
   - `GET /health` — ヘルスチェック
   - `POST /optimize` — シフト最適化実行
-    - リクエスト: `{week_start_date, time_limit_seconds?, dry_run?}`
-    - レスポンス: `{assignments[], objective_value, solve_time_seconds, status, orders_updated}`
-    - エラー: 409（Infeasible/オーダーなし）、422（日付不正/非月曜日）
-- **Firestoreデータローダー**: `optimizer/src/optimizer/data/firestore_loader.py`
-  - 5コレクション（customers, helpers, orders, travel_times, staff_unavailability）読み込み
-  - Firestore Timestamp → Python datetime 変換
-  - staff_count導出: Firestoreフィールド > customer.weekly_services > デフォルト1
-  - StaffConstraint: Customer.ng_staff_ids/preferred_staff_idsから生成
-- **Firestore書き戻し**: `optimizer/src/optimizer/data/firestore_writer.py`
-  - Assignment[] → orders.assigned_staff_ids + status='assigned' バッチ更新
-  - 500件/batchの自動分割
-- **Dockerfile**: Python 3.12-slim + gunicorn/uvicorn
-  - Docker build成功、ローカルヘルスチェック確認済み
-- **Cloud Build**: `optimizer/cloudbuild.yaml`
-- **Artifact Registry**: `optimizer/deploy/`
-  - setup-ar.sh: リポジトリ作成 + クリーンアップポリシー適用
-  - cleanup-policy.json: 最新2イメージ保持、古いものは自動削除
-- **テスト**: 116件全パス（既存76件 + 新規40件）
-  - Firestoreローダー: 28件（変換ロジック、staff_count導出、エッジケース）
-  - API + 書き戻し: 12件（正常系、dry_run、409/422エラー、バッチ分割）
-- **Seedデータ不整合修正**: 3つの問題を解消
-  - 日曜: H003/H005/H010/H012/H016に日曜シフト追加（5行）
-  - 早朝: H001(月水金)、H007(月-金)のstart_timeを07:00に変更
-  - 土曜午後: H003/H005/H008/H010のend_timeを17:00に延長（移動時間制約で4名必要）
-  - 統合テストからフィルタ除去、全160オーダーでOptimal（0.6秒）
+- **Cloud Run デプロイ済み**: `https://shift-optimizer-1045989697649.asia-northeast1.run.app`
+  - asia-northeast1 / 512Mi / max 3インスタンス / 認証必須
+- **CORSミドルウェア追加**: `CORS_ORIGINS`環境変数で制御
+- **Artifact Registry**: 最新2イメージ保持（Keep policy）
+- **テスト**: 116件全パス
+
+### Phase 3a: UI基盤 + ガントチャート（ADR-008）
+- **Next.js 15 App Router** + Tailwind CSS v4 + shadcn/ui
+- **Firebase Client SDK**: `web/src/lib/firebase.ts`（エミュレータ対応）
+- **クライアント型定義**: `web/src/types/`（Timestamp→Date変換版）
+- **Firestoreリアルタイムフック**: useHelpers, useCustomers, useOrders, useStaffUnavailability
+- **スケジュールデータ統合**: useScheduleData（日別・ヘルパー別整形）
+- **ガントチャート**: CSS Grid カスタム（7:00-21:00, 5分粒度, 168スロット）
+  - GanttChart / GanttTimeHeader / GanttRow / GanttBar
+  - 身体介護=青、生活援助=緑、違反=赤/黄ボーダー
+- **最適化ボタン**: 確認ダイアログ（実行/テスト実行/キャンセル）→ sonner通知
+- **制約違反チェッカー**: NGスタッフ/資格不適合/時間重複/希望休/勤務時間外
+- **オーダー詳細パネル**: Sheet（スライドイン）
+- **未割当セクション**: ガント下部に表示
+- **テスト**: 29件全パス（constants 14 + checker 7 + API 4 + DayTabs 4）
+- **ビルド確認済み**: `next build` 成功
 
 ## 未着手
 
-### Phase 3a: UI基盤 + ガントチャート
 ### Phase 3b: 統合 + バリデーション
 
 ## 次のアクション候補
-1. Artifact Registryセットアップ: `optimizer/deploy/setup-ar.sh` 実行
-2. Cloud Runデプロイ: `gcloud builds submit` でCI/CD実行
-3. Phase 3a: Next.js UI基盤 + ガントチャート
+1. `.env.local` 作成（Firebase API Key等）
+2. Firebase Emulator + Seedデータでの動作確認
+3. Cloud Run URLを`.env.local`のOPTIMIZER_API_URLに設定
+4. Firebase Hosting設定（`firebase.json`にhosting追加）
+5. Phase 3b: E2Eテスト + 統合バリデーション
 
 ## データアクセス方法
 ```bash
@@ -88,15 +85,15 @@ cd seed && FIRESTORE_EMULATOR_HOST=localhost:8080 npm run import:all
 # 最適化エンジン テスト
 cd optimizer && .venv/bin/pytest tests/ -v
 
-# APIローカル起動
-cd optimizer && .venv/bin/uvicorn optimizer.api.main:app --reload --port 8080
+# 最適化API（ローカル、ポート8081）
+cd optimizer && .venv/bin/uvicorn optimizer.api.main:app --reload --port 8081
 
-# Docker起動
-cd optimizer && docker build -t shift-optimizer . && docker run -p 8080:8080 shift-optimizer
+# Next.js dev
+cd web && npm run dev  # → http://localhost:3000
 
-# UI確認
-# http://localhost:4000/firestore
-# http://localhost:8080/docs (OpenAPI Swagger UI)
+# テスト
+cd web && npm test          # Vitest (29件)
+cd optimizer && .venv/bin/pytest tests/ -v  # pytest (116件)
 ```
 
 ## 重要なドキュメント
@@ -105,8 +102,10 @@ cd optimizer && docker build -t shift-optimizer . && docker run -p 8080:8080 shi
 - `docs/adr/ADR-005-firestore-schema-design.md` — スキーマ設計判断
 - `docs/adr/ADR-006-pulp-replaces-python-mip.md` — PuLP採用の経緯
 - `docs/adr/ADR-007-fastapi-cloud-run-api.md` — FastAPI + Cloud Run API層
+- `docs/adr/ADR-008-phase3a-ui-architecture.md` — Phase 3a UIアーキテクチャ
 - `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
+- `web/src/` — Next.js フロントエンド
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
