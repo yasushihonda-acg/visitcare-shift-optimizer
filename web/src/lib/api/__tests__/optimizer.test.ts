@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Firebase authモック（optimizer.tsがimportするため先にモック）
 vi.mock('@/lib/firebase', () => ({
-  auth: { currentUser: { getIdToken: () => Promise.resolve('mock-token') } },
-  db: {},
+  getFirebaseAuth: () => ({ currentUser: { getIdToken: () => Promise.resolve('mock-token') } }),
+  getDb: () => ({}),
 }));
 
 import { runOptimize, OptimizeApiError } from '../optimizer';

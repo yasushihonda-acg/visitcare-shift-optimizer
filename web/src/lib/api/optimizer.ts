@@ -1,4 +1,4 @@
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 const API_URL = process.env.NEXT_PUBLIC_OPTIMIZER_API_URL ?? 'http://localhost:8081';
 
@@ -28,7 +28,7 @@ export interface OptimizeError {
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const user = auth.currentUser;
+  const user = getFirebaseAuth().currentUser;
   if (user) {
     const token = await user.getIdToken();
     headers['Authorization'] = `Bearer ${token}`;

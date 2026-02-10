@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDb } from '@/lib/firebase';
 import { convertTimestamps } from '@/lib/firestore-converter';
 import type { Helper } from '@/types';
 
@@ -13,7 +13,7 @@ export function useHelpers() {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
-      collection(db, 'helpers'),
+      collection(getDb(), 'helpers'),
       (snapshot) => {
         const map = new Map<string, Helper>();
         snapshot.forEach((doc) => {
