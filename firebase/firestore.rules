@@ -42,9 +42,30 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // helpers create/update時: 必須フィールドバリデーション
+    function isValidHelper() {
+      let data = request.resource.data;
+      return data.name is map
+        && data.name.family is string
+        && data.name.given is string
+        && data.qualifications is list
+        && data.can_physical_care is bool
+        && data.transportation is string
+        && data.weekly_availability is map
+        && data.preferred_hours is map
+        && data.preferred_hours.min is number
+        && data.preferred_hours.max is number
+        && data.available_hours is map
+        && data.available_hours.min is number
+        && data.available_hours.max is number
+        && data.employment_type is string;
+    }
+
+    // マスタデータ: helpers は create/update 可（delete不可）
     match /helpers/{helperId} {
       allow read: if isAuthenticated();
-      allow write: if false;
+      allow create, update: if isAuthenticated() && isValidHelper();
+      allow delete: if false;
     }
 
     match /travel_times/{travelTimeId} {
