@@ -6,15 +6,17 @@ import { UnassignedSection } from './UnassignedSection';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 import type { Customer, Order } from '@/types';
 import type { ViolationMap } from '@/lib/constraints/checker';
+import type { DropZoneStatus } from '@/lib/dnd/types';
 
 interface GanttChartProps {
   schedule: DaySchedule;
   customers: Map<string, Customer>;
   violations: ViolationMap;
   onOrderClick?: (order: Order) => void;
+  dropZoneStatuses?: Map<string, DropZoneStatus>;
 }
 
-export function GanttChart({ schedule, customers, violations, onOrderClick }: GanttChartProps) {
+export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses }: GanttChartProps) {
   if (schedule.totalOrders === 0) {
     return (
       <div className="flex items-center justify-center h-48 text-muted-foreground">
@@ -34,16 +36,16 @@ export function GanttChart({ schedule, customers, violations, onOrderClick }: Ga
             customers={customers}
             violations={violations}
             onOrderClick={onOrderClick}
+            dropZoneStatus={dropZoneStatuses?.get(row.helper.id)}
           />
         ))}
       </div>
-      {schedule.unassignedOrders.length > 0 && (
-        <UnassignedSection
-          orders={schedule.unassignedOrders}
-          customers={customers}
-          onOrderClick={onOrderClick}
-        />
-      )}
+      <UnassignedSection
+        orders={schedule.unassignedOrders}
+        customers={customers}
+        onOrderClick={onOrderClick}
+        dropZoneStatus={dropZoneStatuses?.get('unassigned-section')}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { addDays } from 'date-fns';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { ScheduleProvider, useScheduleContext } from '@/contexts/ScheduleContext';
 import { Header } from '@/components/layout/Header';
 import { DayTabs } from '@/components/schedule/DayTabs';
@@ -10,6 +11,7 @@ import { OptimizeButton } from '@/components/schedule/OptimizeButton';
 import { GanttChart } from '@/components/gantt/GanttChart';
 import { OrderDetailPanel } from '@/components/schedule/OrderDetailPanel';
 import { useScheduleData } from '@/hooks/useScheduleData';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { checkConstraints } from '@/lib/constraints/checker';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Order } from '@/types';
@@ -40,6 +42,26 @@ function SchedulePage() {
       }),
     [schedule, helpers, customers, unavailability, selectedDay]
   );
+
+  // DnD — distance: 5px でクリックとドラッグを区別
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const {
+    dropZoneStatuses,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDragCancel,
+  } = useDragAndDrop({
+    helperRows: schedule.helperRows,
+    unassignedOrders: schedule.unassignedOrders,
+    helpers,
+    customers,
+    unavailability,
+    day: selectedDay,
+  });
 
   const handleOrderClick = (order: Order) => {
     setSelectedOrder(order);
@@ -72,12 +94,21 @@ function SchedulePage() {
       </div>
       <StatsBar schedule={schedule} violations={violations} />
       <main className="flex-1 overflow-auto p-4">
-        <GanttChart
-          schedule={schedule}
-          customers={customers}
-          violations={violations}
-          onOrderClick={handleOrderClick}
-        />
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <GanttChart
+            schedule={schedule}
+            customers={customers}
+            violations={violations}
+            onOrderClick={handleOrderClick}
+            dropZoneStatuses={dropZoneStatuses}
+          />
+        </DndContext>
       </main>
       <OrderDetailPanel
         order={selectedOrder}
