@@ -136,16 +136,9 @@ describe('認証済みユーザー - 読み取り', () => {
 });
 
 // ============================================================
-// 認証済みユーザー: マスタコレクションはwrite不可
+// 認証済みユーザー: マスタコレクション書き込み（customers以外は拒否）
 // ============================================================
-describe('認証済みユーザー - マスタコレクション書き込み拒否', () => {
-  it('customers に書き込めない', async () => {
-    const authed = testEnv.authenticatedContext('user-1');
-    await assertFails(
-      setDoc(doc(authed.firestore(), 'customers', 'customer-new'), { name: '新規' })
-    );
-  });
-
+describe('認証済みユーザー - マスタコレクション書き込み', () => {
   it('helpers に書き込めない', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     await assertFails(
@@ -164,6 +157,119 @@ describe('認証済みユーザー - マスタコレクション書き込み拒�
     const authed = testEnv.authenticatedContext('user-1');
     await assertFails(
       setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-new'), { reason: '希望休' })
+    );
+  });
+});
+
+// ============================================================
+// customers: create/update 許可（isValidCustomer バリデーション）
+// ============================================================
+/** isValidCustomer を満たす有効なcustomerデータ */
+const validCustomerData = {
+  name: { family: '田中', given: '太郎' },
+  address: '東京都新宿区1-1-1',
+  location: { lat: 35.6895, lng: 139.6917 },
+  ng_staff_ids: [],
+  preferred_staff_ids: [],
+  weekly_services: {},
+  service_manager: '鈴木花子',
+  created_at: serverTimestamp(),
+  updated_at: serverTimestamp(),
+};
+
+describe('認証済みユーザー - customers create', () => {
+  it('有効なデータで新規作成できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-new'), validCustomerData)
+    );
+  });
+
+  it('name.family がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), {
+        ...validCustomerData,
+        name: { given: '太郎' },
+      })
+    );
+  });
+
+  it('location がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { location: _, ...noLocation } = validCustomerData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noLocation)
+    );
+  });
+
+  it('ng_staff_ids が配列でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), {
+        ...validCustomerData,
+        ng_staff_ids: 'not-an-array',
+      })
+    );
+  });
+
+  it('service_manager がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { service_manager: _, ...noSM } = validCustomerData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noSM)
+    );
+  });
+});
+
+describe('認証済みユーザー - customers update', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'customers', 'customer-existing'), validCustomerData);
+    });
+  });
+
+  it('有効なデータで更新できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-existing'), {
+        ...validCustomerData,
+        address: '東京都渋谷区2-2-2',
+        notes: '住所変更',
+      })
+    );
+  });
+
+  it('必須フィールドを欠いた更新は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-existing'), {
+        name: { family: '田中', given: '太郎' },
+      })
+    );
+  });
+});
+
+describe('認証済みユーザー - customers delete', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'customers', 'customer-to-delete'), validCustomerData);
+    });
+  });
+
+  it('customers を削除できない', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(deleteDoc(doc(authed.firestore(), 'customers', 'customer-to-delete')));
+  });
+});
+
+describe('未認証ユーザー - customers write', () => {
+  it('未認証ユーザーはcustomersに書き込めない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(
+      setDoc(doc(unauthed.firestore(), 'customers', 'customer-unauth'), validCustomerData)
     );
   });
 });
