@@ -33,7 +33,7 @@ import {
   updateStaffUnavailability,
   deleteStaffUnavailability,
 } from '@/lib/firestore/staff-unavailability';
-import type { Helper, StaffUnavailability, DayOfWeek } from '@/types';
+import type { Helper, StaffUnavailability } from '@/types';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 
 interface UnavailabilityEditDialogProps {

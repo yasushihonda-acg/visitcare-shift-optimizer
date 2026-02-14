@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addDays, addWeeks, subWeeks, startOfWeek } from 'date-fns';
+import { format, addDays, addWeeks, subWeeks, startOfWeek, differenceInCalendarDays } from 'date-fns';
 import { useHelpers } from '@/hooks/useHelpers';
 import { useStaffUnavailability } from '@/hooks/useStaffUnavailability';
 import { Button } from '@/components/ui/button';
@@ -34,14 +34,6 @@ export default function UnavailabilityPage() {
 
   const loading = helpersLoading || unavailLoading;
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, StaffUnavailability>();
-    for (const u of unavailability) {
-      map.set(u.staff_id, u);
-    }
-    return map;
-  }, [unavailability]);
-
   const filtered = useMemo(() => {
     if (!search.trim()) return unavailability;
     const q = search.trim().toLowerCase();
@@ -67,9 +59,7 @@ export default function UnavailabilityPage() {
 
   const formatSlots = (u: StaffUnavailability) => {
     return u.unavailable_slots.map((slot) => {
-      const dayIndex = Math.round(
-        (slot.date.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const dayIndex = differenceInCalendarDays(slot.date, weekStart);
       const dayLabel =
         dayIndex >= 0 && dayIndex < 7
           ? DAY_OF_WEEK_LABELS[DAY_OF_WEEK_ORDER[dayIndex]]
