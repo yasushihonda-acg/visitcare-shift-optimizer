@@ -6,6 +6,8 @@ export const TOTAL_HOURS = GANTT_END_HOUR - GANTT_START_HOUR; // 14
 export const TOTAL_SLOTS = TOTAL_HOURS * (60 / MINUTES_PER_SLOT); // 168
 export const SLOT_WIDTH_PX = 4; // 各5分スロットの幅
 export const HELPER_NAME_WIDTH_PX = 120;
+export const ROW_HEIGHT_PX = 36; // 行高さ（h-9相当）
+export const BAR_HEIGHT_CLASS = 'h-8'; // バー高さ
 
 /** "HH:MM" → グリッド列番号（1-based） */
 export function timeToColumn(time: string): number {

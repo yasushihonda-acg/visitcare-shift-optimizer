@@ -9,9 +9,9 @@ export function GanttTimeHeader() {
   );
 
   return (
-    <div className="flex border-b bg-muted/50 sticky top-0 z-10">
+    <div className="flex border-b bg-gradient-to-b from-muted/80 to-muted/40 sticky top-0 z-10">
       <div
-        className="shrink-0 border-r px-2 py-1 text-xs font-medium text-muted-foreground"
+        className="shrink-0 border-r px-2 py-1.5 text-xs font-semibold text-primary"
         style={{ width: HELPER_NAME_WIDTH_PX }}
       >
         ヘルパー
@@ -26,10 +26,10 @@ export function GanttTimeHeader() {
           return (
             <div
               key={hour}
-              className="absolute top-0 h-full border-l border-border/50"
+              className="absolute top-0 h-full border-l border-border/40"
               style={{ left }}
             >
-              <span className="px-1 text-[10px] text-muted-foreground">
+              <span className="px-1 text-[10px] font-medium text-muted-foreground">
                 {hour}:00
               </span>
             </div>

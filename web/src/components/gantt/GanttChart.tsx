@@ -27,9 +27,9 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
 
   return (
     <div className="flex flex-col">
-      <div className="overflow-x-auto border rounded-lg">
+      <div className="overflow-x-auto border rounded-lg shadow-sm">
         <GanttTimeHeader />
-        {schedule.helperRows.map((row) => (
+        {schedule.helperRows.map((row, index) => (
           <GanttRow
             key={row.helper.id}
             row={row}
@@ -37,6 +37,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
             violations={violations}
             onOrderClick={onOrderClick}
             dropZoneStatus={dropZoneStatuses?.get(row.helper.id)}
+            index={index}
           />
         ))}
       </div>

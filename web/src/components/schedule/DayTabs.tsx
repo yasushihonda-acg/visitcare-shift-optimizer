@@ -13,7 +13,7 @@ export function DayTabs({ orderCounts }: DayTabsProps) {
   const { selectedDay, setSelectedDay } = useScheduleContext();
 
   return (
-    <div className="flex gap-1 border-b px-4 py-2" role="tablist">
+    <div className="flex gap-0.5 px-4 py-2" role="tablist">
       {DAY_OF_WEEK_ORDER.map((day) => {
         const count = orderCounts?.[day] ?? 0;
         const isSelected = selectedDay === day;
@@ -26,21 +26,28 @@ export function DayTabs({ orderCounts }: DayTabsProps) {
             aria-selected={isSelected}
             onClick={() => setSelectedDay(day)}
             className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              'relative flex items-center gap-1.5 rounded-t-md px-3 py-2 text-sm font-medium transition-all duration-200',
               isSelected
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted',
-              isWeekend && !isSelected && 'text-muted-foreground'
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+              isWeekend && !isSelected && 'text-muted-foreground/70'
             )}
           >
             {DAY_OF_WEEK_LABELS[day]}
             {count > 0 && (
               <Badge
-                variant={isSelected ? 'secondary' : 'outline'}
-                className="h-5 min-w-[20px] px-1 text-xs"
+                variant={isSelected ? 'default' : 'secondary'}
+                className={cn(
+                  'h-5 min-w-[20px] px-1.5 text-xs',
+                  isSelected && 'bg-primary/15 text-primary hover:bg-primary/15'
+                )}
               >
                 {count}
               </Badge>
+            )}
+            {/* アクティブインジケーター */}
+            {isSelected && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary" />
             )}
           </button>
         );
