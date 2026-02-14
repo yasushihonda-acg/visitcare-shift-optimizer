@@ -34,11 +34,13 @@ OFFSET_TO_DAY_OF_WEEK: dict[int, DayOfWeek] = {
 
 
 def _ts_to_date_str(ts: datetime | object) -> str:
-    """Firestore Timestamp/datetime → 'YYYY-MM-DD'"""
+    """Firestore Timestamp/datetime → 'YYYY-MM-DD' (JST)"""
+    JST = timezone(timedelta(hours=9))
     if isinstance(ts, datetime):
-        return ts.strftime("%Y-%m-%d")
+        return ts.astimezone(JST).strftime("%Y-%m-%d")
     if hasattr(ts, "to_pydatetime"):
-        return ts.to_pydatetime().strftime("%Y-%m-%d")  # type: ignore[union-attr]
+        dt = ts.to_pydatetime()  # type: ignore[union-attr]
+        return dt.astimezone(JST).strftime("%Y-%m-%d")
     if isinstance(ts, str):
         return ts.split("T")[0]
     raise ValueError(f"Unsupported timestamp type: {type(ts)}")
