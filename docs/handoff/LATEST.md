@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（seedデータ動的週対応 PR #20 完了 + 本番環境割当確認）
-**現在のフェーズ**: Phase 4a-design + seedデータ本番化完了
+**最終更新**: 2026-02-15（Firestoreセキュリティルール Phase 1 本番化 PR #21 完了）
+**現在のフェーズ**: Phase 4c-security（認証必須 + 最小権限write）
 
 ## 完了済み
 
@@ -111,11 +111,21 @@
   - `csv_loader.py`: Python側も新CSV形式に対応
   - `dev-start.sh`: 起動時にseedデータを今週の日付で自動インポート
 - **本番環境確認**: 2,783ドキュメント投入 → オーダー160件全割当成功（月30件/日4件）
-- **コマンド**（本番Firestoreへの投入）:
-  ```bash
-  cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts
-  ```
 - **テスト**: CI全パス（Optimizer 134/134 + Web 43/43 + Seed validation 9/9）
+
+### Phase 4c-security: Firestoreセキュリティルール本番化 Phase 1（PR #21 — 2026-02-15）
+- **実装**: 全アクセス許可（`allow read, write: if true`）→ 認証必須 + 最小権限write
+- **認証必須化**: `request.auth != null` で未認証アクセスをブロック
+- **FE Read**: 全コレクション読み取り可（認証済みユーザーのみ）
+- **FE Write**: `orders`の3フィールドのみ（`assigned_staff_ids`, `manually_edited`, `updated_at`）
+- **マスタコレクション**: customers / helpers / travel_times / staff_unavailability はFEからwrite不可（Admin SDKのみ）
+- **テスト**: `@firebase/rules-unit-testing` + Vitestで21テストケース
+  - 未認証ブロック 5件 + 認証済みRead 5件 + マスタWrite拒否 4件 + ordersUpdate 3件 + create/delete 2件 + 型バリデーション 2件
+- **CIジョブ追加**: `.github/workflows/ci.yml` に `test-firestore-rules`（Firestore emulator上でテスト）
+- **本番反映**: mainへマージ後、CI/CDで自動デプロイ
+- **FE互換性**: AuthProvider（匿名認証）で `request.auth != null` を満たす
+- **テスト結果**: Optimizer 134/134 + Web 43/43 + Firestore Rules 21/21 = **全パス**
+- **ADR作成**: `docs/adr/ADR-012-firestore-security-rules-phase1.md`
 
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
@@ -199,6 +209,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 - `docs/adr/ADR-009-phase3b-integration.md` — Phase 3b 統合・認証・CI/CD
 - `docs/adr/ADR-010-workload-identity-federation.md` — WIF CI/CD認証
 - `docs/adr/ADR-011-phase4a-dnd-implementation.md` — Phase 4a DnD手動編集
+- `docs/adr/ADR-012-firestore-security-rules-phase1.md` — Phase 4c Firestoreルール認証必須化
 - `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
 - `web/src/` — Next.js フロントエンド
@@ -214,12 +225,11 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **フロントエンドデザイン改善** 🟡 — UX/見た目のベストプラクティス適用
-2. **Phase 4b: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面
-3. **Cloud Buildサービスアカウントへのrun.services.setIamPolicy権限付与** 🟠 — CI/CDからの`--allow-unauthenticated`を正常動作させる
-4. **Firestoreセキュリティルール本番化** 🟠 — 現行allow all→RBAC
-5. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
-6. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
+1. **Phase 4d: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面（現行allow allルール廃止後は認証必須）
+2. **Phase 2（Phase 2Security）: Custom Claims RBAC** 🟠 — Phase 1→Phase 2で admin/service_manager/helper権限導入
+3. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
+4. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
+5. **Cloud Buildサービスアカウント権限確認** 🟡 — CI/CDからのデプロイ権限チェック
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
