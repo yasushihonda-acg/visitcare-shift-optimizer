@@ -28,7 +28,7 @@ steps:
       - '--memory=512Mi'
       - '--timeout=300'
       - '--max-instances=3'
-      - '--no-allow-unauthenticated'
+      - '--allow-unauthenticated'
       - '--set-env-vars=^##^CORS_ORIGINS=${_CORS_ORIGINS}##ALLOW_UNAUTHENTICATED=${_ALLOW_UNAUTHENTICATED}'
 
 images:
@@ -41,4 +41,4 @@ substitutions:
   _IMAGE_NAME: shift-optimizer
   _SERVICE_NAME: shift-optimizer
   _CORS_ORIGINS: 'https://visitcare-shift-optimizer.web.app,https://visitcare-shift-optimizer.firebaseapp.com,http://localhost:3000'
-  _ALLOW_UNAUTHENTICATED: 'false'
+  _ALLOW_UNAUTHENTICATED: 'true'

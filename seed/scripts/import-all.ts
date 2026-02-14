@@ -14,8 +14,29 @@ const COLLECTIONS = [
   'staff_unavailability',
 ];
 
+function parseArgs(): { week?: string; ordersOnly?: boolean } {
+  const args = process.argv.slice(2);
+  const result: { week?: string; ordersOnly?: boolean } = {};
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--week' && args[i + 1]) {
+      result.week = args[i + 1];
+      i++;
+    }
+    if (args[i] === '--orders-only') {
+      result.ordersOnly = true;
+    }
+  }
+  return result;
+}
+
 async function main() {
+  const { week, ordersOnly } = parseArgs();
+
   console.log('=== Seed Data Import ===\n');
+
+  if (week) {
+    console.log(`📅 Week start date: ${week}\n`);
+  }
 
   // 1. バリデーション
   console.log('📋 Validating CSV data...');
@@ -28,6 +49,22 @@ async function main() {
     process.exit(1);
   }
   console.log('✅ All validations passed\n');
+
+  if (ordersOnly) {
+    // ordersのみ再生成（本番で週を切り替える時に便利）
+    console.log('🗑️  Clearing orders...');
+    const deleted = await clearCollection('orders');
+    if (deleted > 0) {
+      console.log(`   Cleared ${deleted} docs from orders`);
+    }
+    console.log('');
+
+    console.log('📥 Importing orders...');
+    const orderCount = await importOrders(week);
+    console.log(`   orders: ${orderCount}`);
+    console.log('\n✅ Import complete!');
+    process.exit(0);
+  }
 
   // 2. 既存データクリア
   console.log('🗑️  Clearing existing data...');
@@ -48,7 +85,7 @@ async function main() {
   const helperCount = await importHelpers();
   console.log(`   helpers: ${helperCount}`);
 
-  const orderCount = await importOrders();
+  const orderCount = await importOrders(week);
   console.log(`   orders: ${orderCount}`);
 
   const travelTimeCount = await generateTravelTimes();
