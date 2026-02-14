@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-14（最適化品質改善 PR #13）
-**現在のフェーズ**: Phase 3b 完了 + 最適化品質改善済み
+**最終更新**: 2026-02-14（本番環境修正 PR #15, #16 + Phase 4a DnD PR #14）
+**現在のフェーズ**: Phase 4a 完了 + 本番環境修正済み
 
 ## 完了済み
 
@@ -72,8 +72,17 @@
 - **Firebase Hosting**: `output: 'export'` + SPA rewrites設定
 - **CORS本番対応**: Firebase HostingドメインをCORS_ORIGINSに追加
 - **統合テスト**: API契約テスト3件 + 認証テスト12件 + AuthProviderテスト3件
-- **CI/CD**: GitHub Actions（PR時テスト並列、main pushでCloud Build + Firebase Hosting並列デプロイ）
+- **CI/CD**: GitHub Actions（PR時テスト並列、main pushでCloud Build + Firebase Hosting + Firestoreルール並列デプロイ）
 - **テスト合計**: BE 134件 + FE 32件 = **166件全パス**
+
+### Phase 4a: ドラッグ&ドロップ手動編集（ADR-011）
+- **@dnd-kit導入**: DndContext + useDraggable + useDroppable
+- **ヘルパー間移動**: GanttBar → 別ヘルパー行へドロップで割当変更
+- **未割当↔ヘルパー**: UnassignedSection ↔ GanttRow の双方向移動
+- **リアルタイムバリデーション**: NGスタッフ/資格不適合/時間重複/希望休=拒否、勤務時間外=警告
+- **視覚フィードバック**: ドロップゾーンの色分け（緑/黄/赤）+ カーソルスタイル
+- **Firestore直接更新**: updateDoc() + onSnapshot自動反映
+- **テスト**: FE 43件全パス
 
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
@@ -111,15 +120,29 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
   - SA: `github-actions@visitcare-shift-optimizer.iam.gserviceaccount.com`
   - WIF Pool: `github-actions-pool` / OIDC Provider: `github-oidc`
 - PR時: test-optimizer + test-web 並列実行
-- main push時: テスト通過後にCloud Build + Firebase Hosting 並列デプロイ
+- main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
-- **全4ジョブ成功確認済み**（PR #7〜#13）
+- **全4ジョブ成功確認済み**（PR #7〜#16）
 
-## 本番環境修正（2026-02-10）
+## 本番環境修正履歴
+
+### 2026-02-14（PR #15, #16）
+- **PR #15**: CORS問題修正 + seedスクリプト本番対応
+  - Cloud Run: `--allow-unauthenticated` + `ALLOW_UNAUTHENTICATED=true`に変更
+  - Cloud Run IAM: `allUsers` → `roles/run.invoker` バインディング追加
+  - seedスクリプト: `SEED_TARGET=production`で本番Firestoreに接続可能に
+  - `--week`引数と`--orders-only`モードを追加
+- **PR #16**: CI/CDにFirestoreルールデプロイを追加（`--only hosting,firestore:rules`）
+- **インフラ作業**:
+  - Firestoreデータベース作成（asia-northeast1, native mode）
+  - 本番Firestoreに2,783ドキュメントseed済み（customers:50, helpers:20, orders:160, travel_times:2550, staff_unavailability:3）
+  - Firestoreセキュリティルールを手動デプロイ
+  - ADCアカウントに`roles/datastore.owner`付与
+
+### 2026-02-10（PR #11, #12）
 - **PR #11**: `.env.production`にFirebase SDK設定追加（auth/invalid-api-keyエラー修正）
 - **PR #12**: Proxy → `getDb()`/`getFirebaseAuth()`関数ベース遅延初期化（Firebase SDK v12互換性修正）
 - **GCP設定**: Firebase Webアプリ登録 + Auth Identity Platform初期化 + Anonymous sign-in有効化
-- **本番動作確認済み**: https://visitcare-shift-optimizer.web.app でエラーなし
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md` — 全コレクション定義 + クエリパターン
@@ -130,17 +153,27 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 - `docs/adr/ADR-008-phase3a-ui-architecture.md` — Phase 3a UIアーキテクチャ
 - `docs/adr/ADR-009-phase3b-integration.md` — Phase 3b 統合・認証・CI/CD
 - `docs/adr/ADR-010-workload-identity-federation.md` — WIF CI/CD認証
+- `docs/adr/ADR-011-phase4a-dnd-implementation.md` — Phase 4a DnD手動編集
 - `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
 - `web/src/` — Next.js フロントエンド
 
+## Seedコマンド（本番Firestore）
+```bash
+# 全データ再投入（今週）
+cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --week 2026-02-09
+
+# オーダーのみ週切替
+cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --week 2026-02-16
+```
+
 ## 次のアクション（優先度順）
 
-1. **Phase 4a: ドラッグ&ドロップ手動編集** 🔴 — PRD核要件、実運用に必須
-2. **Phase 4b: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面
-3. **リアルタイムバリデーション強化** 🟡 — ドラッグ中の制約違反ハイライト
-4. **Firestoreセキュリティルール本番化** 🟠 — 現行allow all→RBAC
-5. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
+1. **Phase 4b: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面
+2. **Cloud Buildサービスアカウントへのrun.services.setIamPolicy権限付与** 🟠 — CI/CDからの`--allow-unauthenticated`を正常動作させる
+3. **Firestoreセキュリティルール本番化** 🟠 — 現行allow all→RBAC
+4. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
+5. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
