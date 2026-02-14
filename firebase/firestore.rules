@@ -73,9 +73,19 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // staff_unavailability create/update/delete時: 必須フィールドバリデーション
+    function isValidUnavailability() {
+      let data = request.resource.data;
+      return data.staff_id is string
+        && data.week_start_date is timestamp
+        && data.unavailable_slots is list;
+    }
+
+    // 希望休: create/update/delete 可（週単位で再作成するため）
     match /staff_unavailability/{unavailabilityId} {
       allow read: if isAuthenticated();
-      allow write: if false;
+      allow create, update: if isAuthenticated() && isValidUnavailability();
+      allow delete: if isAuthenticated();
     }
 
     // orders: 認証済みユーザーは読み取り + 3フィールドのみupdate可

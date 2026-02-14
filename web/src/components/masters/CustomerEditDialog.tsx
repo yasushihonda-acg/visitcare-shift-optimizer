@@ -15,8 +15,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WeeklyServicesEditor } from './WeeklyServicesEditor';
+import { StaffMultiSelect } from './StaffMultiSelect';
 import { customerSchema, type CustomerFormValues } from '@/lib/validation/schemas';
 import { createCustomer, updateCustomer } from '@/lib/firestore/customers';
+import { useHelpers } from '@/hooks/useHelpers';
 import type { Customer } from '@/types';
 
 interface CustomerEditDialogProps {
@@ -31,12 +33,14 @@ export function CustomerEditDialog({
   customer,
 }: CustomerEditDialogProps) {
   const isNew = !customer;
+  const { helpers } = useHelpers();
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
@@ -182,6 +186,36 @@ export function CustomerEditDialog({
             <Label htmlFor="notes">備考（任意）</Label>
             <Input id="notes" {...register('notes')} placeholder="特記事項" />
           </div>
+
+          {/* NGスタッフ */}
+          <Controller
+            name="ng_staff_ids"
+            control={control}
+            render={({ field }) => (
+              <StaffMultiSelect
+                label="NGスタッフ"
+                selected={field.value ?? []}
+                onChange={field.onChange}
+                helpers={helpers}
+                excludeIds={watch('preferred_staff_ids') ?? []}
+              />
+            )}
+          />
+
+          {/* 推奨スタッフ */}
+          <Controller
+            name="preferred_staff_ids"
+            control={control}
+            render={({ field }) => (
+              <StaffMultiSelect
+                label="推奨スタッフ"
+                selected={field.value ?? []}
+                onChange={field.onChange}
+                helpers={helpers}
+                excludeIds={watch('ng_staff_ids') ?? []}
+              />
+            )}
+          />
 
           {/* 週間サービス */}
           <Controller
