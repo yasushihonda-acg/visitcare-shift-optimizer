@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Phase 1: 認証必須 + 最小権限write (ADR-012)
+// Phase 1: 認証必須 + マスタ編集対応 (ADR-012, ADR-013)
 // バックエンド（Cloud Run）とseedスクリプトはAdmin SDKでルールをバイパス
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -19,10 +19,27 @@ service cloud.firestore {
         && request.resource.data.manually_edited is bool;
     }
 
-    // マスタデータ: 認証済みユーザーは読み取りのみ
+    // customers create/update時: 必須フィールドバリデーション
+    function isValidCustomer() {
+      let data = request.resource.data;
+      return data.name is map
+        && data.name.family is string
+        && data.name.given is string
+        && data.address is string
+        && data.location is map
+        && data.location.lat is number
+        && data.location.lng is number
+        && data.ng_staff_ids is list
+        && data.preferred_staff_ids is list
+        && data.weekly_services is map
+        && data.service_manager is string;
+    }
+
+    // マスタデータ: customers は create/update 可（delete不可）
     match /customers/{customerId} {
       allow read: if isAuthenticated();
-      allow write: if false;
+      allow create, update: if isAuthenticated() && isValidCustomer();
+      allow delete: if false;
     }
 
     match /helpers/{helperId} {

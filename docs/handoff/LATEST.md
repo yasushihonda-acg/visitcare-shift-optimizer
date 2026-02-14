@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（Firestoreセキュリティルール Phase 1 本番化 PR #21 完了）
-**現在のフェーズ**: Phase 4c-security（認証必須 + 最小権限write）
+**最終更新**: 2026-02-15（Phase 4d マスタ編集UI PR 1/3 — 利用者マスタCRUD）
+**現在のフェーズ**: Phase 4d-master-edit（マスタ編集UI）
 
 ## 完了済み
 
@@ -127,6 +127,21 @@
 - **テスト結果**: Optimizer 134/134 + Web 43/43 + Firestore Rules 21/21 = **全パス**
 - **ADR作成**: `docs/adr/ADR-012-firestore-security-rules-phase1.md`
 
+### Phase 4d-master-edit PR 1/3: 基盤 + 利用者マスタCRUD（2026-02-15）
+- **ブランチ**: `feature/phase4d-master-edit-customers`
+- **Firestoreルール更新**: `customers` に `create, update` 許可 + `isValidCustomer()` バリデーション（delete不可維持）
+- **新規依存**: react-hook-form, zod v4, @hookform/resolvers
+- **shadcn/ui追加**: input, label, select, table, dropdown-menu, card, separator, checkbox
+- **ナビゲーション**: Header.tsx に DropdownMenu（マスタ管理 → 利用者/ヘルパー）
+- **利用者マスタ画面**: `/masters/customers`
+  - 一覧表示（Table + 検索フィルター） + 新規追加/編集（Dialog）
+  - WeeklyServicesEditor（7曜日×複数スロット、動的追加/削除）
+  - react-hook-form + zod バリデーション → Firestore直接書き込み → onSnapshot自動反映
+- **zodスキーマ**: customerSchema / helperSchema / unavailabilitySchema（PR 2/3で使用）
+- **Firestoreユーティリティ**: createCustomer / updateCustomer
+- **テスト**: Firestoreルール 29件（+9件追加） + Web 43件 = 全パス
+- **ADR**: `docs/adr/ADR-013-phase4d-master-edit-ui.md`
+
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
 - **Optimizer API**: https://shift-optimizer-1045989697649.asia-northeast1.run.app
@@ -210,6 +225,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 - `docs/adr/ADR-010-workload-identity-federation.md` — WIF CI/CD認証
 - `docs/adr/ADR-011-phase4a-dnd-implementation.md` — Phase 4a DnD手動編集
 - `docs/adr/ADR-012-firestore-security-rules-phase1.md` — Phase 4c Firestoreルール認証必須化
+- `docs/adr/ADR-013-phase4d-master-edit-ui.md` — Phase 4d マスタ編集UI設計判断
 - `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
 - `web/src/` — Next.js フロントエンド
@@ -225,7 +241,8 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **Phase 4d: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面（現行allow allルール廃止後は認証必須）
+1. **Phase 4d: マスタ編集UI PR 2/3** 🟡 — ヘルパーマスタCRUD（PR 1 完了済み）
+1b. **Phase 4d: マスタ編集UI PR 3/3** 🟡 — 希望休管理 + NG/推奨スタッフUI
 2. **Phase 2（Phase 2Security）: Custom Claims RBAC** 🟠 — Phase 1→Phase 2で admin/service_manager/helper権限導入
 3. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
 4. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
