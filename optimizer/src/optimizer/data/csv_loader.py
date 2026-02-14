@@ -240,29 +240,52 @@ def _haversine_travel_minutes(loc1: GeoLocation, loc2: GeoLocation) -> float:
     return urban_distance_km / 40.0 * 60.0  # 分換算
 
 
-def load_staff_unavailabilities(data_dir: Path) -> list[StaffUnavailability]:
-    """staff-unavailability.csv → StaffUnavailability リスト"""
+def load_staff_unavailabilities(
+    data_dir: Path, week_start: date | None = None
+) -> list[StaffUnavailability]:
+    """staff-unavailability.csv → StaffUnavailability リスト
+
+    CSV は day_of_week 形式。week_start から実際の日付を計算する。
+    """
     rows = _read_csv(data_dir / "staff-unavailability.csv")
 
-    # staff_id + week_start_date でグループ化
-    grouped: dict[tuple[str, str], list[UnavailableSlot]] = {}
+    if week_start is None:
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+
+    week_start_str = week_start.isoformat()
+
+    day_name_to_offset = {
+        "monday": 0,
+        "tuesday": 1,
+        "wednesday": 2,
+        "thursday": 3,
+        "friday": 4,
+        "saturday": 5,
+        "sunday": 6,
+    }
+
+    # staff_id でグループ化
+    grouped: dict[str, list[UnavailableSlot]] = {}
     for row in rows:
-        key = (row["staff_id"], row["week_start_date"])
+        staff_id = row["staff_id"]
+        day_offset = day_name_to_offset.get(row["day_of_week"].lower(), 0)
+        actual_date = week_start + timedelta(days=day_offset)
         slot = UnavailableSlot(
-            date=row["date"],
+            date=actual_date.isoformat(),
             all_day=row["all_day"].lower() == "true",
             start_time=row.get("start_time") or None,
             end_time=row.get("end_time") or None,
         )
-        grouped.setdefault(key, []).append(slot)
+        grouped.setdefault(staff_id, []).append(slot)
 
     return [
         StaffUnavailability(
             staff_id=staff_id,
-            week_start_date=week_start,
+            week_start_date=week_start_str,
             unavailable_slots=slots,
         )
-        for (staff_id, week_start), slots in grouped.items()
+        for staff_id, slots in grouped.items()
     ]
 
 
@@ -285,7 +308,7 @@ def load_optimization_input(data_dir: Path, week_start: date) -> OptimizationInp
     helpers = load_helpers(data_dir)
     orders = generate_orders(customers, week_start)
     travel_times = load_travel_times(data_dir, customers)
-    staff_unavailabilities = load_staff_unavailabilities(data_dir)
+    staff_unavailabilities = load_staff_unavailabilities(data_dir, week_start)
     staff_constraints = load_staff_constraints(data_dir)
 
     return OptimizationInput(

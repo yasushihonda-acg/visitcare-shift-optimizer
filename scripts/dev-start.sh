@@ -26,13 +26,19 @@ if [ ! -f web/.env.local ]; then
 fi
 
 # 2. Firebase Emulator起動
-echo "[1/3] Firebase Emulator 起動中..."
+echo "[1/4] Firebase Emulator 起動中..."
 firebase emulators:start --import=seed/emulator-data --export-on-exit=seed/emulator-data &
 EMULATOR_PID=$!
 sleep 5
 
-# 3. Optimizer API起動
-echo "[2/3] Optimizer API 起動中 (port 8081)..."
+# 3. Seedデータインポート（今週の日付で）
+echo "[2/4] Seed データインポート中（今週の日付）..."
+cd "$ROOT_DIR/seed"
+FIRESTORE_EMULATOR_HOST=localhost:8080 npx tsx scripts/import-all.ts
+cd "$ROOT_DIR"
+
+# 4. Optimizer API起動
+echo "[3/4] Optimizer API 起動中 (port 8081)..."
 cd "$ROOT_DIR/optimizer"
 ALLOW_UNAUTHENTICATED=true \
 FIRESTORE_EMULATOR_HOST=localhost:8080 \
@@ -41,7 +47,7 @@ API_PID=$!
 cd "$ROOT_DIR"
 
 # 4. Next.js dev起動
-echo "[3/3] Next.js dev 起動中 (port 3000)..."
+echo "[4/4] Next.js dev 起動中 (port 3000)..."
 cd "$ROOT_DIR/web"
 npm run dev &
 WEB_PID=$!
