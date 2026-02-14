@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-14（フロントエンドデザイン改善 PR #19 + タイムゾーン修正 + 本番環境修正）
-**現在のフェーズ**: Phase 4a-design 完了 + 本番環境フルリリース
+**最終更新**: 2026-02-15（seedデータ動的週対応 PR #20 完了 + 本番環境割当確認）
+**現在のフェーズ**: Phase 4a-design + seedデータ本番化完了
 
 ## 完了済み
 
@@ -102,21 +102,39 @@
 - **ビルド**: ✅成功 | **テスト**: 43/43全パス | **デプロイ**: Firebase Hosting + Cloud Run成功
 - **本番反映済み**: https://visitcare-shift-optimizer.web.app（リアルタイム）
 
+### Phase 4b-seed: Seedデータ動的週対応（PR #20 — 2026-02-15）
+- **問題**: seedデータの`week_start_date`が`2025-01-06`固定のため、本番環境で「今週」表示時にオーダー0件 → 割当不可
+- **修正内容**:
+  - `import-orders.ts`: デフォルト週を`getCurrentMonday()`（JST）に動的化
+  - `staff-unavailability.csv`: 絶対日付→`day_of_week`形式に変更し、任意の週で利用可能に
+  - `import-staff-unavailability.ts`: week引数対応 + day_of_weekから日付を計算
+  - `csv_loader.py`: Python側も新CSV形式に対応
+  - `dev-start.sh`: 起動時にseedデータを今週の日付で自動インポート
+- **本番環境確認**: 2,783ドキュメント投入 → オーダー160件全割当成功（月30件/日4件）
+- **コマンド**（本番Firestoreへの投入）:
+  ```bash
+  cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts
+  ```
+- **テスト**: CI全パス（Optimizer 134/134 + Web 43/43 + Seed validation 9/9）
+
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
 - **Optimizer API**: https://shift-optimizer-1045989697649.asia-northeast1.run.app
 
 ## データアクセス方法
 ```bash
-# 一括起動（推奨）
+# 一括起動（推奨、ローカル Emulator）
 ./scripts/dev-start.sh
 
-# 個別起動:
+# 本番 Firestore へのseed投入（今週の日付）
+cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts
+
+# 個別起動（ローカル）:
 # Emulator起動
 firebase emulators:start --project demo-test
 
-# Seed データ投入
-cd seed && FIRESTORE_EMULATOR_HOST=localhost:8080 npm run import:all
+# Seed データ投入（ローカル）
+cd seed && FIRESTORE_EMULATOR_HOST=localhost:8080 npx tsx scripts/import-all.ts
 
 # 最適化エンジン テスト
 cd optimizer && .venv/bin/pytest tests/ -v  # 134件
