@@ -1,7 +1,7 @@
 """Firestore → Pydanticモデル変換ローダー"""
 
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 
 from google.cloud import firestore  # type: ignore[attr-defined]
 
@@ -163,7 +163,9 @@ def load_orders(
     customers: list[Customer],
 ) -> list[Order]:
     """ordersコレクション → Order リスト（対象週のpending/assigned）"""
-    week_start_dt = datetime(week_start.year, week_start.month, week_start.day)
+    # seedスクリプトが JST (UTC+9) midnight で保存するため、クエリも JST で合わせる
+    JST = timezone(timedelta(hours=9))
+    week_start_dt = datetime(week_start.year, week_start.month, week_start.day, tzinfo=JST)
 
     docs = (
         db.collection("orders")
@@ -233,7 +235,8 @@ def load_staff_unavailabilities(
     week_start: date,
 ) -> list[StaffUnavailability]:
     """staff_unavailabilityコレクション → StaffUnavailability リスト（対象週）"""
-    week_start_dt = datetime(week_start.year, week_start.month, week_start.day)
+    JST = timezone(timedelta(hours=9))
+    week_start_dt = datetime(week_start.year, week_start.month, week_start.day, tzinfo=JST)
 
     docs = (
         db.collection("staff_unavailability")
