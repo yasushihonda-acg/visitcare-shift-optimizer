@@ -39,3 +39,7 @@ Thumbs.db
 
 # Build
 build/
+
+# Screenshots & temporary images
+*.png
+!docs/**/*.png
