@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-14（本番環境修正 PR #15, #16 + Phase 4a DnD PR #14）
-**現在のフェーズ**: Phase 4a 完了 + 本番環境修正済み
+**最終更新**: 2026-02-14（タイムゾーン修正 PR #17, #18 + 本番環境修正 PR #15, #16 + Phase 4a DnD PR #14）
+**現在のフェーズ**: Phase 4a 完了 + 本番環境完全動作確認済み
 
 ## 完了済み
 
@@ -122,9 +122,18 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
-- **全4ジョブ成功確認済み**（PR #7〜#16）
+- **全4ジョブ成功確認済み**（PR #7〜#18）
 
 ## 本番環境修正履歴
+
+### 2026-02-14（PR #17, #18）— Firestoreタイムゾーン修正
+- **PR #17**: Firestoreクエリのタイムゾーンミスマッチ修正
+  - `load_orders`/`load_staff_unavailabilities`の`week_start_date`クエリをJSTに統一
+  - 原因: naive datetime（UTC扱い）≠ seedスクリプトのJST midnight Timestamp
+- **PR #18**: Firestore日付変換のタイムゾーンをJSTに統一
+  - `_ts_to_date_str()`で`astimezone(JST)`後に日付抽出するよう修正
+  - 原因: UTC日付変換により全オーダーの曜日が1日前にずれ → Infeasible
+- **本番動作確認**: 160/160オーダー全割当成功（Optimal, 5.3秒）
 
 ### 2026-02-14（PR #15, #16）
 - **PR #15**: CORS問題修正 + seedスクリプト本番対応
@@ -169,11 +178,12 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **Phase 4b: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面
-2. **Cloud Buildサービスアカウントへのrun.services.setIamPolicy権限付与** 🟠 — CI/CDからの`--allow-unauthenticated`を正常動作させる
-3. **Firestoreセキュリティルール本番化** 🟠 — 現行allow all→RBAC
-4. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
-5. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
+1. **フロントエンドデザイン改善** 🟡 — UX/見た目のベストプラクティス適用
+2. **Phase 4b: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面
+3. **Cloud Buildサービスアカウントへのrun.services.setIamPolicy権限付与** 🟠 — CI/CDからの`--allow-unauthenticated`を正常動作させる
+4. **Firestoreセキュリティルール本番化** 🟠 — 現行allow all→RBAC
+5. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
+6. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
