@@ -66,7 +66,7 @@ def solve(
     _add_constraints(prob, x, inp, travel_lookup)
 
     # --- 目的関数: 重み付き加算 ---
-    objective = _build_objective(x, inp, travel_lookup)
+    objective = _build_objective(x, inp, travel_lookup, prob)
     prob += objective, "total_cost"
 
     # --- ソルバー実行 ---
@@ -114,14 +114,19 @@ def _build_objective(
     x: dict[tuple[str, str], pulp.LpVariable],
     inp: OptimizationInput,
     travel_lookup: dict[tuple[str, str], float],
+    prob: pulp.LpProblem,
 ) -> pulp.LpAffineExpression:
     """重み付き目的関数の構築
 
     w1: 移動時間最小化
     w2: 非推奨スタッフペナルティ
+    w3: 稼働バランス（preferred_hours乖離ペナルティ）
+    w4: 担当継続性（同一利用者のスタッフ分散ペナルティ）
     """
     W_TRAVEL = 1.0
-    W_NOT_PREFERRED = 5.0  # 推奨スタッフでない場合のペナルティ
+    W_NOT_PREFERRED = 5.0
+    W_WORKLOAD = 10.0  # 稼働バランスの重み
+    W_CONTINUITY = 3.0  # 担当継続性の重み
 
     objective = pulp.LpAffineExpression()
 
@@ -142,13 +147,11 @@ def _build_objective(
                         objective += W_TRAVEL * tt * (x[h.id, o1.id] + x[h.id, o2.id]) / 2
 
     # --- 2. 推奨スタッフ優先 ---
-    # 推奨スタッフペアをセット化
     preferred_pairs: set[tuple[str, str]] = set()
     for sc in inp.staff_constraints:
         if sc.constraint_type == StaffConstraintType.PREFERRED:
             preferred_pairs.add((sc.customer_id, sc.staff_id))
 
-    # 推奨設定がある利用者のオーダーで、非推奨スタッフにペナルティ
     customers_with_preferred: set[str] = {cid for cid, _ in preferred_pairs}
     for o in inp.orders:
         if o.customer_id not in customers_with_preferred:
@@ -157,4 +160,95 @@ def _build_objective(
             if (o.customer_id, h.id) not in preferred_pairs:
                 objective += W_NOT_PREFERRED * x[h.id, o.id]
 
+    # --- 3. 稼働バランス（preferred_hours乖離ペナルティ） ---
+    _add_workload_balance(prob, x, inp, objective, W_WORKLOAD)
+
+    # --- 4. 担当継続性（同一利用者のスタッフ分散ペナルティ） ---
+    _add_staff_continuity(prob, x, inp, objective, W_CONTINUITY)
+
     return objective
+
+
+def _add_workload_balance(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+    objective: pulp.LpAffineExpression,
+    weight: float,
+) -> None:
+    """稼働バランス: 各ヘルパーの合計稼働時間がpreferred_hoursを超過した分にペナルティ
+
+    over_h: preferred_hours.max を超えた時間（分）
+    under_h: preferred_hours.min を下回った時間（分）
+    """
+    for h in inp.helpers:
+        # 各ヘルパーの合計稼働時間（分）
+        total_minutes = pulp.lpSum(
+            (_time_to_minutes(o.end_time) - _time_to_minutes(o.start_time)) * x[h.id, o.id]
+            for o in inp.orders
+        )
+
+        pref_max_min = h.preferred_hours.max * 60
+        pref_min_min = h.preferred_hours.min * 60
+
+        # 超過スラック変数
+        over = pulp.LpVariable(f"over_{h.id}", lowBound=0)
+        prob += over >= total_minutes - pref_max_min, f"over_def_{h.id}"
+
+        # 不足スラック変数
+        under = pulp.LpVariable(f"under_{h.id}", lowBound=0)
+        prob += under >= pref_min_min - total_minutes, f"under_def_{h.id}"
+
+        # 超過・不足にペナルティ（超過のほうが深刻なので2倍重み）
+        objective += weight * 2.0 * over
+        objective += weight * under
+
+
+def _add_staff_continuity(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+    objective: pulp.LpAffineExpression,
+    weight: float,
+) -> None:
+    """担当継続性: 同一利用者の複数オーダーを異なるスタッフに割り当てるとペナルティ
+
+    y[c,h] = ヘルパーhが利用者cの少なくとも1件を担当するか（連続変数0-1）
+    → y[c,h]の合計を最小化 = 担当スタッフ数を最小化
+
+    計算効率のため、3件以上のオーダーを持つ利用者のみ対象とし、
+    資格・曜日で明らかに不可能なヘルパーは除外する。
+    """
+    orders_by_customer: dict[str, list[Order]] = {}
+    for o in inp.orders:
+        orders_by_customer.setdefault(o.customer_id, []).append(o)
+
+    # ヘルパーの曜日別勤務可能セットを事前計算
+    helper_available_days: dict[str, set[str]] = {}
+    for h in inp.helpers:
+        if h.weekly_availability:
+            helper_available_days[h.id] = {
+                dow.value for dow in h.weekly_availability.keys()
+            }
+        else:
+            helper_available_days[h.id] = set()  # 未定義=全日可能は別扱い
+
+    for cid, customer_orders in orders_by_customer.items():
+        if len(customer_orders) < 4:
+            continue  # 3件以下はスキップ（計算効率・変数数削減）
+
+        # この利用者のオーダー曜日
+        order_days = {o.day_of_week.value for o in customer_orders}
+
+        for h in inp.helpers:
+            # 明らかに割当不可能なヘルパーはスキップ
+            avail_days = helper_available_days[h.id]
+            if avail_days and not order_days & avail_days:
+                continue  # この利用者の曜日に一切勤務しない
+
+            y = pulp.LpVariable(f"y_{cid}_{h.id}", lowBound=0, upBound=1)
+
+            for o in customer_orders:
+                prob += y >= x[h.id, o.id], f"cont_y_{cid}_{h.id}_{o.id}"
+
+            objective += weight * y

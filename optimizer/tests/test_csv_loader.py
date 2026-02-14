@@ -117,6 +117,41 @@ class TestLoadStaffConstraints:
         assert len(ng) == 7
 
 
+class TestGenerateOrdersLinkedOrders:
+    """世帯ペアのlinked_order_id生成テスト"""
+
+    def test_household_pair_linked(self, seed_data_dir: Path) -> None:
+        """同世帯・同日・連続時間帯のオーダーがlinked_order_idで紐付く"""
+        customers = load_customers(seed_data_dir)
+        orders = generate_orders(customers, date(2025, 1, 6))
+
+        # C001(山田太郎)とC002(山田花子)は世帯H001
+        # C001: 月曜09:00-10:00, C002: 月曜10:00-11:00 → 連続
+        c001_mon = [o for o in orders if o.customer_id == "C001" and o.day_of_week == DayOfWeek.MONDAY]
+        c002_mon = [o for o in orders if o.customer_id == "C002" and o.day_of_week == DayOfWeek.MONDAY]
+        assert len(c001_mon) == 1
+        assert len(c002_mon) == 1
+        assert c001_mon[0].linked_order_id == c002_mon[0].id
+        assert c002_mon[0].linked_order_id == c001_mon[0].id
+
+    def test_non_household_not_linked(self, seed_data_dir: Path) -> None:
+        """世帯ペアでない利用者はlinked_order_idがNone"""
+        customers = load_customers(seed_data_dir)
+        orders = generate_orders(customers, date(2025, 1, 6))
+        # C003(中村正雄)はhousehold_idなし
+        c003_orders = [o for o in orders if o.customer_id == "C003"]
+        for o in c003_orders:
+            assert o.linked_order_id is None
+
+    def test_all_household_pairs_linked(self, seed_data_dir: Path) -> None:
+        """全3世帯ペアの連続訪問オーダーがリンクされている"""
+        customers = load_customers(seed_data_dir)
+        orders = generate_orders(customers, date(2025, 1, 6))
+        linked = [o for o in orders if o.linked_order_id is not None]
+        # 3世帯ペア × 各世帯の共通曜日数 × 2（双方向）
+        assert len(linked) > 0
+
+
 class TestLoadOptimizationInput:
     def test_full_load(self, seed_data_dir: Path) -> None:
         inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
