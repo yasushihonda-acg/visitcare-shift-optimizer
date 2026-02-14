@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Play } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -51,8 +51,16 @@ export function OptimizeButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" disabled={loading}>
-          {loading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Play className="mr-1 h-4 w-4" />}
+        <Button
+          size="sm"
+          disabled={loading}
+          className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] text-white shadow-sm hover:shadow-md hover:brightness-110 transition-all duration-200"
+        >
+          {loading ? (
+            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="mr-1.5 h-4 w-4" />
+          )}
           最適化実行
         </Button>
       </DialogTrigger>
@@ -70,7 +78,11 @@ export function OptimizeButton() {
           <Button variant="secondary" onClick={() => handleOptimize(true)} disabled={loading}>
             テスト実行
           </Button>
-          <Button onClick={() => handleOptimize(false)} disabled={loading}>
+          <Button
+            onClick={() => handleOptimize(false)}
+            disabled={loading}
+            className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] text-white"
+          >
             {loading && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
             実行
           </Button>

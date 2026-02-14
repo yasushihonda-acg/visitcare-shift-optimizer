@@ -1,5 +1,6 @@
 'use client';
 
+import { Clock, MapPin, User, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
@@ -22,6 +23,13 @@ interface OrderDetailPanelProps {
 const SERVICE_LABELS: Record<string, string> = {
   physical_care: '身体介護',
   daily_living: '生活援助',
+  prevention: '介護予防',
+};
+
+const SERVICE_BADGE_STYLES: Record<string, string> = {
+  physical_care: 'bg-[oklch(0.55_0.15_230)]/10 text-[oklch(0.45_0.15_230)] border-[oklch(0.55_0.15_230)]/30',
+  daily_living: 'bg-[oklch(0.55_0.15_160)]/10 text-[oklch(0.45_0.15_160)] border-[oklch(0.55_0.15_160)]/30',
+  prevention: 'bg-[oklch(0.60_0.12_300)]/10 text-[oklch(0.50_0.12_300)] border-[oklch(0.60_0.12_300)]/30',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -29,6 +37,13 @@ const STATUS_LABELS: Record<string, string> = {
   assigned: '割当済',
   completed: '完了',
   cancelled: 'キャンセル',
+};
+
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  pending: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
+  assigned: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+  completed: 'bg-muted text-muted-foreground',
+  cancelled: 'bg-destructive/10 text-destructive border-destructive/30',
 };
 
 export function OrderDetailPanel({
@@ -49,31 +64,45 @@ export function OrderDetailPanel({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>{customerName}</SheetTitle>
+          <SheetTitle className="text-lg">{customerName}</SheetTitle>
         </SheetHeader>
-        <div className="mt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="text-muted-foreground">時間</div>
-            <div>{order.start_time} - {order.end_time}</div>
-            <div className="text-muted-foreground">サービス種別</div>
-            <div>{SERVICE_LABELS[order.service_type]}</div>
-            <div className="text-muted-foreground">ステータス</div>
-            <div>
-              <Badge variant={order.status === 'assigned' ? 'default' : 'outline'}>
+        <div className="mt-4 space-y-5">
+          {/* 基本情報セクション */}
+          <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">時間</span>
+              <span className="ml-auto font-medium">{order.start_time} - {order.end_time}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="h-4 w-4" />
+              <span className="text-muted-foreground">サービス種別</span>
+              <Badge variant="outline" className={`ml-auto ${SERVICE_BADGE_STYLES[order.service_type] ?? ''}`}>
+                {SERVICE_LABELS[order.service_type]}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="h-4 w-4" />
+              <span className="text-muted-foreground">ステータス</span>
+              <Badge variant="outline" className={`ml-auto ${STATUS_BADGE_STYLES[order.status] ?? ''}`}>
                 {STATUS_LABELS[order.status]}
               </Badge>
             </div>
           </div>
 
+          {/* 割当スタッフ */}
           {assignedHelpers.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium mb-1">割当スタッフ</h4>
-              <ul className="text-sm space-y-1">
+              <div className="flex items-center gap-2 mb-2">
+                <User className="h-4 w-4 text-primary" />
+                <h4 className="text-sm font-semibold">割当スタッフ</h4>
+              </div>
+              <ul className="space-y-1.5 pl-6">
                 {assignedHelpers.map((h) => (
-                  <li key={h.id} className="flex items-center gap-2">
+                  <li key={h.id} className="flex items-center gap-2 text-sm">
                     <span>{h.name.family} {h.name.given}</span>
                     {h.can_physical_care && (
-                      <Badge variant="secondary" className="text-[10px]">身体可</Badge>
+                      <Badge variant="secondary" className="text-[10px] bg-[oklch(0.55_0.15_230)]/10 text-[oklch(0.45_0.15_230)]">身体可</Badge>
                     )}
                   </li>
                 ))}
@@ -81,12 +110,19 @@ export function OrderDetailPanel({
             </div>
           )}
 
+          {/* 制約違反 */}
           {violations.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium mb-1 text-destructive">制約違反</h4>
-              <ul className="text-sm space-y-1">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <h4 className="text-sm font-semibold text-destructive">制約違反</h4>
+              </div>
+              <ul className="space-y-1.5 pl-6">
                 {violations.map((v, i) => (
-                  <li key={i} className={v.severity === 'error' ? 'text-destructive' : 'text-yellow-600'}>
+                  <li
+                    key={i}
+                    className={`text-sm ${v.severity === 'error' ? 'text-destructive' : 'text-amber-600'}`}
+                  >
                     {v.message}
                   </li>
                 ))}
@@ -94,10 +130,14 @@ export function OrderDetailPanel({
             </div>
           )}
 
+          {/* 住所 */}
           {customer?.address && (
             <div>
-              <h4 className="text-sm font-medium mb-1">住所</h4>
-              <p className="text-sm text-muted-foreground">{customer.address}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <h4 className="text-sm font-semibold">住所</h4>
+              </div>
+              <p className="text-sm text-muted-foreground pl-6">{customer.address}</p>
             </div>
           )}
         </div>

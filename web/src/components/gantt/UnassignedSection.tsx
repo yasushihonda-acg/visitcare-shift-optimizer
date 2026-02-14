@@ -2,6 +2,7 @@
 
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { PackageOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Order, Customer } from '@/types';
 import type { DragData, DropZoneStatus } from '@/lib/dnd/types';
@@ -24,6 +25,13 @@ interface UnassignedSectionProps {
 const SERVICE_LABELS: Record<string, string> = {
   physical_care: '身体',
   daily_living: '生活',
+  prevention: '予防',
+};
+
+const SERVICE_BADGE_COLORS: Record<string, string> = {
+  physical_care: 'bg-[oklch(0.55_0.15_230)]/10 text-[oklch(0.45_0.15_230)] border-[oklch(0.55_0.15_230)]/30',
+  daily_living: 'bg-[oklch(0.55_0.15_160)]/10 text-[oklch(0.45_0.15_160)] border-[oklch(0.55_0.15_160)]/30',
+  prevention: 'bg-[oklch(0.60_0.12_300)]/10 text-[oklch(0.50_0.12_300)] border-[oklch(0.60_0.12_300)]/30',
 };
 
 function UnassignedOrderItem({
@@ -50,22 +58,24 @@ function UnassignedOrderItem({
     transform: CSS.Translate.toString(transform),
   };
 
+  const badgeColor = SERVICE_BADGE_COLORS[order.service_type] ?? '';
+
   return (
     <button
       ref={setNodeRef}
       style={style}
       onClick={() => !isDragging && onOrderClick?.(order)}
       className={cn(
-        'flex items-center gap-1.5 rounded-md border border-dashed px-2 py-1 text-xs hover:bg-muted transition-colors cursor-grab',
+        'flex items-center gap-1.5 rounded-lg border border-dashed border-border/60 bg-card px-2.5 py-1.5 text-xs hover:bg-muted/50 hover:border-primary/30 transition-all duration-150 cursor-grab shadow-sm',
         isDragging && 'opacity-50 shadow-lg cursor-grabbing'
       )}
       {...attributes}
       {...listeners}
     >
-      <Badge variant="outline" className="text-[10px]">
+      <Badge variant="outline" className={cn('text-[10px] border', badgeColor)}>
         {SERVICE_LABELS[order.service_type] ?? order.service_type}
       </Badge>
-      <span>{name}</span>
+      <span className="font-medium">{name}</span>
       <span className="text-muted-foreground">
         {order.start_time}-{order.end_time}
       </span>
@@ -82,13 +92,19 @@ export function UnassignedSection({ orders, customers, onOrderClick, dropZoneSta
     <div
       ref={setNodeRef}
       className={cn(
-        'mt-4 border rounded-lg p-3 transition-colors duration-150',
+        'mt-4 rounded-xl border bg-card p-4 shadow-sm transition-colors duration-150',
         isOver && DROP_ZONE_STYLES[dropZoneStatus]
       )}
     >
-      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-        未割当 ({orders.length}件)
-      </h3>
+      <div className="flex items-center gap-2 mb-3">
+        <PackageOpen className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-foreground">
+          未割当
+        </h3>
+        <Badge variant="secondary" className="text-xs">
+          {orders.length}件
+        </Badge>
+      </div>
       <div className="flex flex-wrap gap-2">
         {orders.map((order) => (
           <UnassignedOrderItem
@@ -99,7 +115,7 @@ export function UnassignedSection({ orders, customers, onOrderClick, dropZoneSta
           />
         ))}
         {orders.length === 0 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground py-2">
             オーダーをここにドロップして割当を解除
           </p>
         )}

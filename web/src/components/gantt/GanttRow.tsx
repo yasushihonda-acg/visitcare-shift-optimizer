@@ -15,6 +15,7 @@ interface GanttRowProps {
   violations: ViolationMap;
   onOrderClick?: (order: Order) => void;
   dropZoneStatus?: DropZoneStatus;
+  index: number;
 }
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
@@ -24,18 +25,24 @@ const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
   invalid: 'bg-red-50 ring-2 ring-inset ring-red-400 cursor-not-allowed',
 };
 
-export function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle' }: GanttRowProps) {
+export function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index }: GanttRowProps) {
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
 
   const { setNodeRef, isOver } = useDroppable({
     id: row.helper.id,
   });
 
+  const isEven = index % 2 === 0;
+
   return (
-    <div className="flex border-b hover:bg-muted/30">
+    <div className={cn(
+      'flex border-b border-border/50 transition-colors duration-100',
+      isEven ? 'bg-card' : 'bg-muted/20',
+      'hover:bg-primary/[0.03]'
+    )}>
       <div
-        className="shrink-0 border-r px-2 py-1 text-xs font-medium truncate flex items-center"
-        style={{ width: HELPER_NAME_WIDTH_PX }}
+        className="shrink-0 border-r border-border/50 px-2 py-1 text-xs font-medium truncate flex items-center"
+        style={{ width: HELPER_NAME_WIDTH_PX, height: 36 }}
         title={helperName}
       >
         {helperName}
@@ -43,16 +50,16 @@ export function GanttRow({ row, customers, violations, onOrderClick, dropZoneSta
       <div
         ref={setNodeRef}
         className={cn(
-          'relative h-7 transition-colors duration-150',
+          'relative transition-colors duration-150',
           isOver && DROP_ZONE_STYLES[dropZoneStatus]
         )}
-        style={{ width: TOTAL_SLOTS * SLOT_WIDTH_PX }}
+        style={{ width: TOTAL_SLOTS * SLOT_WIDTH_PX, height: 36 }}
       >
         {/* 時間グリッド背景線 */}
         {Array.from({ length: GANTT_END_HOUR - GANTT_START_HOUR }, (_, i) => (
           <div
             key={i}
-            className="absolute top-0 h-full border-l border-border/20"
+            className="absolute top-0 h-full border-l border-border/15"
             style={{ left: i * 12 * SLOT_WIDTH_PX }}
           />
         ))}

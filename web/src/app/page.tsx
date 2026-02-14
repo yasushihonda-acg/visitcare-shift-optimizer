@@ -77,8 +77,19 @@ function SchedulePage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-muted-foreground">読み込み中...</div>
+      <div className="flex h-screen flex-col">
+        <header className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] px-4 py-3 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-white/15 animate-pulse" />
+            <div className="h-5 w-24 rounded bg-white/20 animate-pulse" />
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="text-sm text-muted-foreground">読み込み中...</p>
+          </div>
+        </div>
       </div>
     );
   }
