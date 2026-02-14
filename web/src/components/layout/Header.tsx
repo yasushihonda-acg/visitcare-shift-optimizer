@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Settings, Users, UserCog } from 'lucide-react';
+import { Heart, Settings, Users, UserCog, CalendarOff } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
 import {
   DropdownMenu,
@@ -61,6 +61,13 @@ export function Header() {
                 <Link href="/masters/helpers">
                   <UserCog className="mr-2 h-4 w-4" />
                   ヘルパーマスタ
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/masters/unavailability">
+                  <CalendarOff className="mr-2 h-4 w-4" />
+                  希望休管理
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>

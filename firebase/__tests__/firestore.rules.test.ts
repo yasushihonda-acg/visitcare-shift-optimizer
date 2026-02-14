@@ -146,10 +146,108 @@ describe('認証済みユーザー - マスタコレクション書き込み', (
     );
   });
 
-  it('staff_unavailability に書き込めない', async () => {
+});
+
+// ============================================================
+// staff_unavailability: create/update/delete 許可（isValidUnavailability バリデーション）
+// ============================================================
+/** isValidUnavailability を満たす有効なデータ */
+const validUnavailabilityData = {
+  staff_id: 'helper-1',
+  week_start_date: new Date('2026-02-16T00:00:00+09:00'),
+  unavailable_slots: [
+    { date: new Date('2026-02-17T00:00:00+09:00'), all_day: true },
+  ],
+  notes: '家族行事のため',
+  submitted_at: serverTimestamp(),
+};
+
+describe('認証済みユーザー - staff_unavailability create', () => {
+  it('有効なデータで新規作成できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-new'), validUnavailabilityData)
+    );
+  });
+
+  it('staff_id がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { staff_id: _, ...noStaffId } = validUnavailabilityData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-bad'), noStaffId)
+    );
+  });
+
+  it('week_start_date がtimestampでない場合は拒否される', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     await assertFails(
-      setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-new'), { reason: '希望休' })
+      setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-bad'), {
+        ...validUnavailabilityData,
+        week_start_date: '2026-02-16',
+      })
+    );
+  });
+
+  it('unavailable_slots が配列でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-bad'), {
+        ...validUnavailabilityData,
+        unavailable_slots: 'not-an-array',
+      })
+    );
+  });
+});
+
+describe('認証済みユーザー - staff_unavailability update', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'staff_unavailability', 'su-existing'), validUnavailabilityData);
+    });
+  });
+
+  it('有効なデータで更新できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-existing'), {
+        ...validUnavailabilityData,
+        notes: '通院のため',
+      })
+    );
+  });
+
+  it('必須フィールドを欠いた更新は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'staff_unavailability', 'su-existing'), {
+        notes: '通院のため',
+      })
+    );
+  });
+});
+
+describe('認証済みユーザー - staff_unavailability delete', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'staff_unavailability', 'su-to-delete'), validUnavailabilityData);
+    });
+  });
+
+  it('希望休を削除できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      deleteDoc(doc(authed.firestore(), 'staff_unavailability', 'su-to-delete'))
+    );
+  });
+});
+
+describe('未認証ユーザー - staff_unavailability write', () => {
+  it('未認証ユーザーはstaff_unavailabilityに書き込めない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(
+      setDoc(doc(unauthed.firestore(), 'staff_unavailability', 'su-unauth'), validUnavailabilityData)
     );
   });
 });

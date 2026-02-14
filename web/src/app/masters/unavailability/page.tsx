@@ -1,0 +1,210 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { Plus, Pencil, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, addDays, addWeeks, subWeeks, startOfWeek } from 'date-fns';
+import { useHelpers } from '@/hooks/useHelpers';
+import { useStaffUnavailability } from '@/hooks/useStaffUnavailability';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { UnavailabilityEditDialog } from '@/components/masters/UnavailabilityEditDialog';
+import type { StaffUnavailability } from '@/types';
+import { DAY_OF_WEEK_LABELS, DAY_OF_WEEK_ORDER } from '@/types';
+
+function getMonday(date: Date): Date {
+  return startOfWeek(date, { weekStartsOn: 1 });
+}
+
+export default function UnavailabilityPage() {
+  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const { helpers, loading: helpersLoading } = useHelpers();
+  const { unavailability, loading: unavailLoading } = useStaffUnavailability(weekStart);
+  const [search, setSearch] = useState('');
+  const [editTarget, setEditTarget] = useState<StaffUnavailability | undefined>(undefined);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const loading = helpersLoading || unavailLoading;
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, StaffUnavailability>();
+    for (const u of unavailability) {
+      map.set(u.staff_id, u);
+    }
+    return map;
+  }, [unavailability]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return unavailability;
+    const q = search.trim().toLowerCase();
+    return unavailability.filter((u) => {
+      const h = helpers.get(u.staff_id);
+      if (!h) return false;
+      return (
+        h.name.family.toLowerCase().includes(q) ||
+        h.name.given.toLowerCase().includes(q)
+      );
+    });
+  }, [unavailability, helpers, search]);
+
+  const openNew = () => {
+    setEditTarget(undefined);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (u: StaffUnavailability) => {
+    setEditTarget(u);
+    setDialogOpen(true);
+  };
+
+  const formatSlots = (u: StaffUnavailability) => {
+    return u.unavailable_slots.map((slot) => {
+      const dayIndex = Math.round(
+        (slot.date.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const dayLabel =
+        dayIndex >= 0 && dayIndex < 7
+          ? DAY_OF_WEEK_LABELS[DAY_OF_WEEK_ORDER[dayIndex]]
+          : format(slot.date, 'MM/dd');
+      if (slot.all_day) return `${dayLabel}(終日)`;
+      return `${dayLabel}(${slot.start_time}〜${slot.end_time})`;
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-sm text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">希望休管理</h2>
+        <Button onClick={openNew} size="sm">
+          <Plus className="mr-1 h-4 w-4" />
+          新規追加
+        </Button>
+      </div>
+
+      {/* 週ナビゲーション */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setWeekStart((w) => subWeeks(w, 1))}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium min-w-[200px] text-center">
+          {format(weekStart, 'yyyy/MM/dd')}（月）〜{' '}
+          {format(addDays(weekStart, 6), 'MM/dd')}（日）
+        </span>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setWeekStart((w) => addWeeks(w, 1))}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="スタッフ名で検索..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-32">スタッフ</TableHead>
+              <TableHead>不在内容</TableHead>
+              <TableHead className="w-48">備考</TableHead>
+              <TableHead className="w-16" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="text-center text-muted-foreground py-8"
+                >
+                  {search
+                    ? '一致する希望休が見つかりません'
+                    : 'この週の希望休はありません'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((u) => {
+                const h = helpers.get(u.staff_id);
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">
+                      {h ? `${h.name.family} ${h.name.given}` : u.staff_id}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {formatSlots(u).map((s, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {u.notes || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => openEdit(u)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        全{unavailability.length}件{search && `（表示: ${filtered.length}件）`}
+      </p>
+
+      <UnavailabilityEditDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        unavailability={editTarget}
+        helpers={helpers}
+        weekStart={weekStart}
+      />
+    </div>
+  );
+}
