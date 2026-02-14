@@ -3,18 +3,29 @@ import { getFirestore, Firestore, WriteBatch } from 'firebase-admin/firestore';
 
 let db: Firestore;
 
+const SEED_TARGET = process.env.SEED_TARGET ?? 'emulator';
+const PRODUCTION_PROJECT_ID = 'visitcare-shift-optimizer';
+
 /**
- * Firestore Admin SDKを初期化（Emulator対応）
+ * Firestore Admin SDKを初期化
+ * SEED_TARGET=production → 本番Firestore（Application Default Credentials使用）
+ * SEED_TARGET=emulator（デフォルト） → ローカルEmulator
  */
 export function getDB(): Firestore {
   if (db) return db;
 
-  if (!process.env.FIRESTORE_EMULATOR_HOST) {
-    process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
-  }
-
-  if (getApps().length === 0) {
-    initializeApp({ projectId: 'demo-test' });
+  if (SEED_TARGET === 'production') {
+    console.log(`🔥 Connecting to PRODUCTION Firestore (${PRODUCTION_PROJECT_ID})`);
+    if (getApps().length === 0) {
+      initializeApp({ projectId: PRODUCTION_PROJECT_ID });
+    }
+  } else {
+    if (!process.env.FIRESTORE_EMULATOR_HOST) {
+      process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+    }
+    if (getApps().length === 0) {
+      initializeApp({ projectId: 'demo-test' });
+    }
   }
 
   db = getFirestore();
