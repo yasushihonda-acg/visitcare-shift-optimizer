@@ -15,6 +15,19 @@ const DAY_TO_OFFSET: Record<string, number> = {
   sunday: 6,
 };
 
+/** 今日を含む週の月曜日をYYYY-MM-DD形式で返す */
+function getCurrentMonday(): string {
+  const now = new Date();
+  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const day = jst.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  jst.setDate(jst.getDate() + diff);
+  const y = jst.getFullYear();
+  const m = String(jst.getMonth() + 1).padStart(2, '0');
+  const d = String(jst.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 interface ServiceRow {
   customer_id: string;
   day_of_week: string;
@@ -28,7 +41,10 @@ interface ServiceRow {
  * weekly_services からオーダーを生成
  * weekStartDate: 週の月曜日（YYYY-MM-DD）
  */
-export async function importOrders(weekStartDate: string = '2025-01-06'): Promise<number> {
+export async function importOrders(weekStartDate?: string): Promise<number> {
+  if (!weekStartDate) {
+    weekStartDate = getCurrentMonday();
+  }
   const services = parseCSV<ServiceRow>(resolve(DATA_DIR, 'customer-services.csv'));
   const now = Timestamp.now();
 

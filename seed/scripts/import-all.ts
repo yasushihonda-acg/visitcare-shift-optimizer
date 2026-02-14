@@ -91,7 +91,7 @@ async function main() {
   const travelTimeCount = await generateTravelTimes();
   console.log(`   travel_times: ${travelTimeCount}`);
 
-  const unavailCount = await importStaffUnavailability();
+  const unavailCount = await importStaffUnavailability(week);
   console.log(`   staff_unavailability: ${unavailCount}`);
 
   console.log('\n✅ Import complete!');
