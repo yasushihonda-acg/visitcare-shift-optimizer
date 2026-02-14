@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-10（本番デプロイ修正完了）
-**現在のフェーズ**: Phase 3b 完了 + 本番環境動作確認済み
+**最終更新**: 2026-02-14（最適化品質改善 PR #13）
+**現在のフェーズ**: Phase 3b 完了 + 最適化品質改善済み
 
 ## 完了済み
 
@@ -33,9 +33,11 @@
 - **Pydanticモデル**: `optimizer/src/optimizer/models/` — TS型定義と完全対応
 - **CSVデータローダー**: `optimizer/src/optimizer/data/csv_loader.py`
 - **MIPエンジン**: `optimizer/src/optimizer/engine/`
-  - ハード制約×8 + ソフト制約（推奨スタッフ優先、移動時間最小化）
-- **テスト**: 76件全パス
-- **パフォーマンス**: 142オーダー/20ヘルパーで **0.7秒**
+  - ハード制約×8 + ソフト制約×4（推奨スタッフ優先、移動時間最小化、稼働バランス、担当継続性）
+  - **PR #13 品質改善**: 稼働バランス（preferred_hours乖離ペナルティ）、担当継続性（4件以上の利用者対象）、世帯リンク自動生成
+  - 改善効果: 希望時間外 14/20→6/20、複数担当 44/50→37/50、平均担当者数 3.0→2.3
+- **テスト**: 134件全パス
+- **パフォーマンス**: 160オーダー/20ヘルパーで **2.0秒**
 
 ### Phase 2b: API層 + Cloud Run
 - **REST API**: FastAPI（ADR-007）
@@ -71,7 +73,7 @@
 - **CORS本番対応**: Firebase HostingドメインをCORS_ORIGINSに追加
 - **統合テスト**: API契約テスト3件 + 認証テスト12件 + AuthProviderテスト3件
 - **CI/CD**: GitHub Actions（PR時テスト並列、main pushでCloud Build + Firebase Hosting並列デプロイ）
-- **テスト合計**: BE 128件 + FE 32件 = **160件全パス**
+- **テスト合計**: BE 134件 + FE 32件 = **166件全パス**
 
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
@@ -90,7 +92,7 @@ firebase emulators:start --project demo-test
 cd seed && FIRESTORE_EMULATOR_HOST=localhost:8080 npm run import:all
 
 # 最適化エンジン テスト
-cd optimizer && .venv/bin/pytest tests/ -v  # 128件
+cd optimizer && .venv/bin/pytest tests/ -v  # 134件
 
 # 最適化API（ローカル、ポート8081）
 cd optimizer && ALLOW_UNAUTHENTICATED=true .venv/bin/uvicorn optimizer.api.main:app --reload --port 8081
@@ -100,7 +102,7 @@ cd web && npm run dev  # → http://localhost:3000
 
 # テスト
 cd web && npm test          # Vitest (32件)
-cd optimizer && .venv/bin/pytest tests/ -v  # pytest (128件)
+cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 ```
 
 ## CI/CD（ADR-010）
@@ -111,7 +113,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (128件)
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
-- **全4ジョブ成功確認済み**（PR #7〜#12）
+- **全4ジョブ成功確認済み**（PR #7〜#13）
 
 ## 本番環境修正（2026-02-10）
 - **PR #11**: `.env.production`にFirebase SDK設定追加（auth/invalid-api-keyエラー修正）
@@ -131,6 +133,14 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (128件)
 - `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
 - `web/src/` — Next.js フロントエンド
+
+## 次のアクション（優先度順）
+
+1. **Phase 4a: ドラッグ&ドロップ手動編集** 🔴 — PRD核要件、実運用に必須
+2. **Phase 4b: マスタ編集UI** 🟡 — 利用者・スタッフのCRUD画面
+3. **リアルタイムバリデーション強化** 🟡 — ドラッグ中の制約違反ハイライト
+4. **Firestoreセキュリティルール本番化** 🟠 — 現行allow all→RBAC
+5. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
