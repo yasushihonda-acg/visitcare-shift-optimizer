@@ -39,9 +39,31 @@ jobs:
       - run: npx vitest run
       - run: npm run build
 
+  test-firestore-rules:
+    name: Firestore Rules Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firebase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: firebase/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - name: Run Firestore Rules Tests
+        run: |
+          npx firebase-tools emulators:exec --only firestore --project demo-visitcare-rules-test "npx vitest run"
+
   deploy-optimizer:
     name: Deploy Optimizer (Cloud Run)
-    needs: [test-optimizer, test-web]
+    needs: [test-optimizer, test-web, test-firestore-rules]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -62,7 +84,7 @@ jobs:
 
   deploy-hosting:
     name: Deploy Hosting (Firebase)
-    needs: [test-optimizer, test-web]
+    needs: [test-optimizer, test-web, test-firestore-rules]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
