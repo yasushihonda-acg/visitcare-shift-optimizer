@@ -136,16 +136,9 @@ describe('認証済みユーザー - 読み取り', () => {
 });
 
 // ============================================================
-// 認証済みユーザー: マスタコレクション書き込み（customers以外は拒否）
+// 認証済みユーザー: マスタコレクション書き込み（customers/helpers以外は拒否）
 // ============================================================
 describe('認証済みユーザー - マスタコレクション書き込み', () => {
-  it('helpers に書き込めない', async () => {
-    const authed = testEnv.authenticatedContext('user-1');
-    await assertFails(
-      setDoc(doc(authed.firestore(), 'helpers', 'helper-new'), { name: '新規' })
-    );
-  });
-
   it('travel_times に書き込めない', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     await assertFails(
@@ -270,6 +263,130 @@ describe('未認証ユーザー - customers write', () => {
     const unauthed = testEnv.unauthenticatedContext();
     await assertFails(
       setDoc(doc(unauthed.firestore(), 'customers', 'customer-unauth'), validCustomerData)
+    );
+  });
+});
+
+// ============================================================
+// helpers: create/update 許可（isValidHelper バリデーション）
+// ============================================================
+/** isValidHelper を満たす有効なhelperデータ */
+const validHelperData = {
+  name: { family: '佐藤', given: '花子' },
+  qualifications: ['介護福祉士'],
+  can_physical_care: true,
+  transportation: 'car',
+  weekly_availability: {},
+  preferred_hours: { min: 20, max: 40 },
+  available_hours: { min: 10, max: 40 },
+  employment_type: 'full_time',
+  customer_training_status: {},
+  created_at: serverTimestamp(),
+  updated_at: serverTimestamp(),
+};
+
+describe('認証済みユーザー - helpers create', () => {
+  it('有効なデータで新規作成できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-new'), validHelperData)
+    );
+  });
+
+  it('name.family がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-bad'), {
+        ...validHelperData,
+        name: { given: '花子' },
+      })
+    );
+  });
+
+  it('qualifications が配列でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-bad'), {
+        ...validHelperData,
+        qualifications: 'not-an-array',
+      })
+    );
+  });
+
+  it('can_physical_care が真偽値でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-bad'), {
+        ...validHelperData,
+        can_physical_care: 'yes',
+      })
+    );
+  });
+
+  it('preferred_hours がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { preferred_hours: _, ...noPreferredHours } = validHelperData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-bad'), noPreferredHours)
+    );
+  });
+
+  it('employment_type がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { employment_type: _, ...noEmploymentType } = validHelperData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-bad'), noEmploymentType)
+    );
+  });
+});
+
+describe('認証済みユーザー - helpers update', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'helpers', 'helper-existing'), validHelperData);
+    });
+  });
+
+  it('有効なデータで更新できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-existing'), {
+        ...validHelperData,
+        transportation: 'bicycle',
+      })
+    );
+  });
+
+  it('必須フィールドを欠いた更新は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-existing'), {
+        name: { family: '佐藤', given: '花子' },
+      })
+    );
+  });
+});
+
+describe('認証済みユーザー - helpers delete', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'helpers', 'helper-to-delete'), validHelperData);
+    });
+  });
+
+  it('helpers を削除できない', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(deleteDoc(doc(authed.firestore(), 'helpers', 'helper-to-delete')));
+  });
+});
+
+describe('未認証ユーザー - helpers write', () => {
+  it('未認証ユーザーはhelpersに書き込めない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(
+      setDoc(doc(unauthed.firestore(), 'helpers', 'helper-unauth'), validHelperData)
     );
   });
 });

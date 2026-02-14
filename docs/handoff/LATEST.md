@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（Phase 4d マスタ編集UI PR 1/3 — 利用者マスタCRUD）
+**最終更新**: 2026-02-15（Phase 4d マスタ編集UI PR 2/3 — ヘルパーマスタCRUD）
 **現在のフェーズ**: Phase 4d-master-edit（マスタ編集UI）
 
 ## 完了済み
@@ -239,10 +239,20 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --week 2026-02-0
 cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --week 2026-02-16
 ```
 
+### Phase 4d-master-edit PR 2/3: ヘルパーマスタCRUD（2026-02-15）
+- **ブランチ**: `feature/phase4d-master-edit-helpers`
+- **Firestoreルール更新**: `helpers` に `create, update` 許可 + `isValidHelper()` バリデーション（delete不可維持）
+- **ヘルパーマスタ画面**: `/masters/helpers`
+  - 一覧表示（Table: 氏名/資格/身体介護可否/雇用形態/移動手段 + 検索フィルター）
+  - 新規追加/編集（Dialog） — 資格Checkbox群、身体介護可否、移動手段/雇用形態Select
+  - 希望勤務時間・対応可能時間（min/max）
+  - WeeklyAvailabilityEditor（7曜日×複数スロット、start/endのみ）
+- **Firestoreユーティリティ**: createHelper / updateHelper
+- **テスト**: Firestoreルール 38件（+10件追加） + Web 43件 = 全パス
+
 ## 次のアクション（優先度順）
 
-1. **Phase 4d: マスタ編集UI PR 2/3** 🟡 — ヘルパーマスタCRUD（PR 1 完了済み）
-1b. **Phase 4d: マスタ編集UI PR 3/3** 🟡 — 希望休管理 + NG/推奨スタッフUI
+1. **Phase 4d: マスタ編集UI PR 3/3** 🟡 — 希望休管理 + NG/推奨スタッフUI
 2. **Phase 2（Phase 2Security）: Custom Claims RBAC** 🟠 — Phase 1→Phase 2で admin/service_manager/helper権限導入
 3. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
 4. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
