@@ -87,5 +87,5 @@ jobs:
           npm ci
           npm run build
       - uses: google-github-actions/setup-gcloud@v2
-      - name: Deploy to Firebase Hosting
-        run: npx firebase-tools@latest deploy --only hosting --project visitcare-shift-optimizer --token "${{ steps.auth.outputs.access_token }}"
+      - name: Deploy to Firebase Hosting + Firestore Rules
+        run: npx firebase-tools@latest deploy --only hosting,firestore:rules --project visitcare-shift-optimizer --token "${{ steps.auth.outputs.access_token }}"
