@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（Phase 2 Custom Claims RBAC 実装完了）
-**現在のフェーズ**: Phase 2Security 完了 → Google Maps API 実装へ
+**最終更新**: 2026-02-15（週切替UI + Cloud Build SA権限修正）
+**現在のフェーズ**: Phase 4d完了 → UI改善・機能拡張へ
 
 ## 完了済み
 
@@ -307,13 +307,28 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **本番Seed実行**: 2,550ペア全て `source: 'google_maps'` に更新済み（PR #27 マージ済み）
 - **テスト**: CI全3ジョブ通過（Optimizer/Web/Firestore Rules）
 
+### 週切替UI — カレンダー日付ピッカー（PR #28 — 2026-02-15）
+- **ブランチ**: `feature/week-picker-ui`（マージ済み）
+- **WeekSelector拡張**: 期間表示ボタンにPopover + Calendarを統合
+  - shadcn/ui Popover + Calendar（react-day-picker v9.13.2）導入
+  - カレンダーで任意の日付を選択 → その週に自動ジャンプ
+  - 「今週に戻る」ボタン（現在週以外で表示）
+  - 日本語ロケール対応
+- **header variant対応**: ヘッダー内のWeekSelectorもカレンダー付きで動作
+- **テスト**: Web 48/48 全パス、ビルド成功
+
+### Cloud Build SA権限修正（2026-02-15）
+- **問題**: Cloud Build SA(`1045989697649@cloudbuild.gserviceaccount.com`)に`roles/cloudbuild.builds.builder`のみで、Cloud Runデプロイ権限が不足
+- **修正**: 以下3権限を付与
+  - `roles/run.admin` — Cloud Runデプロイ
+  - `roles/iam.serviceAccountUser` — SA権限委譲
+  - `roles/artifactregistry.writer` — Dockerイメージpush
+
 ## 次のアクション（優先度順）
 
-1. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示（現在は「月単位」へナビゲーションのみ）
-   - Sidebar / Drawer に WeekPicker コンポーネント追加
-2. **Cloud Buildサービスアカウント権限確認** 🟡 — CI/CDからのデプロイ権限チェック
-   - SA: `cloud-build@visitcare-shift-optimizer.iam.gserviceaccount.com`
-   - 権限: `roles/run.admin` + `roles/firebase.admin` 確認
+1. **ヘルパーマスタ・希望休管理のUI改善** 🟡 — 操作性向上
+2. **最適化結果の保存・履歴機能** 🟡 — 実行結果をFirestoreに保存して比較可能に
+3. **Phase 2b拡張: 制約パラメータUI** 🟡 — ソフト制約の重み調整をフロントエンドから可能に
 
 ## 最新テスト結果サマリー（2026-02-15）
 - **Optimizer**: 139/139 pass
