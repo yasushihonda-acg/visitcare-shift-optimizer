@@ -1,39 +1,18 @@
 import { resolve } from 'path';
 import { Timestamp } from 'firebase-admin/firestore';
 import { parseCSV } from './utils/csv-parser.js';
-import { batchWrite } from './utils/firestore-client.js';
+import { batchWrite, getDB } from './utils/firestore-client.js';
+import {
+  fetchTravelTimesFromGoogleMaps,
+  haversineDistance,
+  estimateTravelMinutes,
+  type TravelTimeResult,
+} from './utils/google-maps-client.js';
 
 const DATA_DIR = resolve(import.meta.dirname, '../data');
 
-/**
- * Haversine距離（メートル）
- */
-function haversineDistance(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number,
-): number {
-  const R = 6371000; // 地球の半径（m）
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
-}
-
-/**
- * 直線距離から移動時間を算出（市街地係数 1.3、平均速度 40km/h）
- */
-function estimateTravelMinutes(distanceMeters: number): number {
-  const CITY_FACTOR = 1.3;
-  const SPEED_KMH = 40;
-  const actualDistance = distanceMeters * CITY_FACTOR;
-  return Math.round((actualDistance / 1000 / SPEED_KMH) * 60 * 10) / 10;
-}
+/** キャッシュ有効期間（30日） */
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface LocationRow {
   id: string;
@@ -41,8 +20,53 @@ interface LocationRow {
   lng: string;
 }
 
+/**
+ * Firestore 内の有効キャッシュ済みドキュメントIDを取得
+ */
+async function loadCachedIds(): Promise<Set<string>> {
+  const db = getDB();
+  const now = Date.now();
+  const snapshot = await db.collection('travel_times').get();
+  const cached = new Set<string>();
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    if (data.source === 'google_maps' && data.cached_at) {
+      const cachedAt = data.cached_at.toMillis?.() ?? data.cached_at;
+      if (now - cachedAt < CACHE_TTL_MS) {
+        cached.add(doc.id);
+      }
+    }
+  }
+  return cached;
+}
+
+/**
+ * 全ペア間の移動時間を Haversine 推定で生成
+ */
+function generateHaversineTravelTimes(
+  locations: { id: string; lat: number; lng: number }[],
+): TravelTimeResult[] {
+  const results: TravelTimeResult[] = [];
+  for (let i = 0; i < locations.length; i++) {
+    for (let j = 0; j < locations.length; j++) {
+      if (i === j) continue;
+      const from = locations[i];
+      const to = locations[j];
+      const distance = haversineDistance(from.lat, from.lng, to.lat, to.lng);
+      results.push({
+        fromId: from.id,
+        toId: to.id,
+        travelTimeMinutes: estimateTravelMinutes(distance),
+        distanceMeters: Math.round(distance),
+        source: 'dummy',
+      });
+    }
+  }
+  return results;
+}
+
 export async function generateTravelTimes(): Promise<number> {
-  // 利用者とヘルパーの座標を収集
   const customers = parseCSV<LocationRow & { [key: string]: string }>(
     resolve(DATA_DIR, 'customers.csv'),
   );
@@ -60,32 +84,64 @@ export async function generateTravelTimes(): Promise<number> {
     locations.push({ id: c.id, lat: parseFloat(c.lat), lng: parseFloat(c.lng) });
   }
 
-  const now = Timestamp.now();
-  const docs: { id: string; data: Record<string, unknown> }[] = [];
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  let travelResults: TravelTimeResult[];
 
-  // 全ペア間の移動時間を計算
-  for (let i = 0; i < locations.length; i++) {
-    for (let j = 0; j < locations.length; j++) {
-      if (i === j) continue;
+  if (apiKey) {
+    console.log('🗺️  Google Maps Distance Matrix API を使用...');
 
-      const from = locations[i];
-      const to = locations[j];
-      const distance = haversineDistance(from.lat, from.lng, to.lat, to.lng);
-      const travelMinutes = estimateTravelMinutes(distance);
-
-      docs.push({
-        id: `from_${from.id}_to_${to.id}`,
-        data: {
-          from_location: { lat: from.lat, lng: from.lng },
-          to_location: { lat: to.lat, lng: to.lng },
-          travel_time_minutes: travelMinutes,
-          distance_meters: Math.round(distance),
-          source: 'dummy',
-          cached_at: now,
-        },
+    // キャッシュ済みのペアを除外
+    const cachedIds = await loadCachedIds();
+    const uncachedLocations = locations.filter((loc) => {
+      // このロケーションが含まれるペアのうち、1つでも未キャッシュがあればinclude
+      return locations.some((other) => {
+        if (loc.id === other.id) return false;
+        const id1 = `from_${loc.id}_to_${other.id}`;
+        const id2 = `from_${other.id}_to_${loc.id}`;
+        return !cachedIds.has(id1) || !cachedIds.has(id2);
       });
+    });
+
+    if (uncachedLocations.length === 0) {
+      console.log('✅ 全ペアがキャッシュ済み（有効期限内）');
+      return 0;
     }
+
+    console.log(
+      `📍 ${uncachedLocations.length}/${locations.length} 地点の移動時間を取得中...`,
+    );
+
+    try {
+      travelResults = await fetchTravelTimesFromGoogleMaps(apiKey, uncachedLocations);
+      const gmapsCount = travelResults.filter((r) => r.source === 'google_maps').length;
+      const dummyCount = travelResults.filter((r) => r.source === 'dummy').length;
+      console.log(`✅ API取得: ${gmapsCount}件, Haversineフォールバック: ${dummyCount}件`);
+    } catch (error) {
+      console.error('❌ Google Maps API 全体エラー → Haversine にフォールバック:', error);
+      travelResults = generateHaversineTravelTimes(locations);
+    }
+  } else {
+    console.log('⚠️  GOOGLE_MAPS_API_KEY 未設定 → Haversine 推定値を使用');
+    travelResults = generateHaversineTravelTimes(locations);
   }
+
+  // Firestore ドキュメントに変換
+  const now = Timestamp.now();
+  const docs = travelResults.map((r) => {
+    const fromLoc = locations.find((l) => l.id === r.fromId)!;
+    const toLoc = locations.find((l) => l.id === r.toId)!;
+    return {
+      id: `from_${r.fromId}_to_${r.toId}`,
+      data: {
+        from_location: { lat: fromLoc.lat, lng: fromLoc.lng },
+        to_location: { lat: toLoc.lat, lng: toLoc.lng },
+        travel_time_minutes: r.travelTimeMinutes,
+        distance_meters: r.distanceMeters,
+        source: r.source,
+        cached_at: now,
+      },
+    };
+  });
 
   return batchWrite('travel_times', docs);
 }
