@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（最適化実行結果の保存・履歴機能 実装完了）
-**現在のフェーズ**: Phase 4d完了 → 履歴機能実装・次のアクション検討中
+**最終更新**: 2026-02-15（E2Eテスト導入 完了）
+**現在のフェーズ**: Phase 0-4e 完了 → Phase 5（パフォーマンス最適化）検討中
 
 ## 完了済み
 
@@ -339,6 +339,52 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
   - `/masters/helpers/`: 勤務日数列（0-7の数字）、希望時間列（"6〜8h"形式）、ゼブラストライピング
   - ガントチャート: 短いバーにも利用者名表示、違反バッジ"違反10"と警告バッジ同時表示
 
+### 制約パラメータUI（PR #35 — 2026-02-15）
+- **ブランチ**: `feature/constraint-weights-ui`（マージ完了）
+- **実装内容**: OptimizeButtonのパラメータセクション拡張
+  - ソフト制約の重み（w_travel, w_preferred_staff, w_workload_balance, w_continuity）をSlider UIで調整可能に
+  - デフォルト値: 1.0 → 最小0.1、最大2.0で±1.0の範囲調整可能
+  - プレビュー表示: 目的関数値 (M1*...) の計算式表示
+  - dry_run 確認ダイアログで最適化前にパラメータ確認可能
+- **FE実装**: ConstraintWeightsForm コンポーネント追加（4つのSlider + 説明）
+- **API更新**: `POST /optimize` リクエストに `w_travel, w_preferred_staff, w_workload_balance, w_continuity` フィールド追加
+- **テスト**: Web 98/98 全パス（constraints test新規5件含む）
+- **CI/CD**: 全3ジョブ通過（Optimizer/Web/Firestore Rules）
+
+### マスタ管理機能の追加シナリオテスト（PR #36 — 2026-02-15）
+- **ブランチ**: `feature/master-management-tests`（マージ完了）
+- **テスト追加内容**:
+  - `schemas.test.ts` — Zodスキーマ網羅テスト34件
+    - customerSchema: 必須フィールド検証、座標境界値（lat: ±90, lng: ±180）、NG/推奨スタッフ配列
+    - helperSchema: 資格配列、preferred_hours検証（min > max エラー）、transportation enum
+    - unavailabilitySchema: 空スロット配列、all_day時の時刻検証
+    - timeStringSchema: 形式検証（"09:30" OK、"9:30" NG）
+    - serviceSlotSchema: staff_count境界（0,1,3,4）
+  - `customers.test.ts` — Firestore CRUD ユニットテスト8件
+    - createCustomer / updateCustomer 正常系 + serverTimestamp検証
+  - `helpers.test.ts` — ヘルパー CRUD ユニットテスト8件
+    - createHelper / updateHelper + customer_training_status初期化確認
+- **合計テスト数**: 48→98件（+50件新規追加）
+- **CI/CD**: 全テストパス（Optimizer/Web/Firestore Rules）
+
+### オーダー割当スタッフ変更UI + 最適化差分表示（PR #37 — 2026-02-15）
+- **ブランチ**: `feature/order-edit-diff-ui`（マージ完了）
+- **実装内容**:
+  - **割当スタッフ変更UI**: OrderDetailPanel内にStaffMultiSelectを統合
+    - オーダー詳細パネルからスタッフを直接編集可能（Dialog: 検索 + Checkbox複数選択 + 確定/キャンセル）
+    - 保存時に Firestore 更新 + onSnapshot自動反映 + toast通知
+  - **差分表示**: 最適化実行時の割当と現在の割当を比較
+    - useAssignmentDiff フック: 直近の最適化実行結果を取得 → 差分計算 → diffMap返却
+    - AssignmentDiffBadge コンポーネント: 手動変更ある場合に「手動変更」バッジ表示（hover でスタッフ名確認）
+    - page.tsx に新フック接続 + props受け渡し
+- **新規ファイル**:
+  - `useOrderEdit.ts` — saving状態管理 + updateOrderAssignment呼び出し + エラーハンドリング
+  - `useAssignmentDiff.ts` — fetchOptimizationRuns/Detail + 差分検出ロジック
+  - `AssignmentDiffBadge.tsx` — 差分バッジUI（Tooltip代替: title属性）
+- **既存活用**: StaffMultiSelect（再利用）/ updateOrderAssignment（再利用）/ fetchOptimizationRuns/Detail API（再利用）
+- **テスト**: Web 98/98 全パス
+- **CI/CD**: 全3ジョブ通過（Optimizer/Web/Firestore Rules）
+
 ### 最適化結果の保存・履歴機能（PR #34 — 2026-02-15）
 - **ブランチ**: `feature/optimization-history`（マージ完了）
 - **Firestore新コレクション**: `optimization_runs` — 最適化実行記録を保存
@@ -362,18 +408,36 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **テスト**: Optimizer 139/139 + Web 48/48 + Firestore 69/69 = **全パス**
 - **UI/UX**: ゼブラストライピング、クリック対応で詳細表示、空状態ハンドリング
 
+### E2Eテスト導入（Playwright）— PR #38（2026-02-15 完了）
+- **ブランチ**: `feat/e2e-playwright`（マージ完了）
+- **テスト対象（5画面 / 19テスト）**:
+  - スケジュール画面（7件）: ヘッダー表示、曜日タブ、タブ切替、StatsBar、最適化ボタン、ドロップダウンメニュー、履歴遷移
+  - マスタ管理（9件）: 利用者一覧、ヘルパー一覧、希望休ページ、各画面の新規追加・検索・タブナビゲーション
+  - 履歴画面（3件）: ヘッダー表示、戻るボタン、テーブル・空状態・エラーの出し分け
+- **CI統合**: `.github/workflows/ci.yml` に `test-e2e` ジョブ追加
+  - Firebase Emulator（Firestore:8080, Auth:9099）起動 → Seedデータ投入 → Playwright test実行
+  - 環境変数: NEXT_PUBLIC_USE_EMULATOR=true, NEXT_PUBLIC_AUTH_MODE=demo
+  - Firebase SDK ダミー設定（CI環境用）
+  - 結果レポート: GitHub Actions + HTML reporter（Artifact保存）
+- **バグ修正**: Header.tsx WeekSelector条件を修正（`/history` でScheduleProvider外エラー）
+- **テスト**: 19/19 ✅ | CI: 4ジョブ全て成功
+- **デプロイ**: mainにマージ → CI全パス後に自動デプロイ（PR #38）
+
 ## 次のアクション（優先度順）
 
-1. **Phase 2b拡張: 制約パラメータUI** 🟡 — ソフト制約の重み調整をフロントエンドから可能に
-2. **マスタ管理機能の追加シナリオテスト** 🟡 — 大量データ、境界値での動作確認
-3. **オーダー手動編集UI + 履歴差分表示** 🟡 — 最適化結果の手動調整と履歴比較
+1. **パフォーマンス最適化** 🟠 — 大量データ（1000+ オーダー）でのベンチマーク検証
+2. **本番環境改善** 🟠 — ローカル開発検証とのギャップ調査、本番ユーザーテスト
+3. **ドキュメント整備** 🟡 — 操作マニュアル、トラブルシューティングガイド作成
+4. **追加E2Eテスト** 🟡 — オーダー手動編集、ドラッグ&ドロップなどのユーザーシナリオ
 
-## 最新テスト結果サマリー（2026-02-15 最新）
+## 最新テスト結果サマリー（2026-02-15 本セッション完了）
 - **Optimizer**: 139/139 pass
-- **Web (Next.js)**: 48/48 pass
-- **Firestore Rules**: 69/69 pass ← PR #34で7件新規追加
+- **Web (Next.js)**: 98/98 pass ← PR #36で50件追加、PR #37で新規フック統合、vitest e2e除外追加
+- **Firestore Rules**: 69/69 pass
+- **E2E Tests (Playwright)**: 19/19 pass ← PR #38で新規導入（スケジュール7+マスタ9+履歴3）
 - **Seed**: 12/12 pass
-- **合計**: 268件 全パス ✅
+- **CI/CD**: test-optimizer + test-web + test-firestore-rules + test-e2e 全4ジョブ成功
+- **合計**: 337件 全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
