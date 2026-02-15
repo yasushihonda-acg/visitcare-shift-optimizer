@@ -33,6 +33,17 @@ interface Location {
   lng: number;
 }
 
+class GoogleMapsAPIError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode?: number,
+    public readonly apiStatus?: string,
+  ) {
+    super(message);
+    this.name = 'GoogleMapsAPIError';
+  }
+}
+
 /** Distance Matrix API の1リクエストあたりの最大 origins/destinations 数 */
 const MAX_ELEMENTS_PER_REQUEST = 25;
 
@@ -82,8 +93,8 @@ async function callDistanceMatrixWithRetry(
     } catch (error: unknown) {
       const isTransient = isTransientError(error);
       if (!isTransient || attempt === MAX_RETRIES - 1) {
-        console.error(
-          `Distance Matrix API error (attempt ${attempt + 1}/${MAX_RETRIES}):`,
+        console.warn(
+          `Distance Matrix API fallback (attempt ${attempt + 1}/${MAX_RETRIES}):`,
           error instanceof Error ? error.message : error,
         );
         // permanent error or max retries → Haversine フォールバック
@@ -118,17 +129,20 @@ async function callDistanceMatrix(
   const response = await fetch(url.toString());
 
   if (!response.ok) {
-    const err = new Error(`HTTP ${response.status}: ${response.statusText}`);
-    (err as Error & { statusCode: number }).statusCode = response.status;
-    throw err;
+    throw new GoogleMapsAPIError(
+      `HTTP ${response.status}: ${response.statusText}`,
+      response.status,
+    );
   }
 
   const data: DistanceMatrixResponse = await response.json();
 
   if (data.status !== 'OK') {
-    const err = new Error(`API error: ${data.status} - ${data.error_message ?? ''}`);
-    (err as Error & { apiStatus: string }).apiStatus = data.status;
-    throw err;
+    throw new GoogleMapsAPIError(
+      `API error: ${data.status} - ${data.error_message ?? ''}`,
+      undefined,
+      data.status,
+    );
   }
 
   const results: TravelTimeResult[] = [];
@@ -140,18 +154,7 @@ async function callDistanceMatrix(
 
       const element = data.rows[i]?.elements[j];
       if (!element || element.status !== 'OK') {
-        // 個別ペアが取得失敗 → Haversine フォールバック
-        const distance = haversineDistance(
-          origins[i].lat, origins[i].lng,
-          destinations[j].lat, destinations[j].lng,
-        );
-        results.push({
-          fromId: origins[i].id,
-          toId: destinations[j].id,
-          travelTimeMinutes: estimateTravelMinutes(distance),
-          distanceMeters: Math.round(distance),
-          source: 'dummy',
-        });
+        results.push(createDummyResult(origins[i], destinations[j]));
         continue;
       }
 
@@ -172,11 +175,11 @@ async function callDistanceMatrix(
  * Transient エラー判定
  */
 function isTransientError(error: unknown): boolean {
+  if (error instanceof GoogleMapsAPIError) {
+    if (error.statusCode === 429 || error.statusCode === 503) return true;
+    if (error.apiStatus === 'OVER_QUERY_LIMIT') return true;
+  }
   if (error instanceof Error) {
-    const statusCode = (error as Error & { statusCode?: number }).statusCode;
-    if (statusCode === 429 || statusCode === 503) return true;
-    const apiStatus = (error as Error & { apiStatus?: string }).apiStatus;
-    if (apiStatus === 'OVER_QUERY_LIMIT') return true;
     if (error.message.includes('ETIMEDOUT') || error.message.includes('ECONNRESET')) {
       return true;
     }
@@ -187,6 +190,17 @@ function isTransientError(error: unknown): boolean {
 /**
  * Haversine距離によるフォールバック
  */
+function createDummyResult(from: Location, to: Location): TravelTimeResult {
+  const distance = haversineDistance(from.lat, from.lng, to.lat, to.lng);
+  return {
+    fromId: from.id,
+    toId: to.id,
+    travelTimeMinutes: estimateTravelMinutes(distance),
+    distanceMeters: Math.round(distance),
+    source: 'dummy',
+  };
+}
+
 function fallbackToHaversine(
   origins: Location[],
   destinations: Location[],
@@ -195,14 +209,7 @@ function fallbackToHaversine(
   for (const origin of origins) {
     for (const dest of destinations) {
       if (origin.id === dest.id) continue;
-      const distance = haversineDistance(origin.lat, origin.lng, dest.lat, dest.lng);
-      results.push({
-        fromId: origin.id,
-        toId: dest.id,
-        travelTimeMinutes: estimateTravelMinutes(distance),
-        distanceMeters: Math.round(distance),
-        source: 'dummy',
-      });
+      results.push(createDummyResult(origin, dest));
     }
   }
   return results;

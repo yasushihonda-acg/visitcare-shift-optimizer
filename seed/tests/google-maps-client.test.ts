@@ -164,6 +164,27 @@ describe('fetchTravelTimesFromGoogleMaps', () => {
     expect(gmapsResults.length).toBeGreaterThan(0);
   });
 
+  it('空の locations 配列は空結果を返す', async () => {
+    const results = await fetchTravelTimesFromGoogleMaps('test-key', []);
+    expect(results).toHaveLength(0);
+  });
+
+  it('1地点のみは空結果を返す（自分→自分はスキップ）', async () => {
+    const mockResponse = {
+      status: 'OK',
+      rows: [{ elements: [{ status: 'OK', distance: { value: 0 }, duration: { value: 0 } }] }],
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    });
+
+    const results = await fetchTravelTimesFromGoogleMaps('test-key', [
+      { id: 'A', lat: 31.584, lng: 130.541 },
+    ]);
+    expect(results).toHaveLength(0);
+  });
+
   it('transient エラー（429）はリトライ後フォールバック', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,

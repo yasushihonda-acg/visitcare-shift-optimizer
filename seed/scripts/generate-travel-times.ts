@@ -42,6 +42,24 @@ async function loadCachedIds(): Promise<Set<string>> {
 }
 
 /**
+ * キャッシュされていないペア数をカウント
+ */
+function countUncachedPairs(
+  locations: { id: string }[],
+  cachedIds: Set<string>,
+): number {
+  let count = 0;
+  for (let i = 0; i < locations.length; i++) {
+    for (let j = 0; j < locations.length; j++) {
+      if (i === j) continue;
+      const docId = `from_${locations[i].id}_to_${locations[j].id}`;
+      if (!cachedIds.has(docId)) count++;
+    }
+  }
+  return count;
+}
+
+/**
  * 全ペア間の移動時間を Haversine 推定で生成
  */
 function generateHaversineTravelTimes(
@@ -92,27 +110,24 @@ export async function generateTravelTimes(): Promise<number> {
 
     // キャッシュ済みのペアを除外
     const cachedIds = await loadCachedIds();
-    const uncachedLocations = locations.filter((loc) => {
-      // このロケーションが含まれるペアのうち、1つでも未キャッシュがあればinclude
-      return locations.some((other) => {
-        if (loc.id === other.id) return false;
-        const id1 = `from_${loc.id}_to_${other.id}`;
-        const id2 = `from_${other.id}_to_${loc.id}`;
-        return !cachedIds.has(id1) || !cachedIds.has(id2);
-      });
-    });
+    const totalPairs = locations.length * (locations.length - 1);
+    const uncachedPairCount = countUncachedPairs(locations, cachedIds);
 
-    if (uncachedLocations.length === 0) {
+    if (uncachedPairCount === 0) {
       console.log('✅ 全ペアがキャッシュ済み（有効期限内）');
       return 0;
     }
 
     console.log(
-      `📍 ${uncachedLocations.length}/${locations.length} 地点の移動時間を取得中...`,
+      `📍 ${uncachedPairCount}/${totalPairs} ペアの移動時間を取得中...`,
     );
 
     try {
-      travelResults = await fetchTravelTimesFromGoogleMaps(apiKey, uncachedLocations);
+      // 全地点をAPIに渡し、結果からキャッシュ済みペアを除外
+      const allResults = await fetchTravelTimesFromGoogleMaps(apiKey, locations);
+      travelResults = allResults.filter(
+        (r) => !cachedIds.has(`from_${r.fromId}_to_${r.toId}`),
+      );
       const gmapsCount = travelResults.filter((r) => r.source === 'google_maps').length;
       const dummyCount = travelResults.filter((r) => r.source === 'dummy').length;
       console.log(`✅ API取得: ${gmapsCount}件, Haversineフォールバック: ${dummyCount}件`);
