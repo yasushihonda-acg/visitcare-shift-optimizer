@@ -110,8 +110,8 @@ export default function HelpersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((helper) => (
-                <TableRow key={helper.id}>
+              filtered.map((helper, index) => (
+                <TableRow key={helper.id} className={index % 2 === 1 ? 'bg-muted/30' : ''}>
                   <TableCell className="font-medium">
                     {helper.name.family} {helper.name.given}
                   </TableCell>
