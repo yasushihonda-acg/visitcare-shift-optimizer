@@ -46,6 +46,46 @@ def _build_travel_time_lookup(
     return {(tt.from_id, tt.to_id): tt.travel_time_minutes for tt in inp.travel_times}
 
 
+def _compute_feasible_pairs(inp: OptimizationInput) -> set[tuple[str, str]]:
+    """割当可能な(helper_id, order_id)ペアを事前計算
+
+    資格制約・勤務可能日・勤務可能時間帯・NGスタッフを考慮し、
+    明らかに割当不可能なペアを除外する。
+    """
+    # NGペアの事前計算
+    ng_pairs: set[tuple[str, str]] = set()
+    for sc in inp.staff_constraints:
+        if sc.constraint_type == StaffConstraintType.NG:
+            ng_pairs.add((sc.customer_id, sc.staff_id))
+
+    feasible: set[tuple[str, str]] = set()
+    for h in inp.helpers:
+        for o in inp.orders:
+            # 資格チェック: 無資格者は身体介護不可
+            if not h.can_physical_care and o.service_type == "physical_care":
+                continue
+            # NGスタッフチェック
+            if (o.customer_id, h.id) in ng_pairs:
+                continue
+            # 勤務可能日チェック
+            if h.weekly_availability:
+                slots = h.weekly_availability.get(o.day_of_week, [])
+                if not slots:
+                    continue
+                # 勤務時間帯チェック
+                order_start = _time_to_minutes(o.start_time)
+                order_end = _time_to_minutes(o.end_time)
+                covered = any(
+                    _time_to_minutes(s.start_time) <= order_start
+                    and order_end <= _time_to_minutes(s.end_time)
+                    for s in slots
+                )
+                if not covered:
+                    continue
+            feasible.add((h.id, o.id))
+    return feasible
+
+
 def solve(
     inp: OptimizationInput,
     time_limit_seconds: int = 180,
@@ -62,11 +102,18 @@ def solve(
     # --- モデル作成 ---
     prob = pulp.LpProblem("shift_optimization", pulp.LpMinimize)
 
+    # --- 割当可能ペアの事前計算（変数枝刈り） ---
+    feasible_pairs = _compute_feasible_pairs(inp)
+
     # --- 決定変数: x[h_id, o_id] = ヘルパーhをオーダーoに割り当てるか ---
     x: dict[tuple[str, str], pulp.LpVariable] = {}
     for h in helpers:
         for o in orders:
-            x[h.id, o.id] = pulp.LpVariable(f"x_{h.id}_{o.id}", cat="Binary")
+            if (h.id, o.id) in feasible_pairs:
+                x[h.id, o.id] = pulp.LpVariable(f"x_{h.id}_{o.id}", cat="Binary")
+            else:
+                # 割当不可能なペアは定数0で固定
+                x[h.id, o.id] = pulp.LpVariable(f"x_{h.id}_{o.id}", cat="Binary", upBound=0)
 
     # --- 基本制約: 各オーダーに必要人数を割り当てる ---
     for o in orders:

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { timeToColumn, SLOT_WIDTH_PX } from './constants';
@@ -32,7 +33,7 @@ const SERVICE_COLORS: Record<string, { bar: string; hover: string }> = {
   },
 };
 
-export function GanttBar({ order, customer, hasViolation, violationType, onClick, sourceHelperId }: GanttBarProps) {
+export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, onClick, sourceHelperId }: GanttBarProps) {
   const startCol = timeToColumn(order.start_time);
   const endCol = timeToColumn(order.end_time);
   const width = (endCol - startCol) * SLOT_WIDTH_PX;
@@ -76,4 +77,4 @@ export function GanttBar({ order, customer, hasViolation, violationType, onClick
       {width > 20 ? customerName : ''}
     </button>
   );
-}
+});

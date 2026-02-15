@@ -47,16 +47,30 @@ def _add_no_overlap_constraint(
     x: dict[tuple[str, str], pulp.LpVariable],
     inp: OptimizationInput,
 ) -> None:
-    """F: 重複禁止 — 同一ヘルパーが同時刻に複数箇所にアサイン不可"""
-    orders = inp.orders
-    for h in inp.helpers:
-        for i, o1 in enumerate(orders):
-            for o2 in orders[i + 1 :]:
+    """F: 重複禁止 — 同一ヘルパーが同時刻に複数箇所にアサイン不可
+
+    最適化: 同一日付のオーダーのみペアリング（異なる日付は重複不可能）
+    """
+    # 日付でグループ化して、同日のオーダーペアのみチェック
+    orders_by_date: dict[str, list] = {}
+    for o in inp.orders:
+        orders_by_date.setdefault(o.date, []).append(o)
+
+    # 重複ペアを事前計算（ヘルパー非依存）
+    overlap_pairs: list[tuple] = []
+    for date_orders in orders_by_date.values():
+        for i, o1 in enumerate(date_orders):
+            for o2 in date_orders[i + 1 :]:
                 if _orders_overlap(o1, o2):
-                    prob += (
-                        x[h.id, o1.id] + x[h.id, o2.id] <= 1,
-                        f"no_overlap_{h.id}_{o1.id}_{o2.id}",
-                    )
+                    overlap_pairs.append((o1, o2))
+
+    # 各ヘルパーに対して重複ペア制約を追加
+    for h in inp.helpers:
+        for o1, o2 in overlap_pairs:
+            prob += (
+                x[h.id, o1.id] + x[h.id, o2.id] <= 1,
+                f"no_overlap_{h.id}_{o1.id}_{o2.id}",
+            )
 
 
 def _add_ng_staff_constraint(
@@ -168,17 +182,22 @@ def _add_travel_time_constraint(
     同一ヘルパーが異なる利用者のオーダーを連続で担当する場合、
     前のオーダー終了時刻 + 移動時間 ≤ 次のオーダー開始時刻
     でなければ、両方に割当不可。
-    """
-    orders = inp.orders
-    for h in inp.helpers:
-        for i, o1 in enumerate(orders):
-            for o2 in orders[i + 1 :]:
-                if o1.date != o2.date:
-                    continue
-                if o1.customer_id == o2.customer_id:
-                    continue  # 同一利用者 → 移動不要
 
-                # o1の後にo2（時間順）、またはo2の後にo1
+    最適化: 日付でグループ化 + 移動時間不足ペアを事前計算
+    """
+    # 日付でグループ化
+    orders_by_date: dict[str, list] = {}
+    for o in inp.orders:
+        orders_by_date.setdefault(o.date, []).append(o)
+
+    # 移動時間不足ペアを事前計算（ヘルパー非依存）
+    travel_conflict_pairs: list[tuple[str, str, str]] = []  # (o1.id, o2.id, constraint_name_suffix)
+    for date_orders in orders_by_date.values():
+        for i, o1 in enumerate(date_orders):
+            for o2 in date_orders[i + 1 :]:
+                if o1.customer_id == o2.customer_id:
+                    continue
+
                 e1 = _time_to_minutes(o1.end_time)
                 s2 = _time_to_minutes(o2.start_time)
                 e2 = _time_to_minutes(o2.end_time)
@@ -187,18 +206,18 @@ def _add_travel_time_constraint(
                 tt_1to2 = travel_lookup.get((o1.customer_id, o2.customer_id), 0.0)
                 tt_2to1 = travel_lookup.get((o2.customer_id, o1.customer_id), 0.0)
 
-                # o1 → o2 の順: 間隔 = s2 - e1, 必要 = tt_1to2
                 if e1 <= s2 and (s2 - e1) < tt_1to2:
-                    prob += (
-                        x[h.id, o1.id] + x[h.id, o2.id] <= 1,
-                        f"travel_{h.id}_{o1.id}_{o2.id}",
-                    )
-                # o2 → o1 の順: 間隔 = s1 - e2, 必要 = tt_2to1
+                    travel_conflict_pairs.append((o1.id, o2.id, f"{o1.id}_{o2.id}"))
                 elif e2 <= s1 and (s1 - e2) < tt_2to1:
-                    prob += (
-                        x[h.id, o2.id] + x[h.id, o1.id] <= 1,
-                        f"travel_{h.id}_{o2.id}_{o1.id}",
-                    )
+                    travel_conflict_pairs.append((o2.id, o1.id, f"{o2.id}_{o1.id}"))
+
+    # 各ヘルパーに対して制約追加
+    for h in inp.helpers:
+        for oid1, oid2, suffix in travel_conflict_pairs:
+            prob += (
+                x[h.id, oid1] + x[h.id, oid2] <= 1,
+                f"travel_{h.id}_{suffix}",
+            )
 
 
 def _add_training_constraint(

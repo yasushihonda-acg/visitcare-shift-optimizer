@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { GanttBar } from './GanttBar';
 import { SLOT_WIDTH_PX, TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR } from './constants';
@@ -25,7 +26,16 @@ const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
   invalid: 'bg-red-50 ring-2 ring-inset ring-red-400 cursor-not-allowed',
 };
 
-export function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index }: GanttRowProps) {
+/** 時間グリッド背景線（全行で同一なので一度だけ生成） */
+const GRID_LINES = Array.from({ length: GANTT_END_HOUR - GANTT_START_HOUR }, (_, i) => (
+  <div
+    key={i}
+    className="absolute top-0 h-full border-l border-border/15"
+    style={{ left: i * 12 * SLOT_WIDTH_PX }}
+  />
+));
+
+export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index }: GanttRowProps) {
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
 
   const { setNodeRef, isOver } = useDroppable({
@@ -56,13 +66,7 @@ export function GanttRow({ row, customers, violations, onOrderClick, dropZoneSta
         style={{ width: TOTAL_SLOTS * SLOT_WIDTH_PX, height: 36 }}
       >
         {/* 時間グリッド背景線 */}
-        {Array.from({ length: GANTT_END_HOUR - GANTT_START_HOUR }, (_, i) => (
-          <div
-            key={i}
-            className="absolute top-0 h-full border-l border-border/15"
-            style={{ left: i * 12 * SLOT_WIDTH_PX }}
-          />
-        ))}
+        {GRID_LINES}
         {/* オーダーバー */}
         {row.orders.map((order) => {
           const orderViolations = violations.get(order.id);
@@ -83,4 +87,4 @@ export function GanttRow({ row, customers, violations, onOrderClick, dropZoneSta
       </div>
     </div>
   );
-}
+});
