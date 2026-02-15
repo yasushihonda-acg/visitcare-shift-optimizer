@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Settings, Users, UserCog, CalendarOff } from 'lucide-react';
+import { Heart, Settings, Users, UserCog, CalendarOff, LogOut } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +15,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: '管理者',
+  service_manager: 'サ責',
+  helper: 'ヘルパー',
+};
+
 export function Header() {
   const pathname = usePathname();
   const isMasterPage = pathname?.startsWith('/masters');
+  const { user, role, authMode, signOut } = useAuth();
+
+  const isLoggedIn = authMode === 'required' && user && !user.isAnonymous;
 
   return (
     <header className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] px-4 py-3 shadow-md">
@@ -38,6 +48,20 @@ export function Header() {
         </div>
         <div className="flex items-center gap-2">
           {!isMasterPage && <WeekSelector variant="header" />}
+
+          {isLoggedIn && (
+            <div className="flex items-center gap-1.5 mr-1">
+              {role && (
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white">
+                  {ROLE_LABELS[role] ?? role}
+                </span>
+              )}
+              <span className="text-xs text-white/80 hidden sm:inline">
+                {user.displayName ?? user.email}
+              </span>
+            </div>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -70,6 +94,15 @@ export function Header() {
                   希望休管理
                 </Link>
               </DropdownMenuItem>
+              {isLoggedIn && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    ログアウト
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

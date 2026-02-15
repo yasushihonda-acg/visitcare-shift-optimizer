@@ -5,7 +5,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from optimizer.api.auth import verify_auth
+from optimizer.api.auth import require_manager_or_above
 from optimizer.api.schemas import (
     AssignmentResponse,
     ErrorResponse,
@@ -31,7 +31,7 @@ def health() -> dict[str, str]:
     response_model=OptimizeResponse,
     responses={409: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
 )
-def optimize(req: OptimizeRequest, _auth: dict | None = Depends(verify_auth)) -> OptimizeResponse:
+def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_or_above)) -> OptimizeResponse:
     """シフト最適化を実行し、結果をFirestoreに書き戻す"""
     # 日付パース
     try:

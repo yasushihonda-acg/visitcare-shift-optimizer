@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Search } from 'lucide-react';
 import { useHelpers } from '@/hooks/useHelpers';
+import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,6 +30,7 @@ const EMPLOYMENT_LABELS: Record<string, string> = {
 
 export default function HelpersPage() {
   const { helpers, loading } = useHelpers();
+  const { canEditHelpers } = useAuthRole();
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<Helper | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,10 +72,12 @@ export default function HelpersPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">ヘルパーマスタ</h2>
-        <Button onClick={openNew} size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          新規追加
-        </Button>
+        {canEditHelpers && (
+          <Button onClick={openNew} size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            新規追加
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -131,16 +135,18 @@ export default function HelpersPage() {
                   <TableCell className="text-sm">
                     {TRANSPORTATION_LABELS[helper.transportation] ?? helper.transportation}
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => openEdit(helper)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
+                  {canEditHelpers && (
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => openEdit(helper)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

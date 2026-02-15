@@ -583,3 +583,182 @@ describe('認証済みユーザー - orders 型バリデーション', () => {
     );
   });
 });
+
+// ============================================================
+// RBAC: admin ロール
+// ============================================================
+describe('RBAC: admin ロール', () => {
+  beforeEach(async () => {
+    await setupTestData();
+  });
+
+  it('customers を作成できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'customers', 'customer-new'), validCustomerData)
+    );
+  });
+
+  it('helpers を作成できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'helpers', 'helper-new'), validHelperData)
+    );
+  });
+
+  it('orders を更新できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      updateDoc(doc(admin.firestore(), 'orders', 'order-1'), {
+        assigned_staff_ids: ['helper-2'],
+        manually_edited: true,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('staff_unavailability を作成できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'staff_unavailability', 'su-admin'), validUnavailabilityData)
+    );
+  });
+
+  it('staff_unavailability を削除できる', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'staff_unavailability', 'su-del'), validUnavailabilityData);
+    });
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      deleteDoc(doc(admin.firestore(), 'staff_unavailability', 'su-del'))
+    );
+  });
+});
+
+// ============================================================
+// RBAC: service_manager ロール
+// ============================================================
+describe('RBAC: service_manager ロール', () => {
+  beforeEach(async () => {
+    await setupTestData();
+  });
+
+  it('customers を作成できる', async () => {
+    const manager = testEnv.authenticatedContext('manager-1', { role: 'service_manager' });
+    await assertSucceeds(
+      setDoc(doc(manager.firestore(), 'customers', 'customer-new'), validCustomerData)
+    );
+  });
+
+  it('helpers を作成できない', async () => {
+    const manager = testEnv.authenticatedContext('manager-1', { role: 'service_manager' });
+    await assertFails(
+      setDoc(doc(manager.firestore(), 'helpers', 'helper-new'), validHelperData)
+    );
+  });
+
+  it('orders を更新できる', async () => {
+    const manager = testEnv.authenticatedContext('manager-1', { role: 'service_manager' });
+    await assertSucceeds(
+      updateDoc(doc(manager.firestore(), 'orders', 'order-1'), {
+        assigned_staff_ids: ['helper-2'],
+        manually_edited: true,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('staff_unavailability を作成できる', async () => {
+    const manager = testEnv.authenticatedContext('manager-1', { role: 'service_manager' });
+    await assertSucceeds(
+      setDoc(doc(manager.firestore(), 'staff_unavailability', 'su-mgr'), validUnavailabilityData)
+    );
+  });
+});
+
+// ============================================================
+// RBAC: helper ロール
+// ============================================================
+describe('RBAC: helper ロール', () => {
+  beforeEach(async () => {
+    await setupTestData();
+  });
+
+  it('全コレクションを読み取れる', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertSucceeds(getDoc(doc(helper.firestore(), 'customers', 'customer-1')));
+    await assertSucceeds(getDoc(doc(helper.firestore(), 'helpers', 'helper-1')));
+    await assertSucceeds(getDoc(doc(helper.firestore(), 'orders', 'order-1')));
+  });
+
+  it('customers を作成できない', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertFails(
+      setDoc(doc(helper.firestore(), 'customers', 'customer-new'), validCustomerData)
+    );
+  });
+
+  it('helpers を作成できない', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertFails(
+      setDoc(doc(helper.firestore(), 'helpers', 'helper-new'), validHelperData)
+    );
+  });
+
+  it('orders を更新できない', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertFails(
+      updateDoc(doc(helper.firestore(), 'orders', 'order-1'), {
+        assigned_staff_ids: ['helper-2'],
+        manually_edited: true,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('自分の希望休を作成できる', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertSucceeds(
+      setDoc(doc(helper.firestore(), 'staff_unavailability', 'su-own'), {
+        ...validUnavailabilityData,
+        staff_id: 'helper-1',
+      })
+    );
+  });
+
+  it('他人の希望休を作成できない', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertFails(
+      setDoc(doc(helper.firestore(), 'staff_unavailability', 'su-other'), {
+        ...validUnavailabilityData,
+        staff_id: 'helper-999',
+      })
+    );
+  });
+
+  it('自分の希望休を削除できる', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'staff_unavailability', 'su-own-del'), {
+        ...validUnavailabilityData,
+        staff_id: 'helper-1',
+      });
+    });
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertSucceeds(
+      deleteDoc(doc(helper.firestore(), 'staff_unavailability', 'su-own-del'))
+    );
+  });
+
+  it('他人の希望休を削除できない', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'staff_unavailability', 'su-other-del'), {
+        ...validUnavailabilityData,
+        staff_id: 'helper-999',
+      });
+    });
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertFails(
+      deleteDoc(doc(helper.firestore(), 'staff_unavailability', 'su-other-del'))
+    );
+  });
+});
