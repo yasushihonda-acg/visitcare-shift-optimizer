@@ -5,6 +5,10 @@ const API_URL = process.env.NEXT_PUBLIC_OPTIMIZER_API_URL ?? 'http://localhost:8
 export interface OptimizeRequest {
   week_start_date: string; // YYYY-MM-DD
   dry_run?: boolean;
+  w_travel?: number;
+  w_preferred_staff?: number;
+  w_workload_balance?: number;
+  w_continuity?: number;
 }
 
 export interface AssignmentResult {
@@ -73,7 +77,13 @@ export interface OptimizationRunSummaryResponse {
   solve_time_seconds: number;
   total_orders: number;
   assigned_count: number;
-  parameters: { time_limit_seconds: number };
+  parameters: {
+    time_limit_seconds: number;
+    w_travel: number;
+    w_preferred_staff: number;
+    w_workload_balance: number;
+    w_continuity: number;
+  };
 }
 
 export interface OptimizationRunDetailResponse extends OptimizationRunSummaryResponse {

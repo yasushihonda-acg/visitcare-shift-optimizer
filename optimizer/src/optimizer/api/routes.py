@@ -18,7 +18,7 @@ from optimizer.api.schemas import (
 )
 from optimizer.data.firestore_loader import get_firestore_client, load_optimization_input
 from optimizer.data.firestore_writer import save_optimization_run, write_assignments
-from optimizer.engine.solver import solve
+from optimizer.engine.solver import SoftWeights, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,13 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
     )
 
     # ソルバー実行
-    result = solve(inp, time_limit_seconds=req.time_limit_seconds)
+    weights = SoftWeights(
+        travel=req.w_travel,
+        preferred_staff=req.w_preferred_staff,
+        workload_balance=req.w_workload_balance,
+        continuity=req.w_continuity,
+    )
+    result = solve(inp, time_limit_seconds=req.time_limit_seconds, weights=weights)
 
     if result.status == "Infeasible":
         raise HTTPException(
@@ -122,6 +128,10 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
         assignments=result.assignments,
         parameters=OptimizationParameters(
             time_limit_seconds=req.time_limit_seconds,
+            w_travel=req.w_travel,
+            w_preferred_staff=req.w_preferred_staff,
+            w_workload_balance=req.w_workload_balance,
+            w_continuity=req.w_continuity,
         ),
     )
 
@@ -186,6 +196,10 @@ def list_optimization_runs(
                 assigned_count=data.get("assigned_count", 0),
                 parameters=OptimizationParametersResponse(
                     time_limit_seconds=params.get("time_limit_seconds", 180),
+                    w_travel=params.get("w_travel", 1.0),
+                    w_preferred_staff=params.get("w_preferred_staff", 5.0),
+                    w_workload_balance=params.get("w_workload_balance", 10.0),
+                    w_continuity=params.get("w_continuity", 3.0),
                 ),
             )
         )
@@ -233,6 +247,10 @@ def get_optimization_run(
         assigned_count=data.get("assigned_count", 0),
         parameters=OptimizationParametersResponse(
             time_limit_seconds=params.get("time_limit_seconds", 180),
+            w_travel=params.get("w_travel", 1.0),
+            w_preferred_staff=params.get("w_preferred_staff", 5.0),
+            w_workload_balance=params.get("w_workload_balance", 10.0),
+            w_continuity=params.get("w_continuity", 3.0),
         ),
         assignments=assignments,
     )

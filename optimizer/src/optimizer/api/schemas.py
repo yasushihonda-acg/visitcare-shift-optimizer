@@ -20,6 +20,18 @@ class OptimizeRequest(BaseModel):
         default=False,
         description="trueの場合、Firestoreへの書き戻しを行わない",
     )
+    w_travel: float = Field(
+        default=1.0, ge=0.0, le=20.0, description="移動時間最小化の重み",
+    )
+    w_preferred_staff: float = Field(
+        default=5.0, ge=0.0, le=20.0, description="推奨スタッフ優先の重み",
+    )
+    w_workload_balance: float = Field(
+        default=10.0, ge=0.0, le=20.0, description="稼働バランスの重み",
+    )
+    w_continuity: float = Field(
+        default=3.0, ge=0.0, le=20.0, description="担当継続性の重み",
+    )
 
 
 class AssignmentResponse(BaseModel):
@@ -39,6 +51,10 @@ class OptimizeResponse(BaseModel):
 
 class OptimizationParametersResponse(BaseModel):
     time_limit_seconds: int = 180
+    w_travel: float = 1.0
+    w_preferred_staff: float = 5.0
+    w_workload_balance: float = 10.0
+    w_continuity: float = 3.0
 
 
 class OptimizationRunResponse(BaseModel):
