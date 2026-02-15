@@ -99,13 +99,15 @@ export default function HelpersPage() {
               <TableHead className="w-24 text-center">身体介護</TableHead>
               <TableHead className="w-20">雇用形態</TableHead>
               <TableHead className="w-20">移動手段</TableHead>
+              <TableHead className="w-20 text-center">勤務日数</TableHead>
+              <TableHead className="w-28">希望時間</TableHead>
               <TableHead className="w-16" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   {search ? '一致するヘルパーが見つかりません' : 'ヘルパーが登録されていません'}
                 </TableCell>
               </TableRow>
@@ -134,6 +136,16 @@ export default function HelpersPage() {
                   </TableCell>
                   <TableCell className="text-sm">
                     {TRANSPORTATION_LABELS[helper.transportation] ?? helper.transportation}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                      {Object.keys(helper.weekly_availability).filter(
+                        (day) => (helper.weekly_availability as Record<string, unknown[]>)[day]?.length > 0
+                      ).length}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {helper.preferred_hours.min}〜{helper.preferred_hours.max}h
                   </TableCell>
                   {canEditHelpers && (
                     <TableCell>

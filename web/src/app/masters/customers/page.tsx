@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { CustomerEditDialog } from '@/components/masters/CustomerEditDialog';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Customer } from '@/types';
@@ -93,13 +94,14 @@ export default function CustomersPage() {
               <TableHead>住所</TableHead>
               <TableHead className="w-24">サ責</TableHead>
               <TableHead className="w-24 text-center">サービス日数</TableHead>
+              <TableHead className="w-28 text-center">NG/推奨</TableHead>
               <TableHead className="w-16" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   {search ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
                 </TableCell>
               </TableRow>
@@ -117,6 +119,21 @@ export default function CustomersPage() {
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                       {serviceDayCount(customer)}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      {customer.ng_staff_ids.length > 0 ? (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 h-5">
+                          NG {customer.ng_staff_ids.length}
+                        </Badge>
+                      ) : null}
+                      {customer.preferred_staff_ids.length > 0 ? (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
+                          推奨 {customer.preferred_staff_ids.length}
+                        </Badge>
+                      ) : null}
+                      {customer.ng_staff_ids.length === 0 && customer.preferred_staff_ids.length === 0 && '-'}
+                    </div>
                   </TableCell>
                   {canEditCustomers && (
                     <TableCell>
