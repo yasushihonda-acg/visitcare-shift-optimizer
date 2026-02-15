@@ -73,7 +73,7 @@ export function GanttBar({ order, customer, hasViolation, violationType, onClick
       {...attributes}
       {...listeners}
     >
-      {width > 40 ? customerName : ''}
+      {width > 20 ? customerName : ''}
     </button>
   );
 }

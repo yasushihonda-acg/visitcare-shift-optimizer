@@ -80,9 +80,14 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
           <p className="text-[11px] text-muted-foreground leading-none">ヘルパー</p>
           <div className="flex items-center gap-1.5">
             <p className="text-lg font-bold leading-tight">{schedule.helperRows.length}<span className="text-xs font-normal text-muted-foreground ml-0.5">名</span></p>
-            {totalViolations > 0 && (
+            {errorCount > 0 && (
               <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
-                {errorCount > 0 ? `違反${errorCount}` : `警告${warningCount}`}
+                違反{errorCount}
+              </Badge>
+            )}
+            {warningCount > 0 && (
+              <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-yellow-500 text-yellow-600">
+                警告{warningCount}
               </Badge>
             )}
           </div>
