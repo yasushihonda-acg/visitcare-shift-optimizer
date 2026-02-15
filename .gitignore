@@ -43,3 +43,9 @@ build/
 # Screenshots & temporary images
 *.png
 !docs/**/*.png
+
+# Playwright MCP (Claude Code automation)
+.playwright-mcp/
+
+# Python package lock (uv)
+optimizer/uv.lock
