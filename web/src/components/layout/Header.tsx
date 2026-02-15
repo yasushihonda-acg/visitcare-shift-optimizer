@@ -24,6 +24,7 @@ const ROLE_LABELS: Record<string, string> = {
 export function Header() {
   const pathname = usePathname();
   const isMasterPage = pathname?.startsWith('/masters');
+  const isSchedulePage = pathname === '/' || pathname === '';
   const { user, role, authMode, signOut } = useAuth();
 
   const isLoggedIn = authMode === 'required' && user && !user.isAnonymous;
@@ -47,7 +48,7 @@ export function Header() {
           </Link>
         </div>
         <div className="flex items-center gap-2">
-          {!isMasterPage && <WeekSelector variant="header" />}
+          {isSchedulePage && <WeekSelector variant="header" />}
 
           {isLoggedIn && (
             <div className="flex items-center gap-1.5 mr-1">

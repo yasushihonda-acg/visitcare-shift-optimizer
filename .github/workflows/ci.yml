@@ -61,9 +61,48 @@ jobs:
         run: |
           npx firebase-tools emulators:exec --only firestore --project demo-visitcare-rules-test "npx vitest run"
 
+  test-e2e:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: |
+          cd web && npm ci
+          cd ../seed && npm ci
+      - name: Install Playwright browsers
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Start Emulator, Seed & Run E2E
+        working-directory: web
+        run: |
+          npx firebase-tools@latest emulators:exec \
+            --only firestore,auth \
+            --project demo-visitcare \
+            "cd ../seed && FIRESTORE_EMULATOR_HOST=localhost:8080 npx tsx scripts/import-all.ts && cd ../web && npx playwright test"
+        env:
+          NEXT_PUBLIC_USE_EMULATOR: 'true'
+          NEXT_PUBLIC_AUTH_MODE: demo
+          NEXT_PUBLIC_OPTIMIZER_API_URL: 'http://localhost:8081'
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 14
+
   deploy-optimizer:
     name: Deploy Optimizer (Cloud Run)
-    needs: [test-optimizer, test-web, test-firestore-rules]
+    needs: [test-optimizer, test-web, test-firestore-rules, test-e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -84,7 +123,7 @@ jobs:
 
   deploy-hosting:
     name: Deploy Hosting (Firebase)
-    needs: [test-optimizer, test-web, test-firestore-rules]
+    needs: [test-optimizer, test-web, test-firestore-rules, test-e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
