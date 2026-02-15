@@ -122,6 +122,13 @@ service cloud.firestore {
         && (hasNoRole() || isManagerOrAbove() || isOwnStaffData(resource.data.staff_id));
     }
 
+    // 最適化実行履歴: 読み取りのみ（Admin SDKで書き込み）
+    match /optimization_runs/{runId} {
+      allow read: if isAuthenticated()
+        && (hasNoRole() || isManagerOrAbove());
+      allow write: if false;
+    }
+
     // オーダー: admin + service_manager が割当編集可
     match /orders/{orderId} {
       allow read: if isAuthenticated();

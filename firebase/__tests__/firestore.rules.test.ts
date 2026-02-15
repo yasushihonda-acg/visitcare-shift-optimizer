@@ -762,3 +762,61 @@ describe('RBAC: helper ロール', () => {
     );
   });
 });
+
+// ============================================================
+// optimization_runs: 読み取りのみ（Admin SDKで書き込み）
+// ============================================================
+describe('optimization_runs', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'optimization_runs', 'run-1'), {
+        week_start_date: '2026-02-09',
+        status: 'Optimal',
+        objective_value: 42.5,
+        total_orders: 160,
+        assigned_count: 160,
+      });
+    });
+  });
+
+  it('未認証ユーザーは読み取れない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(getDoc(doc(unauthed.firestore(), 'optimization_runs', 'run-1')));
+  });
+
+  it('admin が読み取れる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(getDoc(doc(admin.firestore(), 'optimization_runs', 'run-1')));
+  });
+
+  it('service_manager が読み取れる', async () => {
+    const manager = testEnv.authenticatedContext('manager-1', { role: 'service_manager' });
+    await assertSucceeds(getDoc(doc(manager.firestore(), 'optimization_runs', 'run-1')));
+  });
+
+  it('デモモード（role未設定）で読み取れる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(getDoc(doc(authed.firestore(), 'optimization_runs', 'run-1')));
+  });
+
+  it('helper ロールは読み取れない', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertFails(getDoc(doc(helper.firestore(), 'optimization_runs', 'run-1')));
+  });
+
+  it('FEから書き込みできない', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertFails(
+      setDoc(doc(admin.firestore(), 'optimization_runs', 'run-new'), {
+        week_start_date: '2026-02-16',
+        status: 'Optimal',
+      })
+    );
+  });
+
+  it('FEから削除できない', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertFails(deleteDoc(doc(admin.firestore(), 'optimization_runs', 'run-1')));
+  });
+});

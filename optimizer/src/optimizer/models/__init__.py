@@ -16,6 +16,7 @@ from .constraint import StaffConstraint
 from .customer import Customer
 from .helper import Helper, HoursRange
 from .order import Order
+from .optimization_run import OptimizationParameters, OptimizationRunRecord
 from .problem import Assignment, OptimizationInput, OptimizationResult
 from .staff_unavailability import StaffUnavailability
 from .travel_time import TravelTime
@@ -30,7 +31,9 @@ __all__ = [
     "Helper",
     "HoursRange",
     "OptimizationInput",
+    "OptimizationParameters",
     "OptimizationResult",
+    "OptimizationRunRecord",
     "Order",
     "ServiceSlot",
     "ServiceType",
