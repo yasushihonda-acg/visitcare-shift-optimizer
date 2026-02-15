@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（パフォーマンス最適化 完了）
-**現在のフェーズ**: Phase 0-5 完了 → 本番改善・ドキュメント整備
+**最終更新**: 2026-02-16（ユーザー向けドキュメント完成）
+**現在のフェーズ**: Phase 0-5 完了 → 本番運用・ユーザー向けドキュメント整備
 
 ## 完了済み
 
@@ -438,20 +438,44 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **テスト**: Optimizer 156/156 + Web 98/98 + E2E 19/19 = 全パス
 - **CI/CD**: 全4ジョブ通過
 
+### ユーザー向けドキュメント作成（PR #41 — 2026-02-16 完了）
+- **ブランチ**: `docs/user-guides`（マージ完了）
+- **実装内容**:
+  - **操作マニュアル** (`docs/guides/user-manual.md`) — 306行
+    - 対象: サ責・管理者
+    - 内容: ログイン、画面構成（5画面）、スケジュール画面（ヘッダー/曜日タブ/StatsBar/ガントチャート）、最適化実行（テスト/本実行・パラメータ調整）、手動編集（D&D・スタッフ変更・差分表示）、週切り替え、マスタ管理3画面、実行履歴、権限マトリクス
+  - **トラブルシューティングガイド** (`docs/guides/troubleshooting.md`) — 308行
+    - 対象: 運用担当者・開発者
+    - 内容: 8つのよくある問題と解決策（通信エラー/CORS/認証/Infeasible/オーダーなし/入力エラー/読み込み止まり/D&D）、本番デプロイ・環境変数・ログ確認手順、ローカル開発セットアップ、問い合わせ先
+- **CI/CD**: 全テスト通過 → squash merge → main完了
+
+### 本番環境改善（PR #42 — 2026-02-16 完了）
+- **ブランチ**: `fix/production-stability`（マージ完了）
+- **問題修正内容**:
+  1. **Cloud Run 504タイムアウト** → インスタンス停止復旧失敗 → `gcloud run deploy` で同一イメージ再デプロイ成功
+  2. **`/optimization-runs` 500エラー** → Firestoreインデックス欠落 → `gcloud firestore indexes composite create`で直接作成
+  3. **firestore.indexes.json同期** → `optimization_runs` コレクション複合インデックス定義追加
+  4. **routes.pyエラーハンドリング** → `list_optimization_runs`でクエリ失敗時に空リスト返却（try-except追加）
+- **本番E2Eテスト**:
+  - テスト実行（dry_run）: ✅ 200 OK（POST /optimize）
+  - 本番実行（月曜30件）: ✅ 100%割当成功、ガントチャートに17名表示
+  - コンソールエラー: ✅ 0件（CORSエラーも解消）
+- **CI/CD**: PR #42 main push でCI in_progress（4ジョブ）
+
 ## 次のアクション（優先度順）
 
-1. **本番環境改善** 🟠 — ローカル開発検証とのギャップ調査、本番ユーザーテスト
-2. **ドキュメント整備** 🟡 — 操作マニュアル、トラブルシューティングガイド作成
-3. **追加E2Eテスト** 🟡 — オーダー手動編集、ドラッグ&ドロップなどのユーザーシナリオ
+1. **追加E2Eテスト** 🟡 — オーダー手動編集、ドラッグ&ドロップなどのユーザーシナリオ
+2. **追加機能** 🟡 — 実績確認、利用者マスタの複合スロット管理、月単位レポート
 
-## 最新テスト結果サマリー（2026-02-15 PR #39マージ後）
-- **Optimizer**: 156/156 pass ← PR #39でベンチマーク4件+変数枝刈り関連テスト追加
+## 最新テスト結果サマリー（2026-02-16 PR #42マージ後）
+- **Optimizer**: 156/156 pass
 - **Web (Next.js)**: 98/98 pass
 - **Firestore Rules**: 69/69 pass
 - **E2E Tests (Playwright)**: 19/19 pass
 - **Seed**: 12/12 pass
-- **CI/CD**: test-optimizer + test-web + test-firestore-rules + test-e2e 全4ジョブ成功
-- **合計**: 354件 全パス ✅
+- **CI/CD**: test-optimizer + test-web + test-firestore-rules + test-e2e 全4ジョブ（PR #42: in_progress）
+- **ドキュメント**: user-manual + troubleshooting 2ファイル + PR #42 修正内容
+- **合計**: 354テスト全パス ✅ + 本番環境E2E検証完了
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
