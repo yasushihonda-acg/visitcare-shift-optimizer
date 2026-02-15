@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（Phase 4d マスタ編集UI PR 3/3 — 希望休管理 + NG/推奨スタッフUI）
-**現在のフェーズ**: Phase 4d-master-edit（マスタ編集UI）完了
+**最終更新**: 2026-02-15（Phase 2 Custom Claims RBAC 実装完了）
+**現在のフェーズ**: Phase 2Security 完了 → Google Maps API 実装へ
 
 ## 完了済み
 
@@ -264,12 +264,38 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **Header**: マスタ管理メニューに「希望休管理」リンク追加
 - **テスト**: Firestoreルール 45件（+7件追加） + Web 43件 = 全パス
 
+### Phase 2Security: Custom Claims RBAC（PR #25 — 2026-02-15）
+- **ブランチ**: `feature/phase2-rbac-auth`
+- **Custom Claims実装**: Firebase Custom Claims で `role` + `helper_id` フィールド追加
+- **ロール体系**: 3役（admin / service_manager / helper）
+  - `admin`: 全機能管理可
+  - `service_manager`: 利用者マスタ・希望休管理可（ヘルパーマスタ除外）
+  - `helper`: 自身の希望休のみ管理可
+  - デモモード: `hasNoRole()` で Custom Claims 未設定時も全権限維持（後方互換性）
+- **Firestoreルール拡張**: `hasNoRole()`, `isManagerOrAbove()` ロール関数追加
+- **Backend API強化**: `optimizer/api/auth.py` に `require_manager_or_above()` 依存注入関数追加
+  - `/optimize` エンドポイント: manager以上のみ実行可能
+  - ロール未設定（demo）は `ALLOW_UNAUTHENTICATED=true` で許可
+- **Frontend権限制御**: `useAuthRole()` フック拡張
+  - `canEditCustomers`: admin / service_manager / デモモード
+  - `canEditHelpers`: admin / デモモード
+  - `canEditUnavailability`: admin / service_manager / デモモード（helper は自身のみ）
+  - マスタ管理画面（customers/helpers/unavailability）に権限ガード追加
+- **テスト**: Backend 14/14（auth新規5件含む）+ Web 48/48 + Firestore 62/62 = **全パス**
+- **CI/CD**: PR時テスト全パス → main にマージ（squash merge）
+- **ADR作成**: `docs/adr/ADR-014-phase2-custom-claims-rbac.md`
+
 ## 次のアクション（優先度順）
 
-1. **Phase 2（Phase 2Security）: Custom Claims RBAC** 🟠 — Phase 1→Phase 2で admin/service_manager/helper権限導入
-2. **Google Maps API実移動時間** 🟠 — ダミー→実測値（有料）
-3. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示
-4. **Cloud Buildサービスアカウント権限確認** 🟡 — CI/CDからのデプロイ権限チェック
+1. **Google Maps API実移動時間** 🟠 — ダミー（Haversine）→実測値（有料API）置き換え
+   - `GET https://maps.googleapis.com/maps/api/distancematrix/json?origins=...&destinations=...&mode=driving&key=...`
+   - Firestoreキャッシュ `travel_times` にAPIレスポンスを保存（期限切れ時のみ更新）
+   - 本番API KEY: GCP Cloud Buildサービスアカウント用に別途設定
+2. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示（現在は「月単位」へナビゲーションのみ）
+   - Sidebar / Drawer に WeekPicker コンポーネント追加
+3. **Cloud Buildサービスアカウント権限確認** 🟡 — CI/CDからのデプロイ権限チェック
+   - SA: `cloud-build@visitcare-shift-optimizer.iam.gserviceaccount.com`
+   - 権限: `roles/run.admin` + `roles/firebase.admin` 確認
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
