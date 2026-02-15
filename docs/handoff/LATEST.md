@@ -285,17 +285,38 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **CI/CD**: PR時テスト全パス → main にマージ（squash merge）
 - **ADR作成**: `docs/adr/ADR-014-phase2-custom-claims-rbac.md`
 
+### Google Maps Distance Matrix API実装（PR #26 — 2026-02-15）
+- **ブランチ**: `feature/google-maps-travel-times`
+- **API統合**: Google Maps Distance Matrix API クライアント実装
+  - Batch処理: origins × destinations を最大25×25で分割してリクエスト
+  - リトライロジック: transient(429/503) → exponential backoff (3回まで)、permanent(400/403) → Haversineフォールバック
+  - カスタムエラークラス: `GoogleMapsAPIError` で型安全なエラー分類
+- **Firestoreキャッシュ**: `travel_times` に `source: 'google_maps'` で30日有効期限付きで保存
+  - キャッシュ済みペアはAPI再呼び出しをスキップ（ペア単位フィルター）
+  - 個別ペア取得失敗 → 自動でHaversineフォールバック
+- **後方互換性**: `GOOGLE_MAPS_API_KEY` 環境変数未設定時はHaversine推定値を使用（既存動作維持）
+- **テスト**: 12件新規（haversine計算3 + API成功/失敗/リトライ 6 + エッジケース3） + 既存全パス
+- **コードレビュー指摘対応**: 型安全性 + 部分キャッシュ最適化 + ログレベル + DRY改善
+- **CI/CD**: PR時テスト全パス → main にマージ（squash merge）
+
 ## 次のアクション（優先度順）
 
-1. **Google Maps API実移動時間** 🟠 — ダミー（Haversine）→実測値（有料API）置き換え
-   - `GET https://maps.googleapis.com/maps/api/distancematrix/json?origins=...&destinations=...&mode=driving&key=...`
-   - Firestoreキャッシュ `travel_times` にAPIレスポンスを保存（期限切れ時のみ更新）
-   - 本番API KEY: GCP Cloud Buildサービスアカウント用に別途設定
+1. **Google Maps APIの本番環境設定** 🟠 — API KEY配置と本番Seed実行
+   - Distance Matrix API 有効化: `gcloud services enable distance-matrix-backend.googleapis.com`
+   - API KEY 作成: `gcloud alpha services api-keys create --display-name="Distance Matrix API Key"`
+   - 本番Seed実行: `cd seed && SEED_TARGET=production GOOGLE_MAPS_API_KEY=<key> npx tsx scripts/generate-travel-times.ts`
 2. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示（現在は「月単位」へナビゲーションのみ）
    - Sidebar / Drawer に WeekPicker コンポーネント追加
 3. **Cloud Buildサービスアカウント権限確認** 🟡 — CI/CDからのデプロイ権限チェック
    - SA: `cloud-build@visitcare-shift-optimizer.iam.gserviceaccount.com`
    - 権限: `roles/run.admin` + `roles/firebase.admin` 確認
+
+## 最新テスト結果サマリー（2026-02-15）
+- **Optimizer**: 139/139 pass
+- **Web (Next.js)**: 48/48 pass
+- **Firestore Rules**: 62/62 pass
+- **Seed (Google Maps)**: 12/12 pass
+- **合計**: 261件 全パス
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
