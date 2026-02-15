@@ -23,6 +23,14 @@
         { "fieldPath": "staff_id", "order": "ASCENDING" },
         { "fieldPath": "week_start_date", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "optimization_runs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "week_start_date", "order": "ASCENDING" },
+        { "fieldPath": "executed_at", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

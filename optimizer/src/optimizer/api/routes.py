@@ -175,7 +175,12 @@ def list_optimization_runs(
         query = query.where("week_start_date", "==", week_start_date)
 
     query = query.limit(limit)
-    docs = query.stream()
+
+    try:
+        docs = list(query.stream())
+    except Exception as e:
+        logger.warning("Failed to query optimization_runs: %s", e)
+        return OptimizationRunListResponse(runs=[])
 
     runs = []
     for doc in docs:
