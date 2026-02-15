@@ -44,8 +44,10 @@ class GoogleMapsAPIError extends Error {
   }
 }
 
-/** Distance Matrix API の1リクエストあたりの最大 origins/destinations 数 */
-const MAX_ELEMENTS_PER_REQUEST = 25;
+/** Distance Matrix API の1リクエストあたりの最大 origins/destinations 数
+ * API制限: origins × destinations ≤ 100 要素/リクエスト
+ * 10 × 10 = 100 でちょうど制限内 */
+const MAX_ELEMENTS_PER_REQUEST = 10;
 
 /** リトライ設定 */
 const MAX_RETRIES = 3;
