@@ -73,7 +73,7 @@ export function OrderDetailPanel({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent>
+      <SheetContent data-testid="order-detail-panel">
         <SheetHeader>
           <SheetTitle className="text-lg">{customerName}</SheetTitle>
         </SheetHeader>
