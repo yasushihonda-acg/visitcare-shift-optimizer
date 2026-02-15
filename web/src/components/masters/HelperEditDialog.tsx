@@ -99,190 +99,203 @@ export function HelperEditDialog({
           <DialogTitle>{isNew ? 'ヘルパーを追加' : 'ヘルパーを編集'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* 氏名 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="name.family">姓</Label>
-              <Input
-                id="name.family"
-                {...register('name.family')}
-                placeholder="佐藤"
-              />
-              {errors.name?.family && (
-                <p className="text-xs text-destructive">
-                  {errors.name.family.message}
-                </p>
-              )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* 基本情報セクション */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">基本情報</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="name.family">姓</Label>
+                <Input
+                  id="name.family"
+                  {...register('name.family')}
+                  placeholder="佐藤"
+                />
+                {errors.name?.family && (
+                  <p className="text-xs text-destructive">
+                    {errors.name.family.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="name.given">名</Label>
+                <Input
+                  id="name.given"
+                  {...register('name.given')}
+                  placeholder="花子"
+                />
+                {errors.name?.given && (
+                  <p className="text-xs text-destructive">
+                    {errors.name.given.message}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="name.given">名</Label>
-              <Input
-                id="name.given"
-                {...register('name.given')}
-                placeholder="花子"
-              />
-              {errors.name?.given && (
-                <p className="text-xs text-destructive">
-                  {errors.name.given.message}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {/* 資格 */}
-          <div className="space-y-2">
-            <Label>資格</Label>
-            <div className="flex flex-wrap gap-4">
-              {QUALIFICATION_OPTIONS.map((qual) => (
-                <label key={qual} className="flex items-center gap-2 text-sm">
+            <div className="space-y-2">
+              <Label>資格</Label>
+              <div className="flex flex-wrap gap-4">
+                {QUALIFICATION_OPTIONS.map((qual) => (
+                  <label key={qual} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={qualifications?.includes(qual) ?? false}
+                      onCheckedChange={() => toggleQualification(qual)}
+                    />
+                    {qual}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <Controller
+              name="can_physical_care"
+              control={control}
+              render={({ field }) => (
+                <label className="flex items-center gap-2 text-sm">
                   <Checkbox
-                    checked={qualifications?.includes(qual) ?? false}
-                    onCheckedChange={() => toggleQualification(qual)}
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
                   />
-                  {qual}
+                  身体介護対応可
                 </label>
-              ))}
-            </div>
+              )}
+            />
           </div>
 
-          {/* 身体介護可否 */}
-          <Controller
-            name="can_physical_care"
-            control={control}
-            render={({ field }) => (
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-                身体介護対応可
-              </label>
-            )}
-          />
+          <hr className="my-4" />
 
-          {/* 移動手段・雇用形態 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>移動手段</Label>
-              <Controller
-                name="transportation"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="car">車</SelectItem>
-                      <SelectItem value="bicycle">自転車</SelectItem>
-                      <SelectItem value="walk">徒歩</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>雇用形態</Label>
-              <Controller
-                name="employment_type"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full_time">常勤</SelectItem>
-                      <SelectItem value="part_time">非常勤</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-          </div>
-
-          {/* 希望勤務時間 */}
-          <div className="space-y-1">
-            <Label>希望勤務時間（時間/週）</Label>
+          {/* 雇用条件セクション */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">雇用条件</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  {...register('preferred_hours.min', { valueAsNumber: true })}
-                  placeholder="最小"
+                <Label>移動手段</Label>
+                <Controller
+                  name="transportation"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="car">車</SelectItem>
+                        <SelectItem value="bicycle">自転車</SelectItem>
+                        <SelectItem value="walk">徒歩</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
-                {errors.preferred_hours?.min && (
-                  <p className="text-xs text-destructive">
-                    {errors.preferred_hours.min.message}
-                  </p>
-                )}
               </div>
               <div className="space-y-1">
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  {...register('preferred_hours.max', { valueAsNumber: true })}
-                  placeholder="最大"
+                <Label>雇用形態</Label>
+                <Controller
+                  name="employment_type"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full_time">常勤</SelectItem>
+                        <SelectItem value="part_time">非常勤</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
-                {errors.preferred_hours?.max && (
-                  <p className="text-xs text-destructive">
-                    {errors.preferred_hours.max.message}
-                  </p>
-                )}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>希望勤務時間（時間/週）</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">最小</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    {...register('preferred_hours.min', { valueAsNumber: true })}
+                    placeholder="0"
+                  />
+                  {errors.preferred_hours?.min && (
+                    <p className="text-xs text-destructive">
+                      {errors.preferred_hours.min.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">最大</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    {...register('preferred_hours.max', { valueAsNumber: true })}
+                    placeholder="40"
+                  />
+                  {errors.preferred_hours?.max && (
+                    <p className="text-xs text-destructive">
+                      {errors.preferred_hours.max.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>対応可能時間（時間/週）</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">最小</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    {...register('available_hours.min', { valueAsNumber: true })}
+                    placeholder="0"
+                  />
+                  {errors.available_hours?.min && (
+                    <p className="text-xs text-destructive">
+                      {errors.available_hours.min.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">最大</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    {...register('available_hours.max', { valueAsNumber: true })}
+                    placeholder="40"
+                  />
+                  {errors.available_hours?.max && (
+                    <p className="text-xs text-destructive">
+                      {errors.available_hours.max.message}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 対応可能時間 */}
-          <div className="space-y-1">
-            <Label>対応可能時間（時間/週）</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  {...register('available_hours.min', { valueAsNumber: true })}
-                  placeholder="最小"
-                />
-                {errors.available_hours?.min && (
-                  <p className="text-xs text-destructive">
-                    {errors.available_hours.min.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  {...register('available_hours.max', { valueAsNumber: true })}
-                  placeholder="最大"
-                />
-                {errors.available_hours?.max && (
-                  <p className="text-xs text-destructive">
-                    {errors.available_hours.max.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <hr className="my-4" />
 
-          {/* 週間勤務可能時間 */}
-          <Controller
-            name="weekly_availability"
-            control={control}
-            render={({ field }) => (
-              <WeeklyAvailabilityEditor
-                value={field.value ?? {}}
-                onChange={field.onChange}
-              />
-            )}
-          />
+          {/* 勤務スケジュールセクション */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">勤務スケジュール</h3>
+            <Controller
+              name="weekly_availability"
+              control={control}
+              render={({ field }) => (
+                <WeeklyAvailabilityEditor
+                  value={field.value ?? {}}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          </div>
 
           <DialogFooter>
             <Button
