@@ -2,6 +2,41 @@ import { getFirebaseAuth } from '@/lib/firebase';
 
 const API_URL = process.env.NEXT_PUBLIC_OPTIMIZER_API_URL ?? 'http://localhost:8081';
 
+const RETRY_DELAYS = [1000, 2000];
+
+function isTransientError(error: unknown): boolean {
+  if (error instanceof TypeError) return true; // Network error (CORS cold start, DNS, etc.)
+  if (error instanceof OptimizeApiError) {
+    return [429, 502, 503, 504].includes(error.statusCode);
+  }
+  return false;
+}
+
+async function fetchWithRetry(
+  fn: () => Promise<Response>,
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    try {
+      const res = await fn();
+      if (res.ok) return res;
+      if ([429, 502, 503, 504].includes(res.status) && attempt < RETRY_DELAYS.length) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+        continue;
+      }
+      return res;
+    } catch (error) {
+      lastError = error;
+      if (isTransientError(error) && attempt < RETRY_DELAYS.length) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt]));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
+}
+
 export interface OptimizeRequest {
   week_start_date: string; // YYYY-MM-DD
   dry_run?: boolean;
@@ -42,11 +77,13 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
 export async function runOptimize(request: OptimizeRequest): Promise<OptimizeResponse> {
   const headers = await getAuthHeaders();
-  const res = await fetch(`${API_URL}/optimize`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(request),
-  });
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/optimize`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(request),
+    }),
+  );
 
   if (!res.ok) {
     const error: OptimizeError = await res.json();
@@ -101,7 +138,7 @@ export async function fetchOptimizationRuns(params?: {
 
   const qs = searchParams.toString();
   const url = `${API_URL}/optimization-runs${qs ? `?${qs}` : ''}`;
-  const res = await fetch(url, { headers });
+  const res = await fetchWithRetry(() => fetch(url, { headers }));
 
   if (!res.ok) {
     const error: OptimizeError = await res.json();
@@ -116,7 +153,9 @@ export async function fetchOptimizationRunDetail(
   runId: string
 ): Promise<OptimizationRunDetailResponse> {
   const headers = await getAuthHeaders();
-  const res = await fetch(`${API_URL}/optimization-runs/${runId}`, { headers });
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/optimization-runs/${runId}`, { headers }),
+  );
 
   if (!res.ok) {
     const error: OptimizeError = await res.json();

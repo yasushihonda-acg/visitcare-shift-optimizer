@@ -6,7 +6,7 @@ vi.mock('@/lib/firebase', () => ({
   getDb: () => ({}),
 }));
 
-import { runOptimize, OptimizeApiError } from '../optimizer';
+import { runOptimize, fetchOptimizationRuns, OptimizeApiError } from '../optimizer';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -76,5 +76,74 @@ describe('runOptimize', () => {
     await runOptimize({ week_start_date: '2025-01-06', dry_run: true });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.dry_run).toBe(true);
+  });
+
+  it('ネットワークエラー時にリトライして成功', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          status: 'Optimal',
+          total_orders: 30,
+          assigned_count: 30,
+          solve_time_seconds: 0.5,
+          objective_value: 100,
+          assignments: [],
+          orders_updated: 0,
+        }),
+      });
+
+    const result = await runOptimize({ week_start_date: '2025-01-06' });
+    expect(result.status).toBe('Optimal');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('503エラー時にリトライして成功', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          status: 'Optimal',
+          total_orders: 10,
+          assigned_count: 10,
+          solve_time_seconds: 0.3,
+          objective_value: 50,
+          assignments: [],
+          orders_updated: 0,
+        }),
+      });
+
+    const result = await runOptimize({ week_start_date: '2025-01-06' });
+    expect(result.status).toBe('Optimal');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('永続エラー(422)はリトライしない', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 422,
+      json: () => Promise.resolve({ detail: '日付が不正です' }),
+    });
+
+    await expect(runOptimize({ week_start_date: 'invalid' }))
+      .rejects.toThrow(OptimizeApiError);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('fetchOptimizationRuns', () => {
+  it('ネットワークエラー時にリトライして成功', async () => {
+    mockFetch
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ runs: [{ id: 'run-1', status: 'Optimal' }] }),
+      });
+
+    const result = await fetchOptimizationRuns({ week_start_date: '2025-01-06', limit: 1 });
+    expect(result).toHaveLength(1);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

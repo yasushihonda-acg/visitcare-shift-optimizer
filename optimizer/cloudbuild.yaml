@@ -27,6 +27,7 @@ steps:
       - '--platform=managed'
       - '--memory=1Gi'
       - '--timeout=300'
+      - '--min-instances=1'
       - '--max-instances=3'
       - '--allow-unauthenticated'
       - '--set-env-vars=^##^CORS_ORIGINS=${_CORS_ORIGINS}##ALLOW_UNAUTHENTICATED=${_ALLOW_UNAUTHENTICATED}'

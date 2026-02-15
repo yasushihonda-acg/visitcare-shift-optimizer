@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（E2Eテスト導入 完了）
-**現在のフェーズ**: Phase 0-4e 完了 → Phase 5（パフォーマンス最適化）検討中
+**最終更新**: 2026-02-15（パフォーマンス最適化 完了）
+**現在のフェーズ**: Phase 0-5 完了 → 本番改善・ドキュメント整備
 
 ## 完了済み
 
@@ -36,15 +36,15 @@
   - ハード制約×8 + ソフト制約×4（推奨スタッフ優先、移動時間最小化、稼働バランス、担当継続性）
   - **PR #13 品質改善**: 稼働バランス（preferred_hours乖離ペナルティ）、担当継続性（4件以上の利用者対象）、世帯リンク自動生成
   - 改善効果: 希望時間外 14/20→6/20、複数担当 44/50→37/50、平均担当者数 3.0→2.3
-- **テスト**: 134件全パス
-- **パフォーマンス**: 160オーダー/20ヘルパーで **2.0秒**
+- **テスト**: 156件全パス
+- **パフォーマンス**: 160オーダー/20ヘルパーで **0.3秒**、692オーダー/50ヘルパーで **38秒**
 
 ### Phase 2b: API層 + Cloud Run
 - **REST API**: FastAPI（ADR-007）
   - `GET /health` — ヘルスチェック
   - `POST /optimize` — シフト最適化実行
 - **Cloud Run デプロイ済み**: `https://shift-optimizer-1045989697649.asia-northeast1.run.app`
-  - asia-northeast1 / 512Mi / max 3インスタンス / 認証必須
+  - asia-northeast1 / 1Gi / max 3インスタンス / 認証必須
 - **CORSミドルウェア追加**: `CORS_ORIGINS`環境変数で制御
 - **Artifact Registry**: 最新2イメージ保持（Keep policy）
 - **テスト**: 116件全パス
@@ -415,29 +415,43 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
   - マスタ管理（9件）: 利用者一覧、ヘルパー一覧、希望休ページ、各画面の新規追加・検索・タブナビゲーション
   - 履歴画面（3件）: ヘッダー表示、戻るボタン、テーブル・空状態・エラーの出し分け
 - **CI統合**: `.github/workflows/ci.yml` に `test-e2e` ジョブ追加
-  - Firebase Emulator（Firestore:8080, Auth:9099）起動 → Seedデータ投入 → Playwright test実行
-  - 環境変数: NEXT_PUBLIC_USE_EMULATOR=true, NEXT_PUBLIC_AUTH_MODE=demo
-  - Firebase SDK ダミー設定（CI環境用）
-  - 結果レポート: GitHub Actions + HTML reporter（Artifact保存）
-- **バグ修正**: Header.tsx WeekSelector条件を修正（`/history` でScheduleProvider外エラー）
 - **テスト**: 19/19 ✅ | CI: 4ジョブ全て成功
-- **デプロイ**: mainにマージ → CI全パス後に自動デプロイ（PR #38）
+
+### パフォーマンス最適化 — PR #39（2026-02-15 完了）
+- **ブランチ**: `feat/performance-optimization`（マージ完了）
+- **Backend最適化**:
+  - **MIP変数枝刈り**: `_compute_feasible_pairs()` — 資格/NG/勤務日時で割当不可ペアを事前除外（`upBound=0`）
+  - **制約事前計算**: `no_overlap`/`travel_time`制約のO(N²)ペア計算をヘルパーループ外へ移動
+  - **日付グルーピング**: 同一日のオーダーペアのみチェック
+  - **Firestoreクエリ最適化**: `load_travel_times()`にcustomer_idsフィルター追加
+  - **Cloud Runメモリ**: 512Mi → 1Gi
+- **Frontend最適化**:
+  - **React.memo**: GanttBar/GanttRow コンポーネントのメモ化
+  - **モジュール定数**: GRID_LINES をレンダー関数外へ抽出
+  - **O(N log N)重複チェック**: checker.tsのO(N²)→ソート+隣接比較
+- **ベンチマーク結果**:
+  | スケール | オーダー/ヘルパー | 時間 | メモリ | ステータス |
+  |---------|-----------------|------|--------|-----------|
+  | ベースライン | 94/20 | 0.3s | - | Optimal |
+  | 中規模 | 322/30 | 3.0s | - | Optimal |
+  | 大規模 | 692/50 | 38.0s | 626MB | Optimal |
+- **テスト**: Optimizer 156/156 + Web 98/98 + E2E 19/19 = 全パス
+- **CI/CD**: 全4ジョブ通過
 
 ## 次のアクション（優先度順）
 
-1. **パフォーマンス最適化** 🟠 — 大量データ（1000+ オーダー）でのベンチマーク検証
-2. **本番環境改善** 🟠 — ローカル開発検証とのギャップ調査、本番ユーザーテスト
-3. **ドキュメント整備** 🟡 — 操作マニュアル、トラブルシューティングガイド作成
-4. **追加E2Eテスト** 🟡 — オーダー手動編集、ドラッグ&ドロップなどのユーザーシナリオ
+1. **本番環境改善** 🟠 — ローカル開発検証とのギャップ調査、本番ユーザーテスト
+2. **ドキュメント整備** 🟡 — 操作マニュアル、トラブルシューティングガイド作成
+3. **追加E2Eテスト** 🟡 — オーダー手動編集、ドラッグ&ドロップなどのユーザーシナリオ
 
-## 最新テスト結果サマリー（2026-02-15 本セッション完了）
-- **Optimizer**: 139/139 pass
-- **Web (Next.js)**: 98/98 pass ← PR #36で50件追加、PR #37で新規フック統合、vitest e2e除外追加
+## 最新テスト結果サマリー（2026-02-15 PR #39マージ後）
+- **Optimizer**: 156/156 pass ← PR #39でベンチマーク4件+変数枝刈り関連テスト追加
+- **Web (Next.js)**: 98/98 pass
 - **Firestore Rules**: 69/69 pass
-- **E2E Tests (Playwright)**: 19/19 pass ← PR #38で新規導入（スケジュール7+マスタ9+履歴3）
+- **E2E Tests (Playwright)**: 19/19 pass
 - **Seed**: 12/12 pass
 - **CI/CD**: test-optimizer + test-web + test-firestore-rules + test-e2e 全4ジョブ成功
-- **合計**: 337件 全パス ✅
+- **合計**: 354件 全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
