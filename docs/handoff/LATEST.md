@@ -299,15 +299,19 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **コードレビュー指摘対応**: 型安全性 + 部分キャッシュ最適化 + ログレベル + DRY改善
 - **CI/CD**: PR時テスト全パス → main にマージ（squash merge）
 
+### Google Maps Distance Matrix API本番設定（2026-02-15 完了）
+- **Distance Matrix API有効化**: `routes.googleapis.com` + `distance-matrix-backend.googleapis.com` 有効化完了
+- **API KEY作成**: Distance Matrix API専用（`service=distance-matrix-backend.googleapis.com`制限）
+  - KEY: `AIzaSyBk1wSIB1iGWGTcsqK9nWJILnb-yTMytw4`
+- **バッチサイズ修正**: `MAX_ELEMENTS_PER_REQUEST` を 25→10 に修正（API制限: 100要素/リクエスト）
+- **本番Seed実行**: 2,550ペア全て `source: 'google_maps'` に更新済み（PR #27 マージ済み）
+- **テスト**: CI全3ジョブ通過（Optimizer/Web/Firestore Rules）
+
 ## 次のアクション（優先度順）
 
-1. **Google Maps APIの本番環境設定** 🟠 — API KEY配置と本番Seed実行
-   - Distance Matrix API 有効化: `gcloud services enable distance-matrix-backend.googleapis.com`
-   - API KEY 作成: `gcloud alpha services api-keys create --display-name="Distance Matrix API Key"`
-   - 本番Seed実行: `cd seed && SEED_TARGET=production GOOGLE_MAPS_API_KEY=<key> npx tsx scripts/generate-travel-times.ts`
-2. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示（現在は「月単位」へナビゲーションのみ）
+1. **週切替UI** 🟡 — 日付ピッカーで任意の週を表示（現在は「月単位」へナビゲーションのみ）
    - Sidebar / Drawer に WeekPicker コンポーネント追加
-3. **Cloud Buildサービスアカウント権限確認** 🟡 — CI/CDからのデプロイ権限チェック
+2. **Cloud Buildサービスアカウント権限確認** 🟡 — CI/CDからのデプロイ権限チェック
    - SA: `cloud-build@visitcare-shift-optimizer.iam.gserviceaccount.com`
    - 権限: `roles/run.admin` + `roles/firebase.admin` 確認
 
@@ -315,7 +319,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **Optimizer**: 139/139 pass
 - **Web (Next.js)**: 48/48 pass
 - **Firestore Rules**: 62/62 pass
-- **Seed (Google Maps)**: 12/12 pass
+- **Seed**: 12/12 pass
 - **合計**: 261件 全パス
 
 ## 参考資料（ローカルExcel）
