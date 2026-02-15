@@ -12,6 +12,8 @@ import { GanttChart } from '@/components/gantt/GanttChart';
 import { OrderDetailPanel } from '@/components/schedule/OrderDetailPanel';
 import { useScheduleData } from '@/hooks/useScheduleData';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { useOrderEdit } from '@/hooks/useOrderEdit';
+import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { checkConstraints } from '@/lib/constraints/checker';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Order } from '@/types';
@@ -23,6 +25,21 @@ function SchedulePage() {
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  const { saving, handleStaffChange } = useOrderEdit();
+
+  const allOrders = useMemo(() => {
+    const orders: Order[] = [];
+    for (const day of DAY_OF_WEEK_ORDER) {
+      const dayIdx = DAY_OF_WEEK_ORDER.indexOf(day);
+      const date = addDays(weekStart, dayIdx);
+      const s = getDaySchedule(day, date);
+      orders.push(...s.helperRows.flatMap((r) => r.orders), ...s.unassignedOrders);
+    }
+    return orders;
+  }, [weekStart, getDaySchedule]);
+
+  const { diffMap } = useAssignmentDiff(weekStart, allOrders);
 
   const dayIndex = DAY_OF_WEEK_ORDER.indexOf(selectedDay);
   const dayDate = addDays(weekStart, dayIndex);
@@ -128,6 +145,10 @@ function SchedulePage() {
         violations={selectedOrder ? violations.get(selectedOrder.id) ?? [] : []}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
+        helpers={helpers}
+        onStaffChange={handleStaffChange}
+        diff={selectedOrder ? diffMap.get(selectedOrder.id) : undefined}
+        saving={saving}
       />
     </div>
   );

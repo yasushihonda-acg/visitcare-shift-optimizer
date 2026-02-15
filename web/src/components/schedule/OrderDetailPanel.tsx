@@ -8,8 +8,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { StaffMultiSelect } from '@/components/masters/StaffMultiSelect';
+import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
 import type { Order, Customer, Helper } from '@/types';
 import type { Violation } from '@/lib/constraints/checker';
+import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
 
 interface OrderDetailPanelProps {
   order: Order | null;
@@ -18,6 +21,10 @@ interface OrderDetailPanelProps {
   violations: Violation[];
   open: boolean;
   onClose: () => void;
+  helpers?: Map<string, Helper>;
+  onStaffChange?: (orderId: string, staffIds: string[]) => void;
+  diff?: AssignmentDiff;
+  saving?: boolean;
 }
 
 const SERVICE_LABELS: Record<string, string> = {
@@ -53,6 +60,10 @@ export function OrderDetailPanel({
   violations,
   open,
   onClose,
+  helpers,
+  onStaffChange,
+  diff,
+  saving,
 }: OrderDetailPanelProps) {
   if (!order) return null;
 
@@ -91,12 +102,22 @@ export function OrderDetailPanel({
           </div>
 
           {/* 割当スタッフ */}
-          {assignedHelpers.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <User className="h-4 w-4 text-primary" />
-                <h4 className="text-sm font-semibold">割当スタッフ</h4>
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <User className="h-4 w-4 text-primary" />
+              <h4 className="text-sm font-semibold">割当スタッフ</h4>
+              {diff && helpers && <AssignmentDiffBadge diff={diff} helpers={helpers} />}
+            </div>
+            {onStaffChange && helpers ? (
+              <div className={saving ? 'opacity-50 pointer-events-none' : ''}>
+                <StaffMultiSelect
+                  label="割当スタッフ"
+                  selected={order.assigned_staff_ids}
+                  onChange={(ids) => onStaffChange(order.id, ids)}
+                  helpers={helpers}
+                />
               </div>
+            ) : assignedHelpers.length > 0 ? (
               <ul className="space-y-1.5 pl-6">
                 {assignedHelpers.map((h) => (
                   <li key={h.id} className="flex items-center gap-2 text-sm">
@@ -107,8 +128,10 @@ export function OrderDetailPanel({
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-muted-foreground pl-6">未割当</p>
+            )}
+          </div>
 
           {/* 制約違反 */}
           {violations.length > 0 && (
