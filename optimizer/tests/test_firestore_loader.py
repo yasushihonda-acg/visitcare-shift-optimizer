@@ -506,13 +506,26 @@ class TestLoadOptimizationInput:
                 "status": "pending",
             },
         )
+        # C002のオーダーも追加（travel_timesフィルタリングの対象にするため）
+        order_doc2 = _mock_doc(
+            "ORD0002",
+            {
+                "customer_id": "C002",
+                "date": datetime(2026, 2, 9),
+                "week_start_date": datetime(2026, 2, 9),
+                "start_time": "11:00",
+                "end_time": "12:00",
+                "service_type": "daily_living",
+                "status": "pending",
+            },
+        )
         tt_doc = _mock_doc("from_C001_to_C002", {"travel_time_minutes": 5.0})
 
         db = _mock_db_with_collections(
             {
                 "customers": [customer_doc],
                 "helpers": [helper_doc],
-                "orders": [order_doc],
+                "orders": [order_doc, order_doc2],
                 "travel_times": [tt_doc],
                 "staff_unavailability": [],
             }
@@ -521,7 +534,7 @@ class TestLoadOptimizationInput:
         inp = load_optimization_input(db, date(2026, 2, 9))
         assert len(inp.customers) == 1
         assert len(inp.helpers) == 1
-        assert len(inp.orders) == 1
+        assert len(inp.orders) == 2
         assert len(inp.travel_times) == 1
         assert len(inp.staff_unavailabilities) == 0
         assert len(inp.staff_constraints) == 0

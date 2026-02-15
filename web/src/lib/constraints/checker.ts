@@ -120,25 +120,28 @@ export function checkConstraints(input: CheckInput): ViolationMap {
 
   for (const [staffId, orders] of staffOrders) {
     const helper = input.helpers.get(staffId);
-    for (let i = 0; i < orders.length; i++) {
-      for (let j = i + 1; j < orders.length; j++) {
-        if (isOverlapping(orders[i].start_time, orders[i].end_time, orders[j].start_time, orders[j].end_time)) {
-          const name = helper?.name.family ?? staffId;
-          addViolation({
-            orderId: orders[i].id,
-            staffId,
-            type: 'overlap',
-            severity: 'error',
-            message: `${name} の時間重複: ${orders[j].start_time}-${orders[j].end_time}`,
-          });
-          addViolation({
-            orderId: orders[j].id,
-            staffId,
-            type: 'overlap',
-            severity: 'error',
-            message: `${name} の時間重複: ${orders[i].start_time}-${orders[i].end_time}`,
-          });
-        }
+    // ソート+隣接比較で O(N log N) に最適化
+    const sorted = [...orders].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    for (let i = 0; i < sorted.length - 1; i++) {
+      // 隣接する全てのオーダーとの重複をチェック（開始時刻順なので後続のみ）
+      for (let j = i + 1; j < sorted.length; j++) {
+        // sorted[j]の開始がsorted[i]の終了以降なら、それ以降も重複しない
+        if (sorted[j].start_time >= sorted[i].end_time) break;
+        const name = helper?.name.family ?? staffId;
+        addViolation({
+          orderId: sorted[i].id,
+          staffId,
+          type: 'overlap',
+          severity: 'error',
+          message: `${name} の時間重複: ${sorted[j].start_time}-${sorted[j].end_time}`,
+        });
+        addViolation({
+          orderId: sorted[j].id,
+          staffId,
+          type: 'overlap',
+          severity: 'error',
+          message: `${name} の時間重複: ${sorted[i].start_time}-${sorted[i].end_time}`,
+        });
       }
     }
   }

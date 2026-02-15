@@ -208,8 +208,17 @@ def load_orders(
     return orders
 
 
-def load_travel_times(db: firestore.Client) -> list[TravelTime]:
-    """travel_timesコレクション → TravelTime リスト"""
+def load_travel_times(
+    db: firestore.Client,
+    customer_ids: set[str] | None = None,
+) -> list[TravelTime]:
+    """travel_timesコレクション → TravelTime リスト
+
+    Args:
+        db: Firestoreクライアント
+        customer_ids: フィルタリング対象のcustomer ID集合。
+                      指定時はこれらのIDに関連するペアのみ返す。
+    """
     travel_times: list[TravelTime] = []
     for doc in db.collection("travel_times").stream():
         d = doc.to_dict()
@@ -221,6 +230,11 @@ def load_travel_times(db: firestore.Client) -> list[TravelTime]:
             continue
         from_id = parts[0].removeprefix("from_")
         to_id = parts[1]
+
+        # customer_idsが指定されている場合、関連するペアのみ
+        if customer_ids is not None:
+            if from_id not in customer_ids or to_id not in customer_ids:
+                continue
 
         travel_times.append(
             TravelTime(
@@ -301,7 +315,9 @@ def load_optimization_input(
     customers = load_customers(db)
     helpers = load_helpers(db)
     orders = load_orders(db, week_start, customers)
-    travel_times = load_travel_times(db)
+    # オーダーに含まれる利用者IDのみでtravel_timesをフィルタリング
+    order_customer_ids = {o.customer_id for o in orders}
+    travel_times = load_travel_times(db, customer_ids=order_customer_ids)
     staff_unavailabilities = load_staff_unavailabilities(db, week_start)
     staff_constraints = load_staff_constraints(customers)
 
