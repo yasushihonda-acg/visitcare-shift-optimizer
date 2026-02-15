@@ -37,6 +37,32 @@ class OptimizeResponse(BaseModel):
     assigned_count: int = Field(description="割当成功オーダー数")
 
 
+class OptimizationParametersResponse(BaseModel):
+    time_limit_seconds: int = 180
+
+
+class OptimizationRunResponse(BaseModel):
+    id: str
+    week_start_date: str
+    executed_at: str = Field(description="ISO 8601 datetime")
+    executed_by: str
+    dry_run: bool
+    status: str
+    objective_value: float
+    solve_time_seconds: float
+    total_orders: int
+    assigned_count: int
+    parameters: OptimizationParametersResponse
+
+
+class OptimizationRunDetailResponse(OptimizationRunResponse):
+    assignments: list[AssignmentResponse]
+
+
+class OptimizationRunListResponse(BaseModel):
+    runs: list[OptimizationRunResponse]
+
+
 class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None

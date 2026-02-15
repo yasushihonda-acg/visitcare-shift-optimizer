@@ -21,3 +21,9 @@ export type { Helper } from './helper';
 export type { Order } from './order';
 export type { TravelTime } from './travel-time';
 export type { StaffUnavailability } from './staff-unavailability';
+export type {
+  AssignmentRecord,
+  OptimizationParameters,
+  OptimizationRun,
+  OptimizationStatus,
+} from './optimization-run';

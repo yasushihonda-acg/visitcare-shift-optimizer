@@ -61,3 +61,57 @@ export class OptimizeApiError extends Error {
     this.name = 'OptimizeApiError';
   }
 }
+
+export interface OptimizationRunSummaryResponse {
+  id: string;
+  week_start_date: string;
+  executed_at: string;
+  executed_by: string;
+  dry_run: boolean;
+  status: string;
+  objective_value: number;
+  solve_time_seconds: number;
+  total_orders: number;
+  assigned_count: number;
+  parameters: { time_limit_seconds: number };
+}
+
+export interface OptimizationRunDetailResponse extends OptimizationRunSummaryResponse {
+  assignments: Array<{ order_id: string; staff_ids: string[] }>;
+}
+
+export async function fetchOptimizationRuns(params?: {
+  week_start_date?: string;
+  limit?: number;
+}): Promise<OptimizationRunSummaryResponse[]> {
+  const headers = await getAuthHeaders();
+  const searchParams = new URLSearchParams();
+  if (params?.week_start_date) searchParams.set('week_start_date', params.week_start_date);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+
+  const qs = searchParams.toString();
+  const url = `${API_URL}/optimization-runs${qs ? `?${qs}` : ''}`;
+  const res = await fetch(url, { headers });
+
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+
+  const data = await res.json();
+  return data.runs;
+}
+
+export async function fetchOptimizationRunDetail(
+  runId: string
+): Promise<OptimizationRunDetailResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/optimization-runs/${runId}`, { headers });
+
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+
+  return res.json();
+}

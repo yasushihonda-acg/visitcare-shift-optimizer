@@ -106,3 +106,23 @@ export interface StaffUnavailability {
   notes?: string;
   submitted_at: Date;
 }
+
+export type OptimizationStatus = 'Optimal' | 'Feasible' | 'Infeasible' | 'Not Solved';
+
+export interface OptimizationRunSummary {
+  id: string;
+  week_start_date: string;
+  executed_at: string;
+  executed_by: string;
+  dry_run: boolean;
+  status: OptimizationStatus;
+  objective_value: number;
+  solve_time_seconds: number;
+  total_orders: number;
+  assigned_count: number;
+  parameters: { time_limit_seconds: number };
+}
+
+export interface OptimizationRunDetail extends OptimizationRunSummary {
+  assignments: Array<{ order_id: string; staff_ids: string[] }>;
+}

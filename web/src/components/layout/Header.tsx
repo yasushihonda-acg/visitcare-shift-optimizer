@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Settings, Users, UserCog, CalendarOff, LogOut } from 'lucide-react';
+import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -92,6 +92,14 @@ export function Header() {
                 <Link href="/masters/unavailability">
                   <CalendarOff className="mr-2 h-4 w-4" />
                   希望休管理
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>最適化</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href="/history">
+                  <History className="mr-2 h-4 w-4" />
+                  実行履歴
                 </Link>
               </DropdownMenuItem>
               {isLoggedIn && (
