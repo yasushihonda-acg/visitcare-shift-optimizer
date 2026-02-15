@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from optimizer.api.auth import _extract_token
+from optimizer.api.auth import _extract_token, require_manager_or_above
 
 
 class TestExtractToken:
@@ -110,3 +110,87 @@ class TestVerifyAuthRequired:
             response = client.get("/test", headers={"Authorization": "Bearer valid-token"})
             assert response.status_code == 200
             assert response.json()["uid"] == "user123"
+
+
+class TestRequireManagerOrAbove:
+    """ロール検証（require_manager_or_above）のテスト"""
+
+    def test_admin_allowed(self) -> None:
+        """adminロールで200"""
+        decoded = {"uid": "admin-1", "role": "admin"}
+        with patch("optimizer.api.auth.ALLOW_UNAUTHENTICATED", False), \
+             patch("optimizer.api.auth._get_firebase_app"), \
+             patch("firebase_admin.auth.verify_id_token", return_value=decoded):
+            app = FastAPI()
+
+            @app.get("/test")
+            async def ep(auth_data: dict | None = Depends(require_manager_or_above)) -> dict:
+                return {"role": auth_data["role"] if auth_data else None}
+
+            client = TestClient(app)
+            resp = client.get("/test", headers={"Authorization": "Bearer t"})
+            assert resp.status_code == 200
+            assert resp.json()["role"] == "admin"
+
+    def test_service_manager_allowed(self) -> None:
+        """service_managerロールで200"""
+        decoded = {"uid": "sm-1", "role": "service_manager"}
+        with patch("optimizer.api.auth.ALLOW_UNAUTHENTICATED", False), \
+             patch("optimizer.api.auth._get_firebase_app"), \
+             patch("firebase_admin.auth.verify_id_token", return_value=decoded):
+            app = FastAPI()
+
+            @app.get("/test")
+            async def ep(auth_data: dict | None = Depends(require_manager_or_above)) -> dict:
+                return {"ok": True}
+
+            client = TestClient(app)
+            resp = client.get("/test", headers={"Authorization": "Bearer t"})
+            assert resp.status_code == 200
+
+    def test_helper_denied(self) -> None:
+        """helperロールで403"""
+        decoded = {"uid": "h-1", "role": "helper"}
+        with patch("optimizer.api.auth.ALLOW_UNAUTHENTICATED", False), \
+             patch("optimizer.api.auth._get_firebase_app"), \
+             patch("firebase_admin.auth.verify_id_token", return_value=decoded):
+            app = FastAPI()
+
+            @app.get("/test")
+            async def ep(_auth: dict | None = Depends(require_manager_or_above)) -> dict:
+                return {"ok": True}
+
+            client = TestClient(app)
+            resp = client.get("/test", headers={"Authorization": "Bearer t"})
+            assert resp.status_code == 403
+            assert "権限がありません" in resp.json()["detail"]
+
+    def test_no_role_allowed(self) -> None:
+        """roleなし（Custom Claims未設定）で200（デモ互換）"""
+        decoded = {"uid": "no-role-1", "email": "user@example.com"}
+        with patch("optimizer.api.auth.ALLOW_UNAUTHENTICATED", False), \
+             patch("optimizer.api.auth._get_firebase_app"), \
+             patch("firebase_admin.auth.verify_id_token", return_value=decoded):
+            app = FastAPI()
+
+            @app.get("/test")
+            async def ep(auth_data: dict | None = Depends(require_manager_or_above)) -> dict:
+                return {"uid": auth_data["uid"] if auth_data else None}
+
+            client = TestClient(app)
+            resp = client.get("/test", headers={"Authorization": "Bearer t"})
+            assert resp.status_code == 200
+
+    def test_unauthenticated_mode_skips(self) -> None:
+        """ALLOW_UNAUTHENTICATED=trueでスキップ"""
+        with patch("optimizer.api.auth.ALLOW_UNAUTHENTICATED", True):
+            app = FastAPI()
+
+            @app.get("/test")
+            async def ep(auth_data: dict | None = Depends(require_manager_or_above)) -> dict:
+                return {"auth": auth_data}
+
+            client = TestClient(app)
+            resp = client.get("/test")
+            assert resp.status_code == 200
+            assert resp.json()["auth"] is None

@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Plus, Pencil, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addDays, addWeeks, subWeeks, startOfWeek, differenceInCalendarDays } from 'date-fns';
 import { useHelpers } from '@/hooks/useHelpers';
+import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { useStaffUnavailability } from '@/hooks/useStaffUnavailability';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ export default function UnavailabilityPage() {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const { helpers, loading: helpersLoading } = useHelpers();
   const { unavailability, loading: unavailLoading } = useStaffUnavailability(weekStart);
+  const { canEditUnavailability, isHelper, helperId } = useAuthRole();
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<StaffUnavailability | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -84,10 +86,12 @@ export default function UnavailabilityPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">希望休管理</h2>
-        <Button onClick={openNew} size="sm">
-          <Plus className="mr-1 h-4 w-4" />
-          新規追加
-        </Button>
+        {(canEditUnavailability || isHelper) && (
+          <Button onClick={openNew} size="sm">
+            <Plus className="mr-1 h-4 w-4" />
+            新規追加
+          </Button>
+        )}
       </div>
 
       {/* 週ナビゲーション */}
@@ -166,16 +170,18 @@ export default function UnavailabilityPage() {
                     <TableCell className="text-sm text-muted-foreground">
                       {u.notes || '-'}
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => openEdit(u)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
+                    {(canEditUnavailability || (isHelper && u.staff_id === helperId)) && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => openEdit(u)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })

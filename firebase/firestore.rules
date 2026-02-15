@@ -1,16 +1,43 @@
 rules_version = '2';
 
-// Phase 1: 認証必須 + マスタ編集対応 (ADR-012, ADR-013)
+// Phase 2: RBAC + Custom Claims (ADR-012, ADR-013, ADR-014)
 // バックエンド（Cloud Run）とseedスクリプトはAdmin SDKでルールをバイパス
+//
+// ロール体系:
+//   admin           — 全権限
+//   service_manager — スケジュール管理 + マスタ編集（ヘルパー除く）
+//   helper          — 自分の希望休管理のみ
+//   (なし)          — デモモード互換（匿名認証、roleなし → 全権限）
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ヘルパー関数: 認証済みか判定
+    // ── ヘルパー関数 ────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // ordersのupdate時: 許可フィールドのみか判定
+    // デモモード互換: role が未設定（Custom Claims なし）なら許可
+    function hasNoRole() {
+      return !('role' in request.auth.token);
+    }
+
+    function isAdmin() {
+      return request.auth.token.role == 'admin';
+    }
+
+    function isManagerOrAbove() {
+      return request.auth.token.role == 'admin'
+          || request.auth.token.role == 'service_manager';
+    }
+
+    // 自分の希望休データか判定（helper_id で照合）
+    function isOwnStaffData(staffId) {
+      return request.auth.token.helper_id == staffId;
+    }
+
+    // ── バリデーション関数 ──────────────────────────
+
     function isValidOrderUpdate() {
       let allowedFields = ['assigned_staff_ids', 'manually_edited', 'updated_at'].toSet();
       let incomingFields = request.resource.data.diff(resource.data).affectedKeys();
@@ -19,7 +46,6 @@ service cloud.firestore {
         && request.resource.data.manually_edited is bool;
     }
 
-    // customers create/update時: 必須フィールドバリデーション
     function isValidCustomer() {
       let data = request.resource.data;
       return data.name is map
@@ -35,14 +61,6 @@ service cloud.firestore {
         && data.service_manager is string;
     }
 
-    // マスタデータ: customers は create/update 可（delete不可）
-    match /customers/{customerId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && isValidCustomer();
-      allow delete: if false;
-    }
-
-    // helpers create/update時: 必須フィールドバリデーション
     function isValidHelper() {
       let data = request.resource.data;
       return data.name is map
@@ -61,19 +79,6 @@ service cloud.firestore {
         && data.employment_type is string;
     }
 
-    // マスタデータ: helpers は create/update 可（delete不可）
-    match /helpers/{helperId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && isValidHelper();
-      allow delete: if false;
-    }
-
-    match /travel_times/{travelTimeId} {
-      allow read: if isAuthenticated();
-      allow write: if false;
-    }
-
-    // staff_unavailability create/update/delete時: 必須フィールドバリデーション
     function isValidUnavailability() {
       let data = request.resource.data;
       return data.staff_id is string
@@ -81,17 +86,48 @@ service cloud.firestore {
         && data.unavailable_slots is list;
     }
 
-    // 希望休: create/update/delete 可（週単位で再作成するため）
-    match /staff_unavailability/{unavailabilityId} {
+    // ── コレクションルール ──────────────────────────
+
+    // 利用者マスタ: admin + service_manager が編集可
+    match /customers/{customerId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && isValidUnavailability();
-      allow delete: if isAuthenticated();
+      allow create, update: if isAuthenticated()
+        && (hasNoRole() || isManagerOrAbove())
+        && isValidCustomer();
+      allow delete: if false;
     }
 
-    // orders: 認証済みユーザーは読み取り + 3フィールドのみupdate可
+    // ヘルパーマスタ: admin のみ編集可
+    match /helpers/{helperId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated()
+        && (hasNoRole() || isAdmin())
+        && isValidHelper();
+      allow delete: if false;
+    }
+
+    // 移動時間: 読み取りのみ（Admin SDKで書き込み）
+    match /travel_times/{travelTimeId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // 希望休: admin + service_manager + 自分の希望休
+    match /staff_unavailability/{unavailabilityId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated()
+        && (hasNoRole() || isManagerOrAbove() || isOwnStaffData(request.resource.data.staff_id))
+        && isValidUnavailability();
+      allow delete: if isAuthenticated()
+        && (hasNoRole() || isManagerOrAbove() || isOwnStaffData(resource.data.staff_id));
+    }
+
+    // オーダー: admin + service_manager が割当編集可
     match /orders/{orderId} {
       allow read: if isAuthenticated();
-      allow update: if isAuthenticated() && isValidOrderUpdate();
+      allow update: if isAuthenticated()
+        && (hasNoRole() || isManagerOrAbove())
+        && isValidOrderUpdate();
       allow create, delete: if false;
     }
   }
