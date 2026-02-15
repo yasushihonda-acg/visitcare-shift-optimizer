@@ -1,6 +1,7 @@
 """MIPソルバー — PuLP + CBC"""
 
 import time
+from dataclasses import dataclass
 
 import pulp
 
@@ -11,6 +12,16 @@ from optimizer.models import (
     Order,
     StaffConstraintType,
 )
+
+
+@dataclass
+class SoftWeights:
+    """ソフト制約の重み"""
+
+    travel: float = 1.0
+    preferred_staff: float = 5.0
+    workload_balance: float = 10.0
+    continuity: float = 3.0
 
 
 def _time_to_minutes(time_str: str) -> int:
@@ -38,9 +49,11 @@ def _build_travel_time_lookup(
 def solve(
     inp: OptimizationInput,
     time_limit_seconds: int = 180,
+    weights: SoftWeights | None = None,
 ) -> OptimizationResult:
     """最適化を実行し、結果を返す"""
     start_time = time.time()
+    w = weights or SoftWeights()
 
     helpers = inp.helpers
     orders = inp.orders
@@ -66,7 +79,7 @@ def solve(
     _add_constraints(prob, x, inp, travel_lookup)
 
     # --- 目的関数: 重み付き加算 ---
-    objective = _build_objective(x, inp, travel_lookup, prob)
+    objective = _build_objective(x, inp, travel_lookup, prob, w)
     prob += objective, "total_cost"
 
     # --- ソルバー実行 ---
@@ -115,56 +128,59 @@ def _build_objective(
     inp: OptimizationInput,
     travel_lookup: dict[tuple[str, str], float],
     prob: pulp.LpProblem,
+    w: SoftWeights | None = None,
 ) -> pulp.LpAffineExpression:
     """重み付き目的関数の構築
 
-    w1: 移動時間最小化
-    w2: 非推奨スタッフペナルティ
-    w3: 稼働バランス（preferred_hours乖離ペナルティ）
-    w4: 担当継続性（同一利用者のスタッフ分散ペナルティ）
+    w.travel: 移動時間最小化
+    w.preferred_staff: 非推奨スタッフペナルティ
+    w.workload_balance: 稼働バランス（preferred_hours乖離ペナルティ）
+    w.continuity: 担当継続性（同一利用者のスタッフ分散ペナルティ）
     """
-    W_TRAVEL = 1.0
-    W_NOT_PREFERRED = 5.0
-    W_WORKLOAD = 10.0  # 稼働バランスの重み
-    W_CONTINUITY = 3.0  # 担当継続性の重み
+    if w is None:
+        w = SoftWeights()
 
     objective = pulp.LpAffineExpression()
 
     # --- 1. 移動時間最小化（線形近似） ---
-    orders_by_date: dict[str, list[Order]] = {}
-    for o in inp.orders:
-        orders_by_date.setdefault(o.date, []).append(o)
+    if w.travel > 0:
+        orders_by_date: dict[str, list[Order]] = {}
+        for o in inp.orders:
+            orders_by_date.setdefault(o.date, []).append(o)
 
-    for h in inp.helpers:
-        for date_orders in orders_by_date.values():
-            for i, o1 in enumerate(date_orders):
-                for o2 in date_orders[i + 1 :]:
-                    c1, c2 = o1.customer_id, o2.customer_id
-                    if c1 == c2:
-                        continue
-                    tt = travel_lookup.get((c1, c2), 0.0)
-                    if tt > 0:
-                        objective += W_TRAVEL * tt * (x[h.id, o1.id] + x[h.id, o2.id]) / 2
+        for h in inp.helpers:
+            for date_orders in orders_by_date.values():
+                for i, o1 in enumerate(date_orders):
+                    for o2 in date_orders[i + 1 :]:
+                        c1, c2 = o1.customer_id, o2.customer_id
+                        if c1 == c2:
+                            continue
+                        tt = travel_lookup.get((c1, c2), 0.0)
+                        if tt > 0:
+                            objective += w.travel * tt * (x[h.id, o1.id] + x[h.id, o2.id]) / 2
 
     # --- 2. 推奨スタッフ優先 ---
-    preferred_pairs: set[tuple[str, str]] = set()
-    for sc in inp.staff_constraints:
-        if sc.constraint_type == StaffConstraintType.PREFERRED:
-            preferred_pairs.add((sc.customer_id, sc.staff_id))
+    if w.preferred_staff > 0:
+        preferred_pairs: set[tuple[str, str]] = set()
+        for sc in inp.staff_constraints:
+            if sc.constraint_type == StaffConstraintType.PREFERRED:
+                preferred_pairs.add((sc.customer_id, sc.staff_id))
 
-    customers_with_preferred: set[str] = {cid for cid, _ in preferred_pairs}
-    for o in inp.orders:
-        if o.customer_id not in customers_with_preferred:
-            continue
-        for h in inp.helpers:
-            if (o.customer_id, h.id) not in preferred_pairs:
-                objective += W_NOT_PREFERRED * x[h.id, o.id]
+        customers_with_preferred: set[str] = {cid for cid, _ in preferred_pairs}
+        for o in inp.orders:
+            if o.customer_id not in customers_with_preferred:
+                continue
+            for h in inp.helpers:
+                if (o.customer_id, h.id) not in preferred_pairs:
+                    objective += w.preferred_staff * x[h.id, o.id]
 
     # --- 3. 稼働バランス（preferred_hours乖離ペナルティ） ---
-    _add_workload_balance(prob, x, inp, objective, W_WORKLOAD)
+    if w.workload_balance > 0:
+        _add_workload_balance(prob, x, inp, objective, w.workload_balance)
 
     # --- 4. 担当継続性（同一利用者のスタッフ分散ペナルティ） ---
-    _add_staff_continuity(prob, x, inp, objective, W_CONTINUITY)
+    if w.continuity > 0:
+        _add_staff_continuity(prob, x, inp, objective, w.continuity)
 
     return objective
 

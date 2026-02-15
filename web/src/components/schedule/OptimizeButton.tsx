@@ -16,11 +16,17 @@ import {
 import { toast } from 'sonner';
 import { runOptimize, OptimizeApiError } from '@/lib/api/optimizer';
 import { useScheduleContext } from '@/contexts/ScheduleContext';
+import {
+  ConstraintWeightsForm,
+  DEFAULT_WEIGHTS,
+  type ConstraintWeights,
+} from './ConstraintWeightsForm';
 
 export function OptimizeButton() {
   const { weekStart } = useScheduleContext();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [weights, setWeights] = useState<ConstraintWeights>({ ...DEFAULT_WEIGHTS });
 
   const handleOptimize = async (dryRun: boolean) => {
     setLoading(true);
@@ -28,6 +34,7 @@ export function OptimizeButton() {
       const result = await runOptimize({
         week_start_date: format(weekStart, 'yyyy-MM-dd'),
         dry_run: dryRun,
+        ...weights,
       });
       toast.success(
         `最適化${dryRun ? '（テスト）' : ''}完了: ${result.assigned_count}/${result.total_orders}件割当 (${result.solve_time_seconds.toFixed(1)}秒)`
@@ -71,6 +78,7 @@ export function OptimizeButton() {
             {format(weekStart, 'yyyy/M/d')}週のシフトを最適化します。
           </DialogDescription>
         </DialogHeader>
+        <ConstraintWeightsForm weights={weights} onChange={setWeights} />
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
             キャンセル

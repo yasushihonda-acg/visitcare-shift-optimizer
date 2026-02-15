@@ -11,6 +11,10 @@ class OptimizationParameters(BaseModel):
     """最適化パラメータ"""
 
     time_limit_seconds: int
+    w_travel: float = 1.0
+    w_preferred_staff: float = 5.0
+    w_workload_balance: float = 10.0
+    w_continuity: float = 3.0
 
 
 class OptimizationRunRecord(BaseModel):

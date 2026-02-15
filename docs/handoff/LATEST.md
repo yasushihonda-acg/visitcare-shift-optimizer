@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-15（週切替UI + Cloud Build SA権限修正）
-**現在のフェーズ**: Phase 4d完了 → UI改善・機能拡張へ
+**最終更新**: 2026-02-15（最適化実行結果の保存・履歴機能 実装完了）
+**現在のフェーズ**: Phase 4d完了 → 履歴機能実装・次のアクション検討中
 
 ## 完了済み
 
@@ -324,18 +324,56 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
   - `roles/iam.serviceAccountUser` — SA権限委譲
   - `roles/artifactregistry.writer` — Dockerイメージpush
 
+### マスタ管理画面UI改善（PR #30～#33 — 2026-02-15）
+- **ブランチ**: 各個別ブランチ、全4PRmainマージ完了
+- **実装内容**:
+  - **PR #30**: マスタ間タブナビゲーション (`layout.tsx` に Tabs コンポーネント) + テーブルゼブラストライピング（3ページ全て）
+  - **PR #31**: 利用者一覧に「NG/推奨スタッフ」列表示（Badge）、ヘルパー一覧に「勤務日数」「希望時間」列表示
+  - **PR #32**: ヘルパー編集ダイアログを3セクション（基本情報/雇用条件/勤務スケジュール）に整理、時間フィールドに「最小/最大」サブラベル追加
+  - **PR #33**: ガントバーテキスト表示閾値を 40px → 20px に調整、違反バッジとして「違反」「警告」を同時表示
+- **ビルド**: ✅ npm run build 成功
+- **テスト**: Web 48/48 全パス（各PRマージ時に確認）
+- **本番デプロイ**: Firebase Hosting へ自動デプロイ完了
+- **E2Eスクリーンショット確認済み**:
+  - `/masters/customers/`: タブナビゲーション表示、NG/推奨 Badge 表示（"NG 2"、"推奨 1"形式）、ゼブラストライピング
+  - `/masters/helpers/`: 勤務日数列（0-7の数字）、希望時間列（"6〜8h"形式）、ゼブラストライピング
+  - ガントチャート: 短いバーにも利用者名表示、違反バッジ"違反10"と警告バッジ同時表示
+
+### 最適化結果の保存・履歴機能（PR #34 — 2026-02-15）
+- **ブランチ**: `feature/optimization-history`（マージ完了）
+- **Firestore新コレクション**: `optimization_runs` — 最適化実行記録を保存
+  - フィールド: id / week_start_date / executed_at / executed_by / dry_run / status / objective_value / solve_time_seconds / total_orders / assigned_count / assignments / parameters
+  - 読み取り: manager以上のみ（hasNoRole()でデモモード対応）
+  - 書き込み: Admin SDKのみ（FE側write禁止）
+- **BE実装**:
+  - `optimizer/src/optimizer/models/optimization_run.py` — OptimizationRunRecord / OptimizationParameters Pydanticモデル
+  - `optimizer/src/optimizer/data/firestore_writer.py` — `save_optimization_run()` 関数追加（UUID生成、SERVER_TIMESTAMP使用）
+  - `/optimize` にrun_record保存ロジック追加（失敗時はログのみ、APIレスポンスに影響させない）
+  - `GET /optimization-runs` — 一覧取得（week_start_dateフィルタ、limit、executed_at DESC）
+  - `GET /optimization-runs/{run_id}` — 詳細取得（404対応）
+- **FE実装**:
+  - `/history` ページ — 履歴一覧テーブル（実行日時/対象週/ステータス/割当/実行時間/目的関数値）
+  - RunDetailPanel — Sheet詳細パネル（割当結果テーブル、ヘルパー名マップ表示）
+  - StatusBadge — Optimal(緑)/Feasible(黄)/テスト(グレー)表示
+  - `useOptimizationRuns` フック — REST APIベース（非リアルタイム）
+  - Header に History リンク追加
+- **Firestore Rules テスト**: 7件新規追加（未認証/admin/service_manager/デモモード/helper/FE書き込み禁止）
+- **CI/CD**: 全3ジョブ通過（Optimizer/Web/Firestore Rules）
+- **テスト**: Optimizer 139/139 + Web 48/48 + Firestore 69/69 = **全パス**
+- **UI/UX**: ゼブラストライピング、クリック対応で詳細表示、空状態ハンドリング
+
 ## 次のアクション（優先度順）
 
-1. **ヘルパーマスタ・希望休管理のUI改善** 🟡 — 操作性向上
-2. **最適化結果の保存・履歴機能** 🟡 — 実行結果をFirestoreに保存して比較可能に
-3. **Phase 2b拡張: 制約パラメータUI** 🟡 — ソフト制約の重み調整をフロントエンドから可能に
+1. **Phase 2b拡張: 制約パラメータUI** 🟡 — ソフト制約の重み調整をフロントエンドから可能に
+2. **マスタ管理機能の追加シナリオテスト** 🟡 — 大量データ、境界値での動作確認
+3. **オーダー手動編集UI + 履歴差分表示** 🟡 — 最適化結果の手動調整と履歴比較
 
-## 最新テスト結果サマリー（2026-02-15）
+## 最新テスト結果サマリー（2026-02-15 最新）
 - **Optimizer**: 139/139 pass
 - **Web (Next.js)**: 48/48 pass
-- **Firestore Rules**: 62/62 pass
+- **Firestore Rules**: 69/69 pass ← PR #34で7件新規追加
 - **Seed**: 12/12 pass
-- **合計**: 261件 全パス
+- **合計**: 268件 全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
