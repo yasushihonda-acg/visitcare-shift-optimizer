@@ -104,8 +104,8 @@ export default function CustomersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((customer) => (
-                <TableRow key={customer.id}>
+              filtered.map((customer, index) => (
+                <TableRow key={customer.id} className={index % 2 === 1 ? 'bg-muted/30' : ''}>
                   <TableCell className="font-medium">
                     {customer.name.family} {customer.name.given}
                   </TableCell>

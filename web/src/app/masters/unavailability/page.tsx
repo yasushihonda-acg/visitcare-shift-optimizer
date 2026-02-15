@@ -151,10 +151,10 @@ export default function UnavailabilityPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((u) => {
+              filtered.map((u, index) => {
                 const h = helpers.get(u.staff_id);
                 return (
-                  <TableRow key={u.id}>
+                  <TableRow key={u.id} className={index % 2 === 1 ? 'bg-muted/30' : ''}>
                     <TableCell className="font-medium">
                       {h ? `${h.name.family} ${h.name.given}` : u.staff_id}
                     </TableCell>
