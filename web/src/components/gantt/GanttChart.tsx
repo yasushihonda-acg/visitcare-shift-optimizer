@@ -15,9 +15,10 @@ interface GanttChartProps {
   onOrderClick?: (order: Order) => void;
   dropZoneStatuses?: Map<string, DropZoneStatus>;
   unavailability: StaffUnavailability[];
+  activeOrder?: Order | null;
 }
 
-export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability }: GanttChartProps) {
+export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder }: GanttChartProps) {
   if (schedule.totalOrders === 0) {
     return (
       <div className="flex items-center justify-center h-48 text-muted-foreground">
@@ -42,6 +43,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
             unavailability={unavailability}
             day={schedule.day}
             dayDate={schedule.date}
+            activeOrder={activeOrder}
           />
         ))}
       </div>

@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { GanttBar } from './GanttBar';
 import { UnavailableBlocksOverlay } from './UnavailableBlocksOverlay';
-import { SLOT_WIDTH_PX, TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR, calculateUnavailableBlocks } from './constants';
+import { SLOT_WIDTH_PX, TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR, calculateUnavailableBlocks, timeToColumn } from './constants';
 import type { Order, Customer, StaffUnavailability, DayOfWeek } from '@/types';
 import type { HelperScheduleRow } from '@/hooks/useScheduleData';
 import type { ViolationMap } from '@/lib/constraints/checker';
@@ -21,7 +21,15 @@ interface GanttRowProps {
   unavailability: StaffUnavailability[];
   day: DayOfWeek;
   dayDate: Date;
+  activeOrder?: Order | null;
 }
+
+/** ゴーストバー用の薄い背景色（サービスタイプ別） */
+const GHOST_COLORS: Record<string, string> = {
+  physical_care: 'bg-[oklch(0.55_0.15_230/0.3)]',
+  daily_living: 'bg-[oklch(0.55_0.15_160/0.3)]',
+  prevention: 'bg-[oklch(0.60_0.12_300/0.3)]',
+};
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
   idle: '',
@@ -39,7 +47,7 @@ const GRID_LINES = Array.from({ length: GANTT_END_HOUR - GANTT_START_HOUR }, (_,
   />
 ));
 
-export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate }: GanttRowProps) {
+export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder }: GanttRowProps) {
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
 
   const staffUnavailSlots = unavailability
@@ -115,6 +123,34 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
             />
           );
         })}
+        {/* ゴーストバー（ドロップ先プレビュー） */}
+        {isOver && dropZoneStatus !== 'idle' && dropZoneStatus !== 'invalid' && activeOrder && (() => {
+          const ghostStartCol = timeToColumn(activeOrder.start_time);
+          const ghostEndCol = timeToColumn(activeOrder.end_time);
+          const ghostWidth = (ghostEndCol - ghostStartCol) * SLOT_WIDTH_PX;
+          const ghostLeft = (ghostStartCol - 1) * SLOT_WIDTH_PX;
+          const ghostColor = GHOST_COLORS[activeOrder.service_type] ?? GHOST_COLORS.physical_care;
+          const customerName = customers.get(activeOrder.customer_id);
+          const ghostLabel = customerName
+            ? (customerName.name.short ?? `${customerName.name.family}${customerName.name.given}`)
+            : '';
+          return (
+            <div
+              className={cn(
+                'absolute top-1 h-8 rounded-md text-[11px] leading-8 px-1.5 truncate',
+                'border-2 border-dashed border-current opacity-40 animate-pulse pointer-events-none',
+                ghostColor,
+              )}
+              style={{
+                left: ghostLeft,
+                width: Math.max(ghostWidth, SLOT_WIDTH_PX * 2),
+              }}
+              title={`${ghostLabel} ${activeOrder.start_time}-${activeOrder.end_time}`}
+            >
+              {ghostWidth > 20 ? `${ghostLabel} ${activeOrder.start_time}-${activeOrder.end_time}` : ''}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
