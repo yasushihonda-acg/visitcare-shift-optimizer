@@ -1,10 +1,13 @@
-import { clearCollection } from './utils/firestore-client.js';
+import { clearCollection, getDB } from './utils/firestore-client.js';
 import { validateAll } from './validate-data.js';
 import { importCustomers } from './import-customers.js';
 import { importHelpers } from './import-helpers.js';
 import { importOrders } from './import-orders.js';
 import { generateTravelTimes } from './generate-travel-times.js';
 import { importStaffUnavailability } from './import-staff-unavailability.js';
+
+const BATCH_LIMIT = 500;
+const ASSIGN_RATIO = 0.8;
 
 const COLLECTIONS = [
   'customers',
@@ -13,6 +16,32 @@ const COLLECTIONS = [
   'travel_times',
   'staff_unavailability',
 ];
+
+/**
+ * E2Eテスト用: Seedオーダーの80%をヘルパーにラウンドロビン割当。
+ * スケジュール画面のガントバー表示に割当済みオーダーが必要。
+ */
+async function assignSampleOrders(): Promise<number> {
+  const db = getDB();
+  const helpersSnap = await db.collection('helpers').get();
+  const helperIds = helpersSnap.docs.map((d) => d.id);
+  if (helperIds.length === 0) return 0;
+
+  const ordersSnap = await db.collection('orders').get();
+  const docs = ordersSnap.docs;
+  const assignCount = Math.floor(docs.length * ASSIGN_RATIO);
+
+  for (let i = 0; i < assignCount; i += BATCH_LIMIT) {
+    const batch = db.batch();
+    const end = Math.min(i + BATCH_LIMIT, assignCount);
+    for (let j = i; j < end; j++) {
+      const helperId = helperIds[j % helperIds.length];
+      batch.update(docs[j].ref, { assigned_staff_ids: [helperId] });
+    }
+    await batch.commit();
+  }
+  return assignCount;
+}
 
 function parseArgs(): { week?: string; ordersOnly?: boolean } {
   const args = process.argv.slice(2);
@@ -62,6 +91,10 @@ async function main() {
     console.log('📥 Importing orders...');
     const orderCount = await importOrders(week);
     console.log(`   orders: ${orderCount}`);
+
+    const assignedCount = await assignSampleOrders();
+    console.log(`   assigned: ${assignedCount}/${orderCount}`);
+
     console.log('\n✅ Import complete!');
     process.exit(0);
   }
@@ -87,6 +120,9 @@ async function main() {
 
   const orderCount = await importOrders(week);
   console.log(`   orders: ${orderCount}`);
+
+  const assignedCount = await assignSampleOrders();
+  console.log(`   assigned: ${assignedCount}/${orderCount}`);
 
   const travelTimeCount = await generateTravelTimes();
   console.log(`   travel_times: ${travelTimeCount}`);

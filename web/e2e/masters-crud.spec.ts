@@ -129,9 +129,11 @@ test.describe('希望休管理 CRUD', () => {
     await firstOption.click();
     // ドロップダウンが閉じるのを待機（選択成功の指標）
     await expect(listbox).toBeHidden({ timeout: 3_000 });
+    // 選択値がトリガーに反映されるのを待機（placeholder "スタッフを選択" が消える）
+    await expect(staffTrigger).not.toHaveText('スタッフを選択', { timeout: 3_000 });
 
     // 不在スロットを追加し、スロットが表示されるのを確認
-    await dialog.getByRole('button', { name: '追加' }).click();
+    await dialog.getByRole('button', { name: /^追加$/ }).click();
     await expect(dialog.getByText(/終日/)).toBeVisible({ timeout: 3_000 });
 
     // 保存
@@ -160,8 +162,9 @@ test.describe('希望休管理 CRUD', () => {
       await expect(firstOpt).toBeVisible();
       await firstOpt.click();
       await expect(listbox).toBeHidden({ timeout: 3_000 });
+      await expect(staffTrigger).not.toHaveText('スタッフを選択', { timeout: 3_000 });
 
-      await addDialog.getByRole('button', { name: '追加' }).click();
+      await addDialog.getByRole('button', { name: /^追加$/ }).click();
       await expect(addDialog.getByText(/終日/)).toBeVisible({ timeout: 3_000 });
       await addDialog.getByRole('button', { name: '保存' }).click();
       await waitForToast(page, '希望休を登録しました');
