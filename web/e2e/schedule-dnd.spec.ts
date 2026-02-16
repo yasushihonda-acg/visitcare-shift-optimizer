@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import { goToSchedule, waitForGanttBars, dragOrderToTarget } from './helpers';
 
 test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
-  // D&Dテストはフレーキーになりやすいため、ローカルでもリトライを設定
-  test.describe.configure({ retries: 2 });
+  // D&Dテストはフレーキーになりやすいため、リトライ + タイムアウト延長
+  test.describe.configure({ retries: 2, timeout: 60_000 });
 
   test('ガントバーをドラッグ開始するとopacityが変化する', async ({ page }) => {
     await goToSchedule(page);

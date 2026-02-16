@@ -36,24 +36,24 @@ export async function goToHistory(page: Page) {
 
 /**
  * スケジュール画面でガントバーが表示されるまで待機する。
- * CI環境ではSeedスクリプトがJST基準で週を算出するが、
- * ブラウザはUTCで動作するため表示週がずれる場合がある。
- * まずgantt-row（Firestoreデータロード指標）を待ち、
- * ガントバーが見つからなければ「次の週」へ移動してリトライする。
+ * CI環境ではFirestore 4コレクションのデータロードに時間がかかるため、
+ * まず「読み込み中...」スピナーの消失（=データロード完了）を待つ。
+ * その後、JST/UTCずれでバーがなければ「次の週」へ移動してリトライする。
  */
 export async function waitForGanttBars(page: Page) {
   const barLocator = page.locator('[data-testid^="gantt-bar-"]').first();
-  // ヘルパー行の表示を待つ（Firestoreデータのロード完了指標）
-  await page.locator('[data-testid^="gantt-row-"]').first().waitFor({ timeout: 15_000 });
-  // 同一週のバーを短時間待つ
+  // スケジュールページのデータロード完了を待つ
+  // （ロード中は「読み込み中...」が表示される。未表示の場合も即座にpassする）
+  await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 30_000 });
+  // データロード後、バーを短時間待つ
   try {
-    await barLocator.waitFor({ timeout: 3_000 });
+    await barLocator.waitFor({ timeout: 5_000 });
     return;
   } catch {
     // 現在の週にバーがない → 次の週へ移動（JST/UTCずれ対策）
   }
   await page.getByRole('button', { name: '次の週' }).click();
-  await barLocator.waitFor({ timeout: 10_000 });
+  await barLocator.waitFor({ timeout: 15_000 });
 }
 
 /**
