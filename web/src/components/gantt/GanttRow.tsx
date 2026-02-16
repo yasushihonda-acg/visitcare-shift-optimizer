@@ -59,6 +59,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
       </div>
       <div
         ref={setNodeRef}
+        data-testid={`gantt-row-${row.helper.id}`}
         className={cn(
           'relative transition-colors duration-150',
           isOver && DROP_ZONE_STYLES[dropZoneStatus]

@@ -59,6 +59,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
   return (
     <button
       ref={setNodeRef}
+      data-testid={`gantt-bar-${order.id}`}
       className={cn(
         'absolute top-1 h-8 rounded-md text-[11px] leading-8 px-1.5 truncate cursor-grab shadow-sm transition-all duration-150',
         colors.bar,

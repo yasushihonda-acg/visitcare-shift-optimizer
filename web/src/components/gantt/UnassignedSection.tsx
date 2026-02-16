@@ -63,6 +63,7 @@ function UnassignedOrderItem({
   return (
     <button
       ref={setNodeRef}
+      data-testid={`unassigned-order-${order.id}`}
       style={style}
       onClick={() => !isDragging && onOrderClick?.(order)}
       className={cn(
@@ -91,6 +92,7 @@ export function UnassignedSection({ orders, customers, onOrderClick, dropZoneSta
   return (
     <div
       ref={setNodeRef}
+      data-testid="unassigned-section"
       className={cn(
         'mt-4 rounded-xl border bg-card p-4 shadow-sm transition-colors duration-150',
         isOver && DROP_ZONE_STYLES[dropZoneStatus]

@@ -27,7 +27,7 @@ fi
 
 # 2. Firebase Emulator起動
 echo "[1/4] Firebase Emulator 起動中..."
-firebase emulators:start --import=seed/emulator-data --export-on-exit=seed/emulator-data &
+firebase emulators:start --project demo-visitcare --import=seed/emulator-data --export-on-exit=seed/emulator-data &
 EMULATOR_PID=$!
 sleep 5
 
@@ -49,7 +49,7 @@ cd "$ROOT_DIR"
 # 4. Next.js dev起動
 echo "[4/4] Next.js dev 起動中 (port 3000)..."
 cd "$ROOT_DIR/web"
-npm run dev &
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-visitcare npm run dev &
 WEB_PID=$!
 cd "$ROOT_DIR"
 

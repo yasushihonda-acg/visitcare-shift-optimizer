@@ -5,6 +5,8 @@ import { addDays } from 'date-fns';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { ScheduleProvider, useScheduleContext } from '@/contexts/ScheduleContext';
 import { Header } from '@/components/layout/Header';
+import { WelcomeDialog } from '@/components/onboarding/WelcomeDialog';
+import { useWelcomeDialog } from '@/components/onboarding/useWelcomeDialog';
 import { DayTabs } from '@/components/schedule/DayTabs';
 import { StatsBar } from '@/components/schedule/StatsBar';
 import { OptimizeButton } from '@/components/schedule/OptimizeButton';
@@ -19,6 +21,7 @@ import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Order } from '@/types';
 
 function SchedulePage() {
+  const { welcomeOpen, closeWelcome, reopenWelcome } = useWelcomeDialog();
   const { weekStart, selectedDay } = useScheduleContext();
   const { customers, helpers, orderCounts, getDaySchedule, unavailability, loading } =
     useScheduleData(weekStart);
@@ -113,7 +116,8 @@ function SchedulePage() {
 
   return (
     <div className="flex h-screen flex-col">
-      <Header />
+      <Header onShowWelcome={reopenWelcome} />
+      <WelcomeDialog open={welcomeOpen} onClose={closeWelcome} />
       <div className="flex items-center justify-between border-b">
         <DayTabs orderCounts={orderCounts} />
         <div className="px-4">

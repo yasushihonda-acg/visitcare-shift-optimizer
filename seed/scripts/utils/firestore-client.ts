@@ -24,7 +24,7 @@ export function getDB(): Firestore {
       process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
     }
     if (getApps().length === 0) {
-      initializeApp({ projectId: 'demo-test' });
+      initializeApp({ projectId: 'demo-visitcare' });
     }
   }
 

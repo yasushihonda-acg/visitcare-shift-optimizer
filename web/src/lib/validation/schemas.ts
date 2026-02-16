@@ -71,8 +71,8 @@ export type HelperFormValues = z.infer<typeof helperSchema>;
 const unavailableSlotSchema = z.object({
   date: z.string().min(1, '日付は必須です'),
   all_day: z.boolean(),
-  start_time: timeStringSchema.optional(),
-  end_time: timeStringSchema.optional(),
+  start_time: z.union([timeStringSchema, z.literal('')]).optional(),
+  end_time: z.union([timeStringSchema, z.literal('')]).optional(),
 });
 
 export const unavailabilitySchema = z.object({
