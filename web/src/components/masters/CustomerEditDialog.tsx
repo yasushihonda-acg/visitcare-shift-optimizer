@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { APIProvider } from '@vis.gl/react-google-maps';
 import {
   Dialog,
   DialogContent,
@@ -16,10 +17,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WeeklyServicesEditor } from './WeeklyServicesEditor';
 import { StaffMultiSelect } from './StaffMultiSelect';
+import { CustomerLocationPicker } from './CustomerLocationPicker';
 import { customerSchema, type CustomerFormValues } from '@/lib/validation/schemas';
 import { createCustomer, updateCustomer } from '@/lib/firestore/customers';
+import { geocodeAddress } from '@/lib/geocoding';
 import { useHelpers } from '@/hooks/useHelpers';
 import type { Customer } from '@/types';
+
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 interface CustomerEditDialogProps {
   open: boolean;
@@ -34,6 +39,7 @@ export function CustomerEditDialog({
 }: CustomerEditDialogProps) {
   const isNew = !customer;
   const { helpers } = useHelpers();
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   const {
     register,
@@ -41,6 +47,7 @@ export function CustomerEditDialog({
     control,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
@@ -52,6 +59,39 @@ export function CustomerEditDialog({
       reset(getDefaults(customer));
     }
   }, [open, customer, reset]);
+
+  const watchLat = watch('location.lat');
+  const watchLng = watch('location.lng');
+
+  const handleGeocodeAddress = useCallback(async () => {
+    const address = watch('address');
+    if (!address?.trim()) {
+      toast.error('住所を入力してください');
+      return;
+    }
+
+    setIsGeocoding(true);
+    try {
+      const result = await geocodeAddress(address);
+      if (result) {
+        setValue('location.lat', result.lat, { shouldDirty: true });
+        setValue('location.lng', result.lng, { shouldDirty: true });
+        toast.success('住所から座標を取得しました');
+      } else {
+        toast.error('住所が見つかりません');
+      }
+    } finally {
+      setIsGeocoding(false);
+    }
+  }, [watch, setValue]);
+
+  const handleLocationChange = useCallback(
+    (lat: number, lng: number) => {
+      setValue('location.lat', lat, { shouldDirty: true });
+      setValue('location.lng', lng, { shouldDirty: true });
+    },
+    [setValue]
+  );
 
   const onSubmit = async (data: CustomerFormValues) => {
     try {
@@ -107,14 +147,27 @@ export function CustomerEditDialog({
             </div>
           </div>
 
-          {/* 住所 */}
+          {/* 住所 + ジオコーディング */}
           <div className="space-y-1">
             <Label htmlFor="address">住所</Label>
-            <Input
-              id="address"
-              {...register('address')}
-              placeholder="東京都新宿区..."
-            />
+            <div className="flex gap-2">
+              <Input
+                id="address"
+                {...register('address')}
+                placeholder="鹿児島市..."
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGeocodeAddress}
+                disabled={isGeocoding}
+                className="shrink-0"
+              >
+                {isGeocoding ? '検索中...' : '住所から検索'}
+              </Button>
+            </div>
             {errors.address && (
               <p className="text-xs text-destructive">
                 {errors.address.message}
@@ -131,7 +184,7 @@ export function CustomerEditDialog({
                 type="number"
                 step="any"
                 {...register('location.lat', { valueAsNumber: true })}
-                placeholder="35.6895"
+                placeholder="31.5916"
               />
               {errors.location?.lat && (
                 <p className="text-xs text-destructive">
@@ -146,7 +199,7 @@ export function CustomerEditDialog({
                 type="number"
                 step="any"
                 {...register('location.lng', { valueAsNumber: true })}
-                placeholder="139.6917"
+                placeholder="130.5571"
               />
               {errors.location?.lng && (
                 <p className="text-xs text-destructive">
@@ -155,6 +208,17 @@ export function CustomerEditDialog({
               )}
             </div>
           </div>
+
+          {/* ミニマップ */}
+          {GOOGLE_MAPS_API_KEY && (
+            <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+              <CustomerLocationPicker
+                lat={watchLat}
+                lng={watchLng}
+                onLocationChange={handleLocationChange}
+              />
+            </APIProvider>
+          )}
 
           {/* サービス提供責任者 */}
           <div className="space-y-1">
