@@ -30,10 +30,13 @@ function minutesToPx(minutes: number): number {
   return ((minutes - startMinutes) / MINUTES_PER_SLOT) * SLOT_WIDTH_PX;
 }
 
+export type UnavailableBlockType = 'off_hours' | 'day_off' | 'unavailable';
+
 export interface UnavailableBlock {
   left: number;
   width: number;
   label: string;
+  type: UnavailableBlockType;
 }
 
 /** ヘルパーの勤務不可時間帯ブロックを計算 */
@@ -65,6 +68,7 @@ export function calculateUnavailableBlocks(
           left: minutesToPx(cursor),
           width: minutesToPx(slotStart) - minutesToPx(cursor),
           label: '勤務時間外',
+          type: 'off_hours',
         });
       }
       cursor = Math.max(cursor, slotEnd);
@@ -75,10 +79,18 @@ export function calculateUnavailableBlocks(
         left: minutesToPx(cursor),
         width: minutesToPx(ganttEndMin) - minutesToPx(cursor),
         label: '勤務時間外',
+        type: 'off_hours',
       });
     }
+  } else {
+    // 勤務時間未設定 → 非勤務日として全域をグレーアウト
+    blocks.push({
+      left: minutesToPx(ganttStartMin),
+      width: minutesToPx(ganttEndMin) - minutesToPx(ganttStartMin),
+      label: '非勤務日',
+      type: 'day_off',
+    });
   }
-  // 勤務時間未設定 → ブロックなし（表示しない）
 
   // 2. 希望休ブロック
   for (const slot of unavailableSlots) {
@@ -97,6 +109,7 @@ export function calculateUnavailableBlocks(
         left: minutesToPx(ganttStartMin),
         width: minutesToPx(ganttEndMin) - minutesToPx(ganttStartMin),
         label: '希望休',
+        type: 'unavailable',
       });
     } else if (slot.start_time && slot.end_time) {
       const start = Math.max(timeToMinutes(slot.start_time), ganttStartMin);
@@ -106,6 +119,7 @@ export function calculateUnavailableBlocks(
           left: minutesToPx(start),
           width: minutesToPx(end) - minutesToPx(start),
           label: '希望休',
+          type: 'unavailable',
         });
       }
     }

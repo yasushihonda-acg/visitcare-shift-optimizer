@@ -90,12 +90,14 @@ describe('calculateUnavailableBlocks', () => {
         left: timeToPx('07:00'),
         width: timeToPx('09:00') - timeToPx('07:00'),
         label: '勤務時間外',
+        type: 'off_hours',
       });
       // 17:00-21:00ブロック
       expect(blocks[1]).toEqual({
         left: timeToPx('17:00'),
         width: timeToPx('21:00') - timeToPx('17:00'),
         label: '勤務時間外',
+        type: 'off_hours',
       });
     });
 
@@ -110,6 +112,7 @@ describe('calculateUnavailableBlocks', () => {
         left: timeToPx('17:00'),
         width: timeToPx('21:00') - timeToPx('17:00'),
         label: '勤務時間外',
+        type: 'off_hours',
       });
     });
 
@@ -124,6 +127,7 @@ describe('calculateUnavailableBlocks', () => {
         left: timeToPx('07:00'),
         width: timeToPx('09:00') - timeToPx('07:00'),
         label: '勤務時間外',
+        type: 'off_hours',
       });
     });
 
@@ -139,6 +143,7 @@ describe('calculateUnavailableBlocks', () => {
       expect(blocks).toHaveLength(3);
       // 7:00-9:00
       expect(blocks[0].label).toBe('勤務時間外');
+      expect(blocks[0].type).toBe('off_hours');
       expect(blocks[0].left).toBe(timeToPx('07:00'));
       expect(blocks[0].width).toBe(timeToPx('09:00') - timeToPx('07:00'));
       // 12:00-14:00
@@ -158,18 +163,30 @@ describe('calculateUnavailableBlocks', () => {
     });
   });
 
-  describe('勤務時間未設定', () => {
-    it('該当曜日に勤務スロットなし → ブロックなし（表示なし）', () => {
+  describe('勤務時間未設定（非勤務日）', () => {
+    it('該当曜日に勤務スロットなし → 非勤務日ブロック（全域）', () => {
       const availability: Partial<Record<DayOfWeek, AvailabilitySlot[]>> = {
         tuesday: [{ start_time: '09:00', end_time: '17:00' }],
       };
       const blocks = calculateUnavailableBlocks(availability, [], monday, mondayDate);
-      expect(blocks).toHaveLength(0);
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        left: timeToPx('07:00'),
+        width: timeToPx('21:00') - timeToPx('07:00'),
+        label: '非勤務日',
+        type: 'day_off',
+      });
     });
 
-    it('weekly_availability自体が空 → ブロックなし', () => {
+    it('weekly_availability自体が空 → 非勤務日ブロック（全域）', () => {
       const blocks = calculateUnavailableBlocks({}, [], monday, mondayDate);
-      expect(blocks).toHaveLength(0);
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        left: timeToPx('07:00'),
+        width: timeToPx('21:00') - timeToPx('07:00'),
+        label: '非勤務日',
+        type: 'day_off',
+      });
     });
   });
 
@@ -207,6 +224,7 @@ describe('calculateUnavailableBlocks', () => {
         left: timeToPx('09:00'),
         width: timeToPx('12:00') - timeToPx('09:00'),
         label: '希望休',
+        type: 'unavailable',
       });
     });
 
@@ -245,6 +263,7 @@ describe('calculateUnavailableBlocks', () => {
         left: timeToPx('07:00'),
         width: timeToPx('09:00') - timeToPx('07:00'),
         label: '勤務時間外',
+        type: 'off_hours',
       });
     });
   });
