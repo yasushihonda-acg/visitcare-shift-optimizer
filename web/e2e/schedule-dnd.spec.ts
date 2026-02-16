@@ -38,17 +38,29 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
       return;
     }
 
-    // 最初の行にあるバーを取得
-    const firstRow = ganttRows.first();
-    const firstRowBar = firstRow.locator('[data-testid^="gantt-bar-"]').first();
-    const barTestId = await firstRowBar.getAttribute('data-testid');
-    if (!barTestId) {
-      test.skip(true, '最初の行にオーダーがないためスキップ');
+    // オーダーを持つ行を検索（PR #48でオーダーなし行も表示されるようになったため）
+    let sourceRowIndex = -1;
+    let barTestId: string | null = null;
+    for (let i = 0; i < rowCount; i++) {
+      const row = ganttRows.nth(i);
+      const barCount = await row.locator('[data-testid^="gantt-bar-"]').count();
+      if (barCount > 0) {
+        barTestId = await row.locator('[data-testid^="gantt-bar-"]').first().getAttribute('data-testid');
+        sourceRowIndex = i;
+        break;
+      }
+    }
+    if (sourceRowIndex < 0 || !barTestId) {
+      test.skip(true, 'オーダーを持つ行がないためスキップ');
       return;
     }
 
-    // 2番目の行にドロップ
-    const secondRow = ganttRows.nth(1);
+    const firstRow = ganttRows.nth(sourceRowIndex);
+    const firstRowBar = firstRow.locator('[data-testid^="gantt-bar-"]').first();
+
+    // 別の行にドロップ（ソース行と異なる行を選択）
+    const targetIndex = sourceRowIndex === 0 ? 1 : 0;
+    const secondRow = ganttRows.nth(targetIndex);
     await dragOrderToTarget(page, firstRowBar, secondRow);
 
     // D&D操作完了を確認: 成功/警告/エラー いずれかのトーストが表示される
