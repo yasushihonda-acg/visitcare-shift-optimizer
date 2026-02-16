@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-17（スケジュール画面UI改善完成）
-**現在のフェーズ**: Phase 0-5 完了 → UI/UXの視認性向上・本番運用
+**最終更新**: 2026-02-17（ガントチャートレスポンシブ幅対応完成）
+**現在のフェーズ**: Phase 0-5 完了 → D&D時間軸移動機能実装開始
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -13,9 +13,9 @@
 - **Phase 4d-security**: RBAC (Custom Claims 3役体系) + Firestoreセキュリティルール
 - **Google Maps**: Distance Matrix API実装 + Geocoding API (座標ジオコーディング完了)
 - **UI/UXピーク**: 週切替(カレンダーピッカー)、制約パラメータUI、マスタ間タブナビゲーション
-- **E2E**: Playwright 19テスト全パス
+- **E2E**: Playwright 38テスト全パス（schedule, masters, history対応）
 - **ドキュメント**: ユーザーマニュアル + トラブルシューティングガイド
-- **テスト合計**: 370テスト全パス（Optimizer 156 + Web 114 + Firestore 69 + E2E 19 + Seed 12）
+- **テスト合計**: 408テスト全パス（Optimizer 156 + Web 114 + Firestore 69 + E2E 38 + Seed 12）
 
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
@@ -60,15 +60,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 - **全4ジョブ成功確認済み**（PR #7〜#18）
 
-## 最新の本番環境修正（2026-02-16 PR #42 以降）
-詳細: `docs/handoff/archive/2026-02-detailed-history.md` の「本番環境修正・最適化履歴」セクション参照
+## 直近の実装（2026-02-16～2026-02-17）
 
-- PR #42: Cloud Run 504タイムアウト、Firestoreインデックス欠落 → 修正済み
-- PR #46: Seedデータ座標ジオコーディング（Google Geocoding API）
-- PR #47: ガントチャートヘルパー勤務不可時間帯グレーアウト表示
-- PR #48: スケジュール画面にオーダーなしヘルパー行も表示
-- PR #49: E2E D&Dテスト修正（オーダーなし行対応）
-- **PR #50**: 休みの日のヘルパー行グレーアウト表示改善（3タイプ分離、「休」バッジ）
+- **PR #51**: D&Dゴーストバー（ドロップ先プレビュー）を追加
+- **PR #52**: 時間目盛りを10分単位に変更し、ゴーストを10分ブロック表示に改善
+- **PR #53**: ドラッグ中の時間帯を全行横断でハイライト表示
+- **PR #54** ✅ **完成**: ガントチャートをレスポンシブ幅に対応（画面幅いっぱいに表示）
+  - `GanttScaleContext` (React Context) で動的スロット幅を配信
+  - ResizeObserverでコンテナ幅を計測し `slotWidth = max(4, (w - 120) / 168)` を動的算出
+  - デスクトップ（1920px）では画面幅いっぱいに拡大（スロット幅4px → 約10px）
+  - モバイルではスクロール表示
+  - CI全テスト通過、デプロイ完了
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -143,10 +145,10 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **Optimizer**: 156/156 pass
 - **Web (Next.js)**: 114/114 pass（+12 calculateUnavailableBlocks + 改善型アサーション）
 - **Firestore Rules**: 69/69 pass
-- **E2E Tests (Playwright)**: 19/19 pass（PR #49で D&D テスト修正済み）
+- **E2E Tests (Playwright)**: 38/38 pass（schedule, schedule-dnd, schedule-interactions, masters, masters-crud, history）
 - **Seed**: 12/12 pass
 - **CI/CD**: 全4ジョブ成功（test-optimizer + test-web + test-firestore-rules + test-e2e）
-- **合計**: 370テスト全パス ✅
+- **合計**: 408テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
