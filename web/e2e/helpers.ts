@@ -15,6 +15,7 @@ export async function waitForAuth(page: Page) {
  */
 export async function goToSchedule(page: Page) {
   await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('visitcare-welcome-shown', 'true'));
   await waitForAuth(page);
   // データロード完了を待つ（「読み込み中...」が消えるまで）
   await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 30_000 });
@@ -25,6 +26,7 @@ export async function goToSchedule(page: Page) {
  */
 export async function goToMasters(page: Page, tab: 'customers' | 'helpers' | 'unavailability') {
   await page.goto(`/masters/${tab}/`);
+  await page.evaluate(() => localStorage.setItem('visitcare-welcome-shown', 'true'));
   await waitForAuth(page);
 }
 
@@ -33,6 +35,7 @@ export async function goToMasters(page: Page, tab: 'customers' | 'helpers' | 'un
  */
 export async function goToHistory(page: Page) {
   await page.goto('/history/');
+  await page.evaluate(() => localStorage.setItem('visitcare-welcome-shown', 'true'));
   await waitForAuth(page);
 }
 

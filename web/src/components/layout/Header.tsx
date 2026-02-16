@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut } from 'lucide-react';
+import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut, HelpCircle } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -21,7 +21,11 @@ const ROLE_LABELS: Record<string, string> = {
   helper: 'ヘルパー',
 };
 
-export function Header() {
+interface HeaderProps {
+  onShowWelcome?: () => void;
+}
+
+export function Header({ onShowWelcome }: HeaderProps = {}) {
   const pathname = usePathname();
   const isMasterPage = pathname?.startsWith('/masters');
   const isSchedulePage = pathname === '/' || pathname === '';
@@ -103,6 +107,15 @@ export function Header() {
                   実行履歴
                 </Link>
               </DropdownMenuItem>
+              {onShowWelcome && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onShowWelcome}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    使い方
+                  </DropdownMenuItem>
+                </>
+              )}
               {isLoggedIn && (
                 <>
                   <DropdownMenuSeparator />
