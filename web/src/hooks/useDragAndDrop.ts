@@ -21,6 +21,7 @@ interface UseDragAndDropInput {
 export function useDragAndDrop(input: UseDragAndDropInput) {
   const { helperRows, unassignedOrders, helpers, customers, unavailability, day } = input;
   const [dropZoneStatuses, setDropZoneStatuses] = useState<Map<string, DropZoneStatus>>(new Map());
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
   const findOrder = useCallback(
     (orderId: string): Order | undefined => {
@@ -33,9 +34,13 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
     [helperRows, unassignedOrders]
   );
 
-  const handleDragStart = useCallback((_event: DragStartEvent) => {
-    // ドラッグ開始時の処理（将来DragOverlay追加時に拡張予定）
-  }, []);
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const dragData = event.active.data.current as DragData | undefined;
+    if (dragData) {
+      const order = findOrder(dragData.orderId);
+      setActiveOrder(order ?? null);
+    }
+  }, [findOrder]);
 
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
@@ -86,6 +91,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       setDropZoneStatuses(new Map());
+      setActiveOrder(null);
 
       const dragData = event.active.data.current as DragData | undefined;
       if (!dragData || !event.over) return;
@@ -144,10 +150,12 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
 
   const handleDragCancel = useCallback(() => {
     setDropZoneStatuses(new Map());
+    setActiveOrder(null);
   }, []);
 
   return {
     dropZoneStatuses,
+    activeOrder,
     handleDragStart,
     handleDragOver,
     handleDragEnd,

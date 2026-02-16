@@ -70,6 +70,7 @@ function SchedulePage() {
 
   const {
     dropZoneStatuses,
+    activeOrder,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
@@ -140,6 +141,7 @@ function SchedulePage() {
             onOrderClick={handleOrderClick}
             dropZoneStatuses={dropZoneStatuses}
             unavailability={unavailability}
+            activeOrder={activeOrder}
           />
         </DndContext>
       </main>
