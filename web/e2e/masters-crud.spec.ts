@@ -26,8 +26,8 @@ test.describe('利用者マスタ CRUD', () => {
     // 成功トースト
     await waitForToast(page, '利用者を追加しました');
 
-    // テーブルに新規行が表示される
-    await expect(page.getByRole('cell', { name: /テスト/ })).toBeVisible({ timeout: 5_000 });
+    // テーブルに新規行が表示される（リトライで複数行ありえるため.first()）
+    await expect(page.getByRole('cell', { name: /テスト\s*太郎/ }).first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('利用者を編集できる', async ({ page }) => {
@@ -76,8 +76,8 @@ test.describe('ヘルパーマスタ CRUD', () => {
     // 成功トースト
     await waitForToast(page, 'ヘルパーを追加しました');
 
-    // テーブルに新規行が表示される
-    await expect(page.getByRole('cell', { name: /E2E/ })).toBeVisible({ timeout: 5_000 });
+    // テーブルに新規行が表示される（リトライで複数行ありえるため.first()）
+    await expect(page.getByRole('cell', { name: /E2E\s*テスト/ }).first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('ヘルパーを編集できる', async ({ page }) => {
@@ -117,12 +117,15 @@ test.describe('希望休管理 CRUD', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('希望休を追加')).toBeVisible();
 
-    // スタッフ選択（comboboxクリック→オプション表示待ち→選択）
-    const staffSelect = dialog.locator('[role="combobox"]').first();
-    await staffSelect.click();
-    const firstOption = page.locator('[role="option"]').first();
-    await expect(firstOption).toBeVisible({ timeout: 5_000 });
-    await firstOption.click();
+    // スタッフ選択（Radix UI Select: trigger→listbox portal→option）
+    const staffTrigger = dialog.locator('[role="combobox"]').first();
+    await staffTrigger.click();
+    // ドロップダウンがPortalで表示されるまで待機
+    const listbox = page.locator('[role="listbox"]');
+    await expect(listbox).toBeVisible({ timeout: 5_000 });
+    await listbox.locator('[role="option"]').first().click();
+    // 選択が反映されるまで待機（プレースホルダーが消える）
+    await expect(staffTrigger).not.toHaveText('スタッフを選択', { timeout: 3_000 });
 
     // 不在スロットを追加し、スロットが表示されるのを確認
     await dialog.getByRole('button', { name: '追加' }).click();
@@ -146,11 +149,12 @@ test.describe('希望休管理 CRUD', () => {
       const addDialog = page.getByRole('dialog');
       await expect(addDialog).toBeVisible();
 
-      const staffSelect = addDialog.locator('[role="combobox"]').first();
-      await staffSelect.click();
-      const firstOption = page.locator('[role="option"]').first();
-      await expect(firstOption).toBeVisible({ timeout: 5_000 });
-      await firstOption.click();
+      const staffTrigger = addDialog.locator('[role="combobox"]').first();
+      await staffTrigger.click();
+      const listbox = page.locator('[role="listbox"]');
+      await expect(listbox).toBeVisible({ timeout: 5_000 });
+      await listbox.locator('[role="option"]').first().click();
+      await expect(staffTrigger).not.toHaveText('スタッフを選択', { timeout: 3_000 });
 
       await addDialog.getByRole('button', { name: '追加' }).click();
       await expect(addDialog.getByText(/終日/)).toBeVisible({ timeout: 3_000 });

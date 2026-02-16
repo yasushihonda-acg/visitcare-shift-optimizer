@@ -38,12 +38,16 @@ export async function goToHistory(page: Page) {
  * スケジュール画面でガントバーが表示されるまで待機する。
  * CI環境ではSeedスクリプトがJST基準で週を算出するが、
  * ブラウザはUTCで動作するため表示週がずれる場合がある。
+ * まずgantt-row（Firestoreデータロード指標）を待ち、
  * ガントバーが見つからなければ「次の週」へ移動してリトライする。
  */
 export async function waitForGanttBars(page: Page) {
   const barLocator = page.locator('[data-testid^="gantt-bar-"]').first();
+  // ヘルパー行の表示を待つ（Firestoreデータのロード完了指標）
+  await page.locator('[data-testid^="gantt-row-"]').first().waitFor({ timeout: 15_000 });
+  // 同一週のバーを短時間待つ
   try {
-    await barLocator.waitFor({ timeout: 5_000 });
+    await barLocator.waitFor({ timeout: 3_000 });
     return;
   } catch {
     // 現在の週にバーがない → 次の週へ移動（JST/UTCずれ対策）
