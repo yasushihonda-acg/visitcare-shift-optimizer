@@ -25,9 +25,9 @@ export function timeToMinutes(time: string): number {
 }
 
 /** 分数 → ピクセル位置（ガント開始からの相対位置） */
-function minutesToPx(minutes: number): number {
+function minutesToPx(minutes: number, slotWidth: number = SLOT_WIDTH_PX): number {
   const startMinutes = GANTT_START_HOUR * 60;
-  return ((minutes - startMinutes) / MINUTES_PER_SLOT) * SLOT_WIDTH_PX;
+  return ((minutes - startMinutes) / MINUTES_PER_SLOT) * slotWidth;
 }
 
 export type UnavailableBlockType = 'off_hours' | 'day_off' | 'unavailable';
@@ -45,7 +45,9 @@ export function calculateUnavailableBlocks(
   unavailableSlots: import('@/types').UnavailableSlot[],
   day: import('@/types').DayOfWeek,
   dayDate: Date,
+  slotWidth: number = SLOT_WIDTH_PX,
 ): UnavailableBlock[] {
+  const toPx = (minutes: number) => minutesToPx(minutes, slotWidth);
   const ganttStartMin = GANTT_START_HOUR * 60;
   const ganttEndMin = GANTT_END_HOUR * 60;
   const blocks: UnavailableBlock[] = [];
@@ -65,8 +67,8 @@ export function calculateUnavailableBlocks(
 
       if (slotStart > cursor) {
         blocks.push({
-          left: minutesToPx(cursor),
-          width: minutesToPx(slotStart) - minutesToPx(cursor),
+          left: toPx(cursor),
+          width: toPx(slotStart) - toPx(cursor),
           label: '勤務時間外',
           type: 'off_hours',
         });
@@ -76,8 +78,8 @@ export function calculateUnavailableBlocks(
 
     if (cursor < ganttEndMin) {
       blocks.push({
-        left: minutesToPx(cursor),
-        width: minutesToPx(ganttEndMin) - minutesToPx(cursor),
+        left: toPx(cursor),
+        width: toPx(ganttEndMin) - toPx(cursor),
         label: '勤務時間外',
         type: 'off_hours',
       });
@@ -85,8 +87,8 @@ export function calculateUnavailableBlocks(
   } else {
     // 勤務時間未設定 → 非勤務日として全域をグレーアウト
     blocks.push({
-      left: minutesToPx(ganttStartMin),
-      width: minutesToPx(ganttEndMin) - minutesToPx(ganttStartMin),
+      left: toPx(ganttStartMin),
+      width: toPx(ganttEndMin) - toPx(ganttStartMin),
       label: '非勤務日',
       type: 'day_off',
     });
@@ -106,8 +108,8 @@ export function calculateUnavailableBlocks(
 
     if (slot.all_day) {
       blocks.push({
-        left: minutesToPx(ganttStartMin),
-        width: minutesToPx(ganttEndMin) - minutesToPx(ganttStartMin),
+        left: toPx(ganttStartMin),
+        width: toPx(ganttEndMin) - toPx(ganttStartMin),
         label: '希望休',
         type: 'unavailable',
       });
@@ -116,8 +118,8 @@ export function calculateUnavailableBlocks(
       const end = Math.min(timeToMinutes(slot.end_time), ganttEndMin);
       if (end > start) {
         blocks.push({
-          left: minutesToPx(start),
-          width: minutesToPx(end) - minutesToPx(start),
+          left: toPx(start),
+          width: toPx(end) - toPx(start),
           label: '希望休',
           type: 'unavailable',
         });

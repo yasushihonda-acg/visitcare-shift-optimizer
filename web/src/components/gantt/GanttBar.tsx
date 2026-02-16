@@ -3,7 +3,8 @@
 import { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { timeToColumn, SLOT_WIDTH_PX } from './constants';
+import { timeToColumn } from './constants';
+import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
 import type { DragData } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
@@ -34,10 +35,11 @@ const SERVICE_COLORS: Record<string, { bar: string; hover: string }> = {
 };
 
 export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, onClick, sourceHelperId }: GanttBarProps) {
+  const slotWidth = useSlotWidth();
   const startCol = timeToColumn(order.start_time);
   const endCol = timeToColumn(order.end_time);
-  const width = (endCol - startCol) * SLOT_WIDTH_PX;
-  const left = (startCol - 1) * SLOT_WIDTH_PX;
+  const width = (endCol - startCol) * slotWidth;
+  const left = (startCol - 1) * slotWidth;
 
   const dragData: DragData = { orderId: order.id, sourceHelperId };
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -52,7 +54,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
 
   const style = {
     left,
-    width: Math.max(width, SLOT_WIDTH_PX * 2),
+    width: Math.max(width, slotWidth * 2),
     transform: CSS.Translate.toString(transform),
   };
 

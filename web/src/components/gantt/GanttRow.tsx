@@ -1,10 +1,11 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { GanttBar } from './GanttBar';
 import { UnavailableBlocksOverlay } from './UnavailableBlocksOverlay';
-import { SLOT_WIDTH_PX, TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR, calculateUnavailableBlocks, timeToColumn } from './constants';
+import { TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR, calculateUnavailableBlocks, timeToColumn } from './constants';
+import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer, StaffUnavailability, DayOfWeek } from '@/types';
 import type { HelperScheduleRow } from '@/hooks/useScheduleData';
 import type { ViolationMap } from '@/lib/constraints/checker';
@@ -40,26 +41,11 @@ const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
 
 /** 10分 = 2スロット（5分×2） */
 const SLOTS_PER_10MIN = 2;
-const PX_PER_10MIN = SLOTS_PER_10MIN * SLOT_WIDTH_PX;
 const TOTAL_10MIN_INTERVALS = (GANTT_END_HOUR - GANTT_START_HOUR) * 6; // 14h × 6 = 84
 
-/** 時間グリッド背景線（10分単位、全行で同一なので一度だけ生成） */
-const GRID_LINES = Array.from({ length: TOTAL_10MIN_INTERVALS }, (_, i) => {
-  const isHour = i % 6 === 0;
-  const isHalf = i % 3 === 0; // 30分
-  return (
-    <div
-      key={i}
-      className={cn(
-        'absolute top-0 h-full border-l',
-        isHour ? 'border-border/25' : isHalf ? 'border-border/15' : 'border-border/8',
-      )}
-      style={{ left: i * PX_PER_10MIN }}
-    />
-  );
-});
-
 export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder }: GanttRowProps) {
+  const slotWidth = useSlotWidth();
+  const pxPer10Min = SLOTS_PER_10MIN * slotWidth;
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
 
   const staffUnavailSlots = unavailability
@@ -71,7 +57,25 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
     staffUnavailSlots,
     day,
     dayDate,
+    slotWidth,
   );
+
+  const gridLines = useMemo(() =>
+    Array.from({ length: TOTAL_10MIN_INTERVALS }, (_, i) => {
+      const isHour = i % 6 === 0;
+      const isHalf = i % 3 === 0;
+      return (
+        <div
+          key={i}
+          className={cn(
+            'absolute top-0 h-full border-l',
+            isHour ? 'border-border/25' : isHalf ? 'border-border/15' : 'border-border/8',
+          )}
+          style={{ left: i * pxPer10Min }}
+        />
+      );
+    }),
+  [pxPer10Min]);
 
   // 休みの日かどうか判定（非勤務日 or 終日希望休）
   const isDayOff = unavailableBlocks.some((b) => b.type === 'day_off' || (b.type === 'unavailable' && b.label === '希望休' && b.left === 0));
@@ -112,10 +116,10 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
           'relative transition-colors duration-150',
           isOver && DROP_ZONE_STYLES[dropZoneStatus]
         )}
-        style={{ width: TOTAL_SLOTS * SLOT_WIDTH_PX, height: 36 }}
+        style={{ width: TOTAL_SLOTS * slotWidth, height: 36 }}
       >
         {/* 時間グリッド背景線 */}
-        {GRID_LINES}
+        {gridLines}
         {/* 勤務不可時間帯オーバーレイ */}
         <UnavailableBlocksOverlay blocks={unavailableBlocks} />
         {/* オーダーバー */}
@@ -151,7 +155,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
           const blockCount = Math.max(endBlock - startBlock, 1);
 
           return Array.from({ length: blockCount }, (_, i) => {
-            const blockLeft = (startBlock + i) * PX_PER_10MIN;
+            const blockLeft = (startBlock + i) * pxPer10Min;
             const isFirst = i === 0;
             const isLast = i === blockCount - 1;
             return (
@@ -167,7 +171,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
                 )}
                 style={{
                   left: blockLeft,
-                  width: PX_PER_10MIN,
+                  width: pxPer10Min,
                 }}
                 title={isFirst ? `${ghostLabel} ${activeOrder.start_time}-${activeOrder.end_time}` : undefined}
               />

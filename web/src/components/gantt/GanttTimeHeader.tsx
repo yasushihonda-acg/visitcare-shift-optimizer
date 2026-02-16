@@ -1,8 +1,10 @@
 'use client';
 
-import { GANTT_START_HOUR, GANTT_END_HOUR, SLOT_WIDTH_PX, HELPER_NAME_WIDTH_PX, TOTAL_SLOTS } from './constants';
+import { GANTT_START_HOUR, GANTT_END_HOUR, HELPER_NAME_WIDTH_PX, TOTAL_SLOTS } from './constants';
+import { useSlotWidth } from './GanttScaleContext';
 
 export function GanttTimeHeader() {
+  const slotWidth = useSlotWidth();
   const hours = Array.from(
     { length: GANTT_END_HOUR - GANTT_START_HOUR },
     (_, i) => GANTT_START_HOUR + i
@@ -18,11 +20,11 @@ export function GanttTimeHeader() {
       </div>
       <div
         className="relative"
-        style={{ width: TOTAL_SLOTS * SLOT_WIDTH_PX }}
+        style={{ width: TOTAL_SLOTS * slotWidth }}
       >
         {hours.map((hour) => {
           const slotsPerHour = 60 / 5;
-          const hourLeft = (hour - GANTT_START_HOUR) * slotsPerHour * SLOT_WIDTH_PX;
+          const hourLeft = (hour - GANTT_START_HOUR) * slotsPerHour * slotWidth;
           return (
             <div key={hour}>
               {/* 正時の線 + ラベル */}
@@ -36,7 +38,7 @@ export function GanttTimeHeader() {
               </div>
               {/* 10分刻みのサブ目盛り（:10, :20, :30, :40, :50） */}
               {[10, 20, 30, 40, 50].map((min) => {
-                const subLeft = hourLeft + (min / 5) * SLOT_WIDTH_PX;
+                const subLeft = hourLeft + (min / 5) * slotWidth;
                 return (
                   <div
                     key={`${hour}:${min}`}
