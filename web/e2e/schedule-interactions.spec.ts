@@ -25,7 +25,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await expect(panel).toBeVisible();
 
     // 時間セクション
-    await expect(panel.getByText('時間')).toBeVisible();
+    await expect(panel.getByText('時間', { exact: true })).toBeVisible();
     // サービス種別（身体介護 or 生活援助 or 介護予防 のいずれか）
     await expect(panel.getByText(/身体介護|生活援助|介護予防/)).toBeVisible();
     // ステータス（割当済 or 未割当）
@@ -66,9 +66,9 @@ test.describe('スケジュール画面インタラクション', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
 
-    await expect(dialog.getByRole('button', { name: 'キャンセル' })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'テスト実行' })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: '実行' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'キャンセル', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'テスト実行', exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: '実行', exact: true })).toBeVisible();
   });
 
   test('最適化ダイアログをキャンセルで閉じられる', async ({ page }) => {

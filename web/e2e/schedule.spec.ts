@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import { goToSchedule } from './helpers';
 
 test.describe('スケジュール画面', () => {
+  // CI・並列実行時のFirestoreデータロード遅延対策
+  test.describe.configure({ retries: 1, timeout: 60_000 });
+
   test('ヘッダーとブランド名が表示される', async ({ page }) => {
     await goToSchedule(page);
     await expect(page.locator('header')).toBeVisible();

@@ -16,6 +16,8 @@ export async function waitForAuth(page: Page) {
 export async function goToSchedule(page: Page) {
   await page.goto('/');
   await waitForAuth(page);
+  // データロード完了を待つ（「読み込み中...」が消えるまで）
+  await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 30_000 });
 }
 
 /**
@@ -52,8 +54,13 @@ export async function waitForGanttBars(page: Page) {
  * 低レベルmouse制御でD&Dを実行する。
  * @dnd-kit PointerSensor (distance: 5px) を確実にトリガーするため、
  * 中間点を経由し、dragover発火のためdrop位置へ2回moveする。
+ * scrollIntoViewIfNeeded で要素をビューポート内に確実に配置する。
  */
 export async function dragOrderToTarget(page: Page, source: Locator, target: Locator) {
+  // ソースとターゲットをビューポート内にスクロール
+  await source.scrollIntoViewIfNeeded();
+  await target.scrollIntoViewIfNeeded();
+
   const dragBox = await source.boundingBox();
   const dropBox = await target.boundingBox();
   if (!dragBox || !dropBox) throw new Error('Could not get bounding box for drag source or target');
@@ -71,6 +78,8 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   // dragover発火用に再度move
   await page.mouse.move(endX, endY);
   await page.mouse.up();
+  // 非同期のhandleDragEnd（Firestore書き込み）完了を待つ
+  await page.waitForTimeout(500);
 }
 
 /**
