@@ -15,6 +15,7 @@ test.describe('利用者マスタ CRUD', () => {
     // フォーム入力
     await dialog.locator('#name\\.family').fill('テスト');
     await dialog.locator('#name\\.given').fill('太郎');
+    await dialog.locator('#service_manager').fill('テストサ責');
     await dialog.locator('#address').fill('東京都テスト区1-2-3');
     await dialog.locator('#location\\.lat').fill('35.6895');
     await dialog.locator('#location\\.lng').fill('139.6917');
@@ -32,6 +33,8 @@ test.describe('利用者マスタ CRUD', () => {
   test('利用者を編集できる', async ({ page }) => {
     await goToMasters(page, 'customers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+    // データ行がロードされるまで待機
+    await page.getByRole('row').nth(1).waitFor({ timeout: 15_000 });
 
     // 最初の行の編集ボタン（Pencilアイコン）をクリック
     const editButton = page.getByRole('row').nth(1).getByRole('button').first();
@@ -80,6 +83,8 @@ test.describe('ヘルパーマスタ CRUD', () => {
   test('ヘルパーを編集できる', async ({ page }) => {
     await goToMasters(page, 'helpers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+    // データ行がロードされるまで待機
+    await page.getByRole('row').nth(1).waitFor({ timeout: 15_000 });
 
     // 最初の行の編集ボタンをクリック
     const editButton = page.getByRole('row').nth(1).getByRole('button').first();
@@ -112,15 +117,16 @@ test.describe('希望休管理 CRUD', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('希望休を追加')).toBeVisible();
 
-    // スタッフ選択
+    // スタッフ選択（comboboxクリック→オプション表示待ち→選択）
     const staffSelect = dialog.locator('[role="combobox"]').first();
     await staffSelect.click();
-    // ドロップダウンの最初のオプションを選択
     const firstOption = page.locator('[role="option"]').first();
+    await expect(firstOption).toBeVisible({ timeout: 5_000 });
     await firstOption.click();
 
-    // 不在スロットを追加
+    // 不在スロットを追加し、スロットが表示されるのを確認
     await dialog.getByRole('button', { name: '追加' }).click();
+    await expect(dialog.getByText(/終日/)).toBeVisible({ timeout: 3_000 });
 
     // 保存
     await dialog.getByRole('button', { name: '保存' }).click();
@@ -133,28 +139,28 @@ test.describe('希望休管理 CRUD', () => {
     await goToMasters(page, 'unavailability');
     await expect(page.getByRole('button', { name: /新規|追加/ })).toBeVisible({ timeout: 10_000 });
 
-    // テーブルが存在し行がある場合のみ
-    const rows = page.getByRole('row');
-    const rowCount = await rows.count();
-    if (rowCount <= 1) {
-      // ヘッダー行のみ = データなし → 先に追加
+    // データ行がない場合は先に追加する
+    const hasDataRow = await page.getByRole('row').nth(1).isVisible().catch(() => false);
+    if (!hasDataRow) {
       await page.getByRole('button', { name: /新規|追加/ }).click();
-      const dialog = page.getByRole('dialog');
-      await expect(dialog).toBeVisible();
+      const addDialog = page.getByRole('dialog');
+      await expect(addDialog).toBeVisible();
 
-      const staffSelect = dialog.locator('[role="combobox"]').first();
+      const staffSelect = addDialog.locator('[role="combobox"]').first();
       await staffSelect.click();
       const firstOption = page.locator('[role="option"]').first();
+      await expect(firstOption).toBeVisible({ timeout: 5_000 });
       await firstOption.click();
 
-      await dialog.getByRole('button', { name: '追加' }).click();
-      await dialog.getByRole('button', { name: '保存' }).click();
+      await addDialog.getByRole('button', { name: '追加' }).click();
+      await expect(addDialog.getByText(/終日/)).toBeVisible({ timeout: 3_000 });
+      await addDialog.getByRole('button', { name: '保存' }).click();
       await waitForToast(page, '希望休を登録しました');
-      // ダイアログが閉じてテーブルが更新されるのを待つ
-      await expect(page.getByRole('dialog')).toBeHidden({ timeout: 5_000 });
+      await expect(addDialog).toBeHidden({ timeout: 5_000 });
     }
 
-    // 既存の行の編集ボタンをクリック
+    // データ行の編集ボタンをクリック
+    await page.getByRole('row').nth(1).waitFor({ timeout: 10_000 });
     const editButton = page.getByRole('row').nth(1).getByRole('button').first();
     await editButton.click();
 

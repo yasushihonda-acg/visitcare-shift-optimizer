@@ -35,10 +35,21 @@ export async function goToHistory(page: Page) {
 }
 
 /**
- * スケジュール画面でガントバーが表示されるまで待機する
+ * スケジュール画面でガントバーが表示されるまで待機する。
+ * CI環境ではSeedスクリプトがJST基準で週を算出するが、
+ * ブラウザはUTCで動作するため表示週がずれる場合がある。
+ * ガントバーが見つからなければ「次の週」へ移動してリトライする。
  */
 export async function waitForGanttBars(page: Page) {
-  await page.locator('[data-testid^="gantt-bar-"]').first().waitFor({ timeout: 15_000 });
+  const barLocator = page.locator('[data-testid^="gantt-bar-"]').first();
+  try {
+    await barLocator.waitFor({ timeout: 5_000 });
+    return;
+  } catch {
+    // 現在の週にバーがない → 次の週へ移動（JST/UTCずれ対策）
+  }
+  await page.getByRole('button', { name: '次の週' }).click();
+  await barLocator.waitFor({ timeout: 10_000 });
 }
 
 /**
