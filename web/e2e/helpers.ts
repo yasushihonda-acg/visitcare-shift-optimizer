@@ -38,21 +38,13 @@ export async function goToHistory(page: Page) {
  * スケジュール画面でガントバーが表示されるまで待機する。
  * CI環境ではFirestore 4コレクションのデータロードに時間がかかるため、
  * まず「読み込み中...」スピナーの消失（=データロード完了）を待つ。
- * その後、JST/UTCずれでバーがなければ「次の週」へ移動してリトライする。
+ * Playwright config で timezoneId: 'Asia/Tokyo' を設定しているため、
+ * Seedデータ（JST）とブラウザの週計算が一致する。
  */
 export async function waitForGanttBars(page: Page) {
   const barLocator = page.locator('[data-testid^="gantt-bar-"]').first();
-  // スケジュールページのデータロード完了を待つ
-  // （ロード中は「読み込み中...」が表示される。未表示の場合も即座にpassする）
+  // データロード完了を待つ
   await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 30_000 });
-  // データロード後、バーを短時間待つ
-  try {
-    await barLocator.waitFor({ timeout: 5_000 });
-    return;
-  } catch {
-    // 現在の週にバーがない → 次の週へ移動（JST/UTCずれ対策）
-  }
-  await page.getByRole('button', { name: '次の週' }).click();
   await barLocator.waitFor({ timeout: 15_000 });
 }
 
