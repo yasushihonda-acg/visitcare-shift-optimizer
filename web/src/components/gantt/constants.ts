@@ -24,6 +24,96 @@ export function timeToMinutes(time: string): number {
   return h * 60 + m;
 }
 
+/** 分数 → ピクセル位置（ガント開始からの相対位置） */
+function minutesToPx(minutes: number): number {
+  const startMinutes = GANTT_START_HOUR * 60;
+  return ((minutes - startMinutes) / MINUTES_PER_SLOT) * SLOT_WIDTH_PX;
+}
+
+export interface UnavailableBlock {
+  left: number;
+  width: number;
+  label: string;
+}
+
+/** ヘルパーの勤務不可時間帯ブロックを計算 */
+export function calculateUnavailableBlocks(
+  weeklyAvailability: Partial<Record<import('@/types').DayOfWeek, import('@/types').AvailabilitySlot[]>>,
+  unavailableSlots: import('@/types').UnavailableSlot[],
+  day: import('@/types').DayOfWeek,
+  dayDate: Date,
+): UnavailableBlock[] {
+  const ganttStartMin = GANTT_START_HOUR * 60;
+  const ganttEndMin = GANTT_END_HOUR * 60;
+  const blocks: UnavailableBlock[] = [];
+
+  // 1. 勤務時間外ブロック
+  const daySlots = weeklyAvailability[day];
+  if (daySlots && daySlots.length > 0) {
+    // スロットを開始時刻でソート
+    const sorted = [...daySlots].sort(
+      (a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time),
+    );
+
+    let cursor = ganttStartMin;
+    for (const slot of sorted) {
+      const slotStart = Math.max(timeToMinutes(slot.start_time), ganttStartMin);
+      const slotEnd = Math.min(timeToMinutes(slot.end_time), ganttEndMin);
+
+      if (slotStart > cursor) {
+        blocks.push({
+          left: minutesToPx(cursor),
+          width: minutesToPx(slotStart) - minutesToPx(cursor),
+          label: '勤務時間外',
+        });
+      }
+      cursor = Math.max(cursor, slotEnd);
+    }
+
+    if (cursor < ganttEndMin) {
+      blocks.push({
+        left: minutesToPx(cursor),
+        width: minutesToPx(ganttEndMin) - minutesToPx(cursor),
+        label: '勤務時間外',
+      });
+    }
+  }
+  // 勤務時間未設定 → ブロックなし（表示しない）
+
+  // 2. 希望休ブロック
+  for (const slot of unavailableSlots) {
+    // 日付比較（年月日のみ）
+    const slotDate = slot.date;
+    if (
+      slotDate.getFullYear() !== dayDate.getFullYear() ||
+      slotDate.getMonth() !== dayDate.getMonth() ||
+      slotDate.getDate() !== dayDate.getDate()
+    ) {
+      continue;
+    }
+
+    if (slot.all_day) {
+      blocks.push({
+        left: minutesToPx(ganttStartMin),
+        width: minutesToPx(ganttEndMin) - minutesToPx(ganttStartMin),
+        label: '希望休',
+      });
+    } else if (slot.start_time && slot.end_time) {
+      const start = Math.max(timeToMinutes(slot.start_time), ganttStartMin);
+      const end = Math.min(timeToMinutes(slot.end_time), ganttEndMin);
+      if (end > start) {
+        blocks.push({
+          left: minutesToPx(start),
+          width: minutesToPx(end) - minutesToPx(start),
+          label: '希望休',
+        });
+      }
+    }
+  }
+
+  return blocks;
+}
+
 /** 2つの時間帯が重複するかチェック */
 export function isOverlapping(
   start1: string, end1: string,

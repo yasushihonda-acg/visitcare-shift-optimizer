@@ -3,8 +3,9 @@
 import { memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { GanttBar } from './GanttBar';
-import { SLOT_WIDTH_PX, TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR } from './constants';
-import type { Order, Customer } from '@/types';
+import { UnavailableBlocksOverlay } from './UnavailableBlocksOverlay';
+import { SLOT_WIDTH_PX, TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR, calculateUnavailableBlocks } from './constants';
+import type { Order, Customer, StaffUnavailability, DayOfWeek } from '@/types';
 import type { HelperScheduleRow } from '@/hooks/useScheduleData';
 import type { ViolationMap } from '@/lib/constraints/checker';
 import type { DropZoneStatus } from '@/lib/dnd/types';
@@ -17,6 +18,9 @@ interface GanttRowProps {
   onOrderClick?: (order: Order) => void;
   dropZoneStatus?: DropZoneStatus;
   index: number;
+  unavailability: StaffUnavailability[];
+  day: DayOfWeek;
+  dayDate: Date;
 }
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
@@ -35,8 +39,19 @@ const GRID_LINES = Array.from({ length: GANTT_END_HOUR - GANTT_START_HOUR }, (_,
   />
 ));
 
-export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index }: GanttRowProps) {
+export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate }: GanttRowProps) {
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
+
+  const staffUnavailSlots = unavailability
+    .filter((u) => u.staff_id === row.helper.id)
+    .flatMap((u) => u.unavailable_slots);
+
+  const unavailableBlocks = calculateUnavailableBlocks(
+    row.helper.weekly_availability,
+    staffUnavailSlots,
+    day,
+    dayDate,
+  );
 
   const { setNodeRef, isOver } = useDroppable({
     id: row.helper.id,
@@ -68,6 +83,8 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
       >
         {/* 時間グリッド背景線 */}
         {GRID_LINES}
+        {/* 勤務不可時間帯オーバーレイ */}
+        <UnavailableBlocksOverlay blocks={unavailableBlocks} />
         {/* オーダーバー */}
         {row.orders.map((order) => {
           const orderViolations = violations.get(order.id);
