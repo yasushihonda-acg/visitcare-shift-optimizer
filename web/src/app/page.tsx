@@ -139,6 +139,7 @@ function SchedulePage() {
             violations={violations}
             onOrderClick={handleOrderClick}
             dropZoneStatuses={dropZoneStatuses}
+            unavailability={unavailability}
           />
         </DndContext>
       </main>

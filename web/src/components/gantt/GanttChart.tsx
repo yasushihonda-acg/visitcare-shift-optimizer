@@ -4,7 +4,7 @@ import { GanttTimeHeader } from './GanttTimeHeader';
 import { GanttRow } from './GanttRow';
 import { UnassignedSection } from './UnassignedSection';
 import type { DaySchedule } from '@/hooks/useScheduleData';
-import type { Customer, Order } from '@/types';
+import type { Customer, Order, StaffUnavailability } from '@/types';
 import type { ViolationMap } from '@/lib/constraints/checker';
 import type { DropZoneStatus } from '@/lib/dnd/types';
 
@@ -14,9 +14,10 @@ interface GanttChartProps {
   violations: ViolationMap;
   onOrderClick?: (order: Order) => void;
   dropZoneStatuses?: Map<string, DropZoneStatus>;
+  unavailability: StaffUnavailability[];
 }
 
-export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses }: GanttChartProps) {
+export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability }: GanttChartProps) {
   if (schedule.totalOrders === 0) {
     return (
       <div className="flex items-center justify-center h-48 text-muted-foreground">
@@ -38,6 +39,9 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
             onOrderClick={onOrderClick}
             dropZoneStatus={dropZoneStatuses?.get(row.helper.id)}
             index={index}
+            unavailability={unavailability}
+            day={schedule.day}
+            dayDate={schedule.date}
           />
         ))}
       </div>
