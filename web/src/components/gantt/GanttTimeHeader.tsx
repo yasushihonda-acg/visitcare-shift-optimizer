@@ -22,16 +22,29 @@ export function GanttTimeHeader() {
       >
         {hours.map((hour) => {
           const slotsPerHour = 60 / 5;
-          const left = (hour - GANTT_START_HOUR) * slotsPerHour * SLOT_WIDTH_PX;
+          const hourLeft = (hour - GANTT_START_HOUR) * slotsPerHour * SLOT_WIDTH_PX;
           return (
-            <div
-              key={hour}
-              className="absolute top-0 h-full border-l border-border/40"
-              style={{ left }}
-            >
-              <span className="px-1 text-[10px] font-medium text-muted-foreground">
-                {hour}:00
-              </span>
+            <div key={hour}>
+              {/* 正時の線 + ラベル */}
+              <div
+                className="absolute top-0 h-full border-l border-border/40"
+                style={{ left: hourLeft }}
+              >
+                <span className="px-1 text-[10px] font-medium text-muted-foreground">
+                  {hour}:00
+                </span>
+              </div>
+              {/* 10分刻みのサブ目盛り（:10, :20, :30, :40, :50） */}
+              {[10, 20, 30, 40, 50].map((min) => {
+                const subLeft = hourLeft + (min / 5) * SLOT_WIDTH_PX;
+                return (
+                  <div
+                    key={`${hour}:${min}`}
+                    className={`absolute h-full border-l ${min === 30 ? 'border-border/25' : 'border-border/10'}`}
+                    style={{ left: subLeft, top: 0 }}
+                  />
+                );
+              })}
             </div>
           );
         })}

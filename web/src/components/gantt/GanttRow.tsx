@@ -38,14 +38,26 @@ const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
   invalid: 'bg-red-50 ring-2 ring-inset ring-red-400 cursor-not-allowed',
 };
 
-/** 時間グリッド背景線（全行で同一なので一度だけ生成） */
-const GRID_LINES = Array.from({ length: GANTT_END_HOUR - GANTT_START_HOUR }, (_, i) => (
-  <div
-    key={i}
-    className="absolute top-0 h-full border-l border-border/15"
-    style={{ left: i * 12 * SLOT_WIDTH_PX }}
-  />
-));
+/** 10分 = 2スロット（5分×2） */
+const SLOTS_PER_10MIN = 2;
+const PX_PER_10MIN = SLOTS_PER_10MIN * SLOT_WIDTH_PX;
+const TOTAL_10MIN_INTERVALS = (GANTT_END_HOUR - GANTT_START_HOUR) * 6; // 14h × 6 = 84
+
+/** 時間グリッド背景線（10分単位、全行で同一なので一度だけ生成） */
+const GRID_LINES = Array.from({ length: TOTAL_10MIN_INTERVALS }, (_, i) => {
+  const isHour = i % 6 === 0;
+  const isHalf = i % 3 === 0; // 30分
+  return (
+    <div
+      key={i}
+      className={cn(
+        'absolute top-0 h-full border-l',
+        isHour ? 'border-border/25' : isHalf ? 'border-border/15' : 'border-border/8',
+      )}
+      style={{ left: i * PX_PER_10MIN }}
+    />
+  );
+});
 
 export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder }: GanttRowProps) {
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
@@ -123,33 +135,44 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
             />
           );
         })}
-        {/* ゴーストバー（ドロップ先プレビュー） */}
+        {/* ゴーストブロック（10分単位のドロップ先プレビュー） */}
         {isOver && dropZoneStatus !== 'idle' && dropZoneStatus !== 'invalid' && activeOrder && (() => {
           const ghostStartCol = timeToColumn(activeOrder.start_time);
           const ghostEndCol = timeToColumn(activeOrder.end_time);
-          const ghostWidth = (ghostEndCol - ghostStartCol) * SLOT_WIDTH_PX;
-          const ghostLeft = (ghostStartCol - 1) * SLOT_WIDTH_PX;
           const ghostColor = GHOST_COLORS[activeOrder.service_type] ?? GHOST_COLORS.physical_care;
           const customerName = customers.get(activeOrder.customer_id);
           const ghostLabel = customerName
             ? (customerName.name.short ?? `${customerName.name.family}${customerName.name.given}`)
             : '';
-          return (
-            <div
-              className={cn(
-                'absolute top-1 h-8 rounded-md text-[11px] leading-8 px-1.5 truncate',
-                'border-2 border-dashed border-current opacity-40 animate-pulse pointer-events-none',
-                ghostColor,
-              )}
-              style={{
-                left: ghostLeft,
-                width: Math.max(ghostWidth, SLOT_WIDTH_PX * 2),
-              }}
-              title={`${ghostLabel} ${activeOrder.start_time}-${activeOrder.end_time}`}
-            >
-              {ghostWidth > 20 ? `${ghostLabel} ${activeOrder.start_time}-${activeOrder.end_time}` : ''}
-            </div>
-          );
+
+          // 10分単位（2スロット）にスナップ
+          const startBlock = Math.floor((ghostStartCol - 1) / SLOTS_PER_10MIN);
+          const endBlock = Math.ceil((ghostEndCol - 1) / SLOTS_PER_10MIN);
+          const blockCount = Math.max(endBlock - startBlock, 1);
+
+          return Array.from({ length: blockCount }, (_, i) => {
+            const blockLeft = (startBlock + i) * PX_PER_10MIN;
+            const isFirst = i === 0;
+            const isLast = i === blockCount - 1;
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'absolute top-1 h-8 border border-dashed border-current/50 pointer-events-none',
+                  ghostColor,
+                  isFirst && 'rounded-l-md',
+                  isLast && 'rounded-r-md',
+                  !isFirst && !isLast && 'rounded-none',
+                  isFirst && isLast && 'rounded-md',
+                )}
+                style={{
+                  left: blockLeft,
+                  width: PX_PER_10MIN,
+                }}
+                title={isFirst ? `${ghostLabel} ${activeOrder.start_time}-${activeOrder.end_time}` : undefined}
+              />
+            );
+          });
         })()}
       </div>
     </div>
