@@ -53,6 +53,9 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
     dayDate,
   );
 
+  // 休みの日かどうか判定（非勤務日 or 終日希望休）
+  const isDayOff = unavailableBlocks.some((b) => b.type === 'day_off' || (b.type === 'unavailable' && b.label === '希望休' && b.left === 0));
+
   const { setNodeRef, isOver } = useDroppable({
     id: row.helper.id,
   });
@@ -62,15 +65,25 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
   return (
     <div className={cn(
       'flex border-b border-border/50 transition-colors duration-100',
-      isEven ? 'bg-card' : 'bg-muted/20',
-      'hover:bg-primary/[0.03]'
+      isDayOff
+        ? 'bg-muted/50'
+        : isEven ? 'bg-card' : 'bg-muted/20',
+      !isDayOff && 'hover:bg-primary/[0.03]'
     )}>
       <div
-        className="shrink-0 border-r border-border/50 px-2 py-1 text-xs font-medium truncate flex items-center"
+        className={cn(
+          'shrink-0 border-r border-border/50 px-2 py-1 text-xs font-medium truncate flex items-center gap-1',
+          isDayOff && 'text-muted-foreground/60',
+        )}
         style={{ width: HELPER_NAME_WIDTH_PX, height: 36 }}
         title={helperName}
       >
-        {helperName}
+        <span className="truncate">{helperName}</span>
+        {isDayOff && (
+          <span className="shrink-0 text-[10px] px-1 py-0.5 rounded bg-muted-foreground/15 text-muted-foreground/70 leading-none">
+            休
+          </span>
+        )}
       </div>
       <div
         ref={setNodeRef}
