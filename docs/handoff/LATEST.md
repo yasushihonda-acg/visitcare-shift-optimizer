@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-16（ユーザー向けドキュメント完成）
-**現在のフェーズ**: Phase 0-5 完了 → 本番運用・ユーザー向けドキュメント整備
+**最終更新**: 2026-02-16（ガントチャートグレーアウト表示完成）
+**現在のフェーズ**: Phase 0-5 完了 → UI/UXの視認性向上・本番運用
 
 ## 完了済み
 
@@ -215,18 +215,9 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 - **GCP設定**: Firebase Webアプリ登録 + Auth Identity Platform初期化 + Anonymous sign-in有効化
 
 ## 重要なドキュメント
-- `docs/schema/firestore-schema.md` — 全コレクション定義 + クエリパターン
-- `docs/schema/data-model.mermaid` — ER図
-- `docs/adr/ADR-005-firestore-schema-design.md` — スキーマ設計判断
-- `docs/adr/ADR-006-pulp-replaces-python-mip.md` — PuLP採用の経緯
-- `docs/adr/ADR-007-fastapi-cloud-run-api.md` — FastAPI + Cloud Run API層
-- `docs/adr/ADR-008-phase3a-ui-architecture.md` — Phase 3a UIアーキテクチャ
-- `docs/adr/ADR-009-phase3b-integration.md` — Phase 3b 統合・認証・CI/CD
-- `docs/adr/ADR-010-workload-identity-federation.md` — WIF CI/CD認証
-- `docs/adr/ADR-011-phase4a-dnd-implementation.md` — Phase 4a DnD手動編集
-- `docs/adr/ADR-012-firestore-security-rules-phase1.md` — Phase 4c Firestoreルール認証必須化
-- `docs/adr/ADR-013-phase4d-master-edit-ui.md` — Phase 4d マスタ編集UI設計判断
-- `shared/types/` — TypeScript型定義（Python Pydantic モデルの参照元）
+- `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
+- `docs/adr/` — 14 ADR（スキーマ設計、PuLP、FastAPI、UI、認証、DnD、ルール、マスタ編集等）
+- `shared/types/` — TypeScript型定義（Python Pydantic参照元）
 - `optimizer/src/optimizer/` — 最適化エンジン + API
 - `web/src/` — Next.js フロントエンド
 
@@ -464,30 +455,32 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ### Seedデータ座標ジオコーディング更新（PR #46 — 2026-02-16 完了）
 - **ブランチ**: `feat/geocode-customer-coordinates`（マージ完了）
+- **実装内容**: Google Geocoding API でcustomers.csv全50件の住所を正確な座標に更新
+- **テスト**: バリデーション32/32全パス
+
+### ガントチャートヘルパー勤務不可時間帯グレーアウト表示（PR #47 — 2026-02-16 完了）
+- **ブランチ**: `feat/gantt-unavailable-greyout`（マージ完了）
 - **実装内容**:
-  - **一時API Key**: Google Geocoding API専用キー作成 → バッチ実行 → 削除完了
-  - **バッチジオコーディング**: customers.csv 全50件の住所を Google Maps Geocoding API で正確な座標に更新
-  - **成功件数**: 47件のユニークな住所全て成功（手動概算値から町名レベルの正確な座標へ）
-  - **座標精度向上**: 谷山中央エリア（南方向約3km）、武岡エリア（西方向約2km）の補正により実地理に近づく
-  - **座標範囲**: lat 31.519〜31.598, lng 130.514〜130.558（全て鹿児島市内）
-  - **世帯座標一致**: H001/H002/H003 の同一世帯ペアが完全に同じ座標（確認済み）
-- **バリデーション**: バリデーションテスト全パス（32件）、CSVフォーマット不変
-- **テスト**: 既存テスト全パス（32/32）
+  - `calculateUnavailableBlocks()`: 勤務時間外・希望休のブロック位置計算
+  - `UnavailableBlocksOverlay`: memo化コンポーネント、薄グレー+斜線パターン背示
+  - DnD対応: `pointer-events-none` + `z-[1]` でオーダーバー操作に影響なし
+  - 対応: 勤務時間外（7:00-21:00範囲外）、希望休終日/時間帯
+- **テスト**: ユニット12件新規+既存102件 = 114/114全パス
+- **ビルド**: TypeScript成功
 
 ## 次のアクション（優先度順）
 
 1. **追加E2Eテスト** 🟡 — オーダー手動編集、ドラッグ&ドロップなどのユーザーシナリオ
 2. **追加機能** 🟡 — 実績確認、利用者マスタの複合スロット管理、月単位レポート
 
-## 最新テスト結果サマリー（2026-02-16 PR #42マージ後）
+## 最新テスト結果サマリー（2026-02-16 PR #47マージ後）
 - **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 98/98 pass
+- **Web (Next.js)**: 114/114 pass（+12 calculateUnavailableBlocks ユニット）
 - **Firestore Rules**: 69/69 pass
 - **E2E Tests (Playwright)**: 19/19 pass
 - **Seed**: 12/12 pass
-- **CI/CD**: test-optimizer + test-web + test-firestore-rules + test-e2e 全4ジョブ（PR #42: in_progress）
-- **ドキュメント**: user-manual + troubleshooting 2ファイル + PR #42 修正内容
-- **合計**: 354テスト全パス ✅ + 本番環境E2E検証完了
+- **CI/CD**: 全4ジョブ成功（test-optimizer + test-web + test-firestore-rules + test-e2e）
+- **合計**: 370テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:

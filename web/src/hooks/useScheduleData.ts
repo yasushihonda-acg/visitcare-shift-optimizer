@@ -71,17 +71,16 @@ export function useScheduleData(weekStart: Date) {
         }
       }
 
+      // 全ヘルパーを行として表示（オーダーがないヘルパーも含む）
       const helperRows: HelperScheduleRow[] = [];
-      for (const [helperId, helperOrders] of helperOrderMap) {
-        const helper = helpers.get(helperId);
-        if (helper) {
-          helperRows.push({
-            helper,
-            orders: helperOrders.sort(
-              (a, b) => a.start_time.localeCompare(b.start_time)
-            ),
-          });
-        }
+      for (const helper of helpers.values()) {
+        const helperOrders = helperOrderMap.get(helper.id) ?? [];
+        helperRows.push({
+          helper,
+          orders: helperOrders.sort(
+            (a, b) => a.start_time.localeCompare(b.start_time)
+          ),
+        });
       }
       helperRows.sort((a, b) => a.helper.id.localeCompare(b.helper.id));
 
