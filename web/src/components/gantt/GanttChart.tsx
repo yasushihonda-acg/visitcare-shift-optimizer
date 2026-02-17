@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useLayoutEffect } from 'react';
+import { useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { GanttTimeHeader } from './GanttTimeHeader';
 import { GanttRow } from './GanttRow';
 import { UnassignedSection } from './UnassignedSection';
@@ -22,9 +22,12 @@ interface GanttChartProps {
   dropZoneStatuses?: Map<string, DropZoneStatus>;
   unavailability: StaffUnavailability[];
   activeOrder?: Order | null;
+  onSlotWidthChange?: (slotWidth: number) => void;
+  /** ドラッグ中の時刻プレビュー（時間軸移動用） */
+  previewTimes?: { startTime: string; endTime: string } | null;
 }
 
-export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder }: GanttChartProps) {
+export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes }: GanttChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [slotWidth, setSlotWidth] = useState(SLOT_WIDTH_PX);
 
@@ -41,6 +44,11 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // slotWidth をページに公開
+  useEffect(() => {
+    onSlotWidthChange?.(slotWidth);
+  }, [slotWidth, onSlotWidthChange]);
 
   if (schedule.totalOrders === 0) {
     return (
@@ -71,12 +79,15 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
                 day={schedule.day}
                 dayDate={schedule.date}
                 activeOrder={activeOrder}
+                previewTimes={previewTimes}
               />
             ))}
             {/* ドラッグ中の時間帯ハイライト（全行横断） */}
             {activeOrder && (() => {
-              const startCol = timeToColumn(activeOrder.start_time);
-              const endCol = timeToColumn(activeOrder.end_time);
+              const displayStart = previewTimes?.startTime ?? activeOrder.start_time;
+              const displayEnd = previewTimes?.endTime ?? activeOrder.end_time;
+              const startCol = timeToColumn(displayStart);
+              const endCol = timeToColumn(displayEnd);
               // 10分単位にスナップ
               const startBlock = Math.floor((startCol - 1) / SLOTS_PER_10MIN);
               const endBlock = Math.ceil((endCol - 1) / SLOTS_PER_10MIN);

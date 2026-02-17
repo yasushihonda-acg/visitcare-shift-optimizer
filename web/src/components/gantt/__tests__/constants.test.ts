@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { timeToColumn, timeToMinutes, isOverlapping, TOTAL_SLOTS, SLOT_WIDTH_PX, calculateUnavailableBlocks } from '../constants';
+import { timeToColumn, timeToMinutes, isOverlapping, TOTAL_SLOTS, SLOT_WIDTH_PX, calculateUnavailableBlocks, minutesToTime, addMinutesToTime, snapTo10Min, deltaToTimeShift, computeShiftedTimes } from '../constants';
 import type { AvailabilitySlot, UnavailableSlot, DayOfWeek } from '@/types';
 
 describe('timeToColumn', () => {
@@ -266,5 +266,130 @@ describe('calculateUnavailableBlocks', () => {
         type: 'off_hours',
       });
     });
+  });
+});
+
+describe('minutesToTime', () => {
+  it('420分は07:00', () => {
+    expect(minutesToTime(420)).toBe('07:00');
+  });
+
+  it('570分は09:30', () => {
+    expect(minutesToTime(570)).toBe('09:30');
+  });
+
+  it('1260分は21:00', () => {
+    expect(minutesToTime(1260)).toBe('21:00');
+  });
+
+  it('0分は00:00', () => {
+    expect(minutesToTime(0)).toBe('00:00');
+  });
+});
+
+describe('addMinutesToTime', () => {
+  it('09:00 + 30分 = 09:30', () => {
+    expect(addMinutesToTime('09:00', 30)).toBe('09:30');
+  });
+
+  it('09:00 - 30分 = 08:30', () => {
+    expect(addMinutesToTime('09:00', -30)).toBe('08:30');
+  });
+
+  it('09:00 + 60分 = 10:00', () => {
+    expect(addMinutesToTime('09:00', 60)).toBe('10:00');
+  });
+
+  it('ガント終了時刻を超えない（20:30 + 60分 → 21:00）', () => {
+    expect(addMinutesToTime('20:30', 60)).toBe('21:00');
+  });
+
+  it('ガント開始時刻を下回らない（07:30 - 60分 → 07:00）', () => {
+    expect(addMinutesToTime('07:30', -60)).toBe('07:00');
+  });
+});
+
+describe('snapTo10Min', () => {
+  it('0はそのまま', () => {
+    expect(snapTo10Min(0)).toBe(0);
+  });
+
+  it('10はそのまま', () => {
+    expect(snapTo10Min(10)).toBe(10);
+  });
+
+  it('7は10にスナップ', () => {
+    expect(snapTo10Min(7)).toBe(10);
+  });
+
+  it('4は0にスナップ', () => {
+    expect(snapTo10Min(4)).toBe(0);
+  });
+
+  it('-7は-10にスナップ', () => {
+    expect(snapTo10Min(-7)).toBe(-10);
+  });
+
+  it('15は20にスナップ', () => {
+    expect(snapTo10Min(15)).toBe(20);
+  });
+});
+
+describe('deltaToTimeShift', () => {
+  it('slotWidth=4, delta=8px → 10分', () => {
+    // 8px / 4px = 2スロット = 10分、snapTo10Min(10) = 10
+    expect(deltaToTimeShift(8, 4)).toBe(10);
+  });
+
+  it('slotWidth=4, delta=0px → 0分', () => {
+    expect(deltaToTimeShift(0, 4)).toBe(0);
+  });
+
+  it('slotWidth=4, delta=-8px → -10分', () => {
+    expect(deltaToTimeShift(-8, 4)).toBe(-10);
+  });
+
+  it('slotWidth=10, delta=20px → 10分', () => {
+    // 20px / 10px = 2スロット = 10分
+    expect(deltaToTimeShift(20, 10)).toBe(10);
+  });
+
+  it('小さなdelta（スナップ閾値未満）→ 0分', () => {
+    // 3px / 4px = 0.75スロット = 3.75分 → snapTo10Min = 0
+    expect(deltaToTimeShift(3, 4)).toBe(0);
+  });
+});
+
+describe('computeShiftedTimes', () => {
+  it('+30分シフト', () => {
+    const result = computeShiftedTimes('09:00', '10:00', 30);
+    expect(result).toEqual({ newStartTime: '09:30', newEndTime: '10:30' });
+  });
+
+  it('-30分シフト', () => {
+    const result = computeShiftedTimes('09:00', '10:00', -30);
+    expect(result).toEqual({ newStartTime: '08:30', newEndTime: '09:30' });
+  });
+
+  it('0分シフト（変更なし）', () => {
+    const result = computeShiftedTimes('09:00', '10:00', 0);
+    expect(result).toEqual({ newStartTime: '09:00', newEndTime: '10:00' });
+  });
+
+  it('ガント終了時刻クランプ（duration保持）', () => {
+    // 20:30 + 60分 → end=22:00 超過 → start=20:00, end=21:00にクランプ
+    const result = computeShiftedTimes('20:00', '21:00', 60);
+    expect(result).toEqual({ newStartTime: '20:00', newEndTime: '21:00' });
+  });
+
+  it('ガント開始時刻クランプ（duration保持）', () => {
+    // 07:30 - 60分 → start=06:30 < 07:00 → start=07:00, end=08:00
+    const result = computeShiftedTimes('07:30', '08:30', -60);
+    expect(result).toEqual({ newStartTime: '07:00', newEndTime: '08:00' });
+  });
+
+  it('duration保持: 2時間のオーダー', () => {
+    const result = computeShiftedTimes('09:00', '11:00', 60);
+    expect(result).toEqual({ newStartTime: '10:00', newEndTime: '12:00' });
   });
 });

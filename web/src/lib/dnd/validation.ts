@@ -11,6 +11,9 @@ interface ValidateDropInput {
   targetHelperOrders: Order[];
   unavailability: StaffUnavailability[];
   day: DayOfWeek;
+  /** 時間軸移動時の新しい開始/終了時刻（省略時はorder元の時刻を使用） */
+  newStartTime?: string;
+  newEndTime?: string;
 }
 
 /**
@@ -18,7 +21,11 @@ interface ValidateDropInput {
  * error 制約 → 拒否、warning 制約 → 許可+警告
  */
 export function validateDrop(input: ValidateDropInput): DropValidationResult {
-  const { order, targetHelperId, helpers, customers, targetHelperOrders, unavailability, day } = input;
+  const { order, targetHelperId, helpers, customers, targetHelperOrders, unavailability, day, newStartTime, newEndTime } = input;
+
+  // 時間軸移動対応: 新時刻が指定されている場合はそちらを使用
+  const startTime = newStartTime ?? order.start_time;
+  const endTime = newEndTime ?? order.end_time;
 
   const helper = helpers.get(targetHelperId);
   if (!helper) return { allowed: false, reason: 'ヘルパーが見つかりません' };
@@ -40,7 +47,7 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
   // 時間重複
   for (const existing of targetHelperOrders) {
     if (existing.id === order.id) continue;
-    if (isOverlapping(order.start_time, order.end_time, existing.start_time, existing.end_time)) {
+    if (isOverlapping(startTime, endTime, existing.start_time, existing.end_time)) {
       return { allowed: false, reason: `${helper.name.family} の既存オーダーと時間が重複しています` };
     }
   }
@@ -54,7 +61,7 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
       }
       if (
         slot.start_time && slot.end_time &&
-        isOverlapping(order.start_time, order.end_time, slot.start_time, slot.end_time)
+        isOverlapping(startTime, endTime, slot.start_time, slot.end_time)
       ) {
         return { allowed: false, reason: `${helper.name.family} は希望休（${slot.start_time}-${slot.end_time}）です` };
       }
@@ -67,7 +74,7 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
   const availability = helper.weekly_availability[day];
   if (availability) {
     const withinAny = availability.some(
-      (slot) => slot.start_time <= order.start_time && slot.end_time >= order.end_time
+      (slot) => slot.start_time <= startTime && slot.end_time >= endTime
     );
     if (!withinAny) {
       warnings.push(`${helper.name.family} の勤務時間外です`);

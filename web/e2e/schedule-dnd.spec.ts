@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { goToSchedule, waitForGanttBars, dragOrderToTarget, waitForToast } from './helpers';
+import { goToSchedule, waitForGanttBars, dragOrderToTarget, dragOrderHorizontally, waitForToast } from './helpers';
 
 test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
   // D&Dテストはフレーキーになりやすいため、リトライ + タイムアウト延長
@@ -138,6 +138,58 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
       ).toBeVisible({ timeout: 10_000 });
     }
     // エラートースト（資格不適合等）の場合もD&D機構自体は正常動作
+  });
+
+  test('同一行内で水平ドラッグして時間を変更できる', async ({ page }) => {
+    await goToSchedule(page);
+    await waitForGanttBars(page);
+
+    // オーダーを持つ行を検索
+    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
+    const rowCount = await ganttRows.count();
+    let sourceBar: ReturnType<typeof ganttRows.first> | null = null;
+    for (let i = 0; i < rowCount; i++) {
+      const row = ganttRows.nth(i);
+      const barCount = await row.locator('[data-testid^="gantt-bar-"]').count();
+      if (barCount > 0) {
+        sourceBar = row.locator('[data-testid^="gantt-bar-"]').first();
+        break;
+      }
+    }
+    if (!sourceBar) {
+      test.skip(true, 'オーダーを持つ行がないためスキップ');
+      return;
+    }
+
+    // 右方向（遅い時間）に約100px移動（10分×数スロット分）
+    await dragOrderHorizontally(page, sourceBar, 100);
+
+    // 時間変更または重複エラーのトーストが表示される
+    const anyToast = page.locator('[data-sonner-toast]');
+    await expect(anyToast.first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('水平ドラッグ後にEscapeで時間変更がキャンセルされる', async ({ page }) => {
+    await goToSchedule(page);
+    await waitForGanttBars(page);
+
+    const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
+    const box = await firstBar.boundingBox();
+    if (!box) throw new Error('Could not get bounding box');
+
+    // ドラッグ開始 → 水平移動
+    await firstBar.hover();
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 10 });
+
+    // Escapeでキャンセル
+    await page.keyboard.press('Escape');
+
+    // トーストが出ないことを確認（500ms待機）
+    await page.waitForTimeout(500);
+    const toastCount = await page.locator('[data-sonner-toast]').count();
+    // キャンセル時はトーストなし（または直前の操作のトーストのみ）
+    expect(toastCount).toBeLessThanOrEqual(0);
   });
 
   test('ドラッグ中にEscapeキーで元の位置に戻る', async ({ page }) => {

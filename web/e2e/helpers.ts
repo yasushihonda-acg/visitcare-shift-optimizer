@@ -103,6 +103,32 @@ export async function mockOptimizerAPI(
 }
 
 /**
+ * 同一行内で水平方向にドラッグする（時間軸移動用）。
+ * @param offsetX 水平方向のピクセル移動量（正=右=遅い時間, 負=左=早い時間）
+ */
+export async function dragOrderHorizontally(page: Page, source: Locator, offsetX: number) {
+  await source.scrollIntoViewIfNeeded();
+
+  const box = await source.boundingBox();
+  if (!box) throw new Error('Could not get bounding box for drag source');
+
+  const startX = box.x + box.width / 2;
+  const startY = box.y + box.height / 2;
+  const endX = startX + offsetX;
+
+  await source.hover();
+  await page.mouse.down();
+  // distance: 5px を確実に超えるため中間点を経由
+  await page.mouse.move(startX + 10, startY, { steps: 5 });
+  await page.mouse.move(endX, startY, { steps: 15 });
+  // dragover発火用に再度move
+  await page.mouse.move(endX, startY);
+  await page.mouse.up();
+  // 非同期のhandleDragEnd（Firestore書き込み）完了を待つ
+  await page.waitForTimeout(500);
+}
+
+/**
  * sonnerトーストの表示を待機する。
  * sonnerは[data-sonner-toast]属性のli要素でトーストを表示する。
  */

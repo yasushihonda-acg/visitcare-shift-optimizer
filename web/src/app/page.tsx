@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { addDays } from 'date-fns';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { ScheduleProvider, useScheduleContext } from '@/contexts/ScheduleContext';
@@ -17,6 +17,7 @@ import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { useOrderEdit } from '@/hooks/useOrderEdit';
 import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { checkConstraints } from '@/lib/constraints/checker';
+import { SLOT_WIDTH_PX } from '@/components/gantt/constants';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Order } from '@/types';
 
@@ -68,9 +69,13 @@ function SchedulePage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  const [slotWidth, setSlotWidth] = useState(SLOT_WIDTH_PX);
+  const handleSlotWidthChange = useCallback((sw: number) => setSlotWidth(sw), []);
+
   const {
     dropZoneStatuses,
     activeOrder,
+    previewTimes,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
@@ -82,6 +87,7 @@ function SchedulePage() {
     customers,
     unavailability,
     day: selectedDay,
+    slotWidth,
   });
 
   const handleOrderClick = (order: Order) => {
@@ -142,6 +148,8 @@ function SchedulePage() {
             dropZoneStatuses={dropZoneStatuses}
             unavailability={unavailability}
             activeOrder={activeOrder}
+            onSlotWidthChange={handleSlotWidthChange}
+            previewTimes={previewTimes}
           />
         </DndContext>
       </main>
