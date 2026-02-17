@@ -39,7 +39,7 @@ service cloud.firestore {
     // ── バリデーション関数 ──────────────────────────
 
     function isValidOrderUpdate() {
-      let allowedFields = ['assigned_staff_ids', 'manually_edited', 'updated_at'].toSet();
+      let allowedFields = ['assigned_staff_ids', 'manually_edited', 'updated_at', 'start_time', 'end_time'].toSet();
       let incomingFields = request.resource.data.diff(resource.data).affectedKeys();
       return incomingFields.hasOnly(allowedFields)
         && request.resource.data.assigned_staff_ids is list

@@ -508,6 +508,19 @@ describe('認証済みユーザー - orders update', () => {
     );
   });
 
+  it('start_time, end_time を含む更新ができる（D&D時間軸移動）', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-1'), {
+        assigned_staff_ids: ['helper-2'],
+        start_time: '2026-02-16T10:00:00+09:00',
+        end_time: '2026-02-16T11:00:00+09:00',
+        manually_edited: true,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
   it('不許可フィールド (service_type) を含む更新は拒否される', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     await assertFails(
