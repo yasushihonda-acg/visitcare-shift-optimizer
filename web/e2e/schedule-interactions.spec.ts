@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import { goToSchedule, waitForGanttBars, mockOptimizerAPI, waitForToast } from './helpers';
 
 test.describe('スケジュール画面インタラクション', () => {
-  // CI環境でのFirestoreデータロード時間を考慮
-  test.describe.configure({ timeout: 60_000 });
+  // CI・並列実行時のFirestoreデータロード遅延対策
+  test.describe.configure({ retries: 2, timeout: 60_000 });
   test('ガントバーをクリックするとOrderDetailPanelが開く', async ({ page }) => {
     await goToSchedule(page);
     await waitForGanttBars(page);

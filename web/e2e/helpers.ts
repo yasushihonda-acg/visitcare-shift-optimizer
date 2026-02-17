@@ -14,19 +14,24 @@ export async function waitForAuth(page: Page) {
  * スケジュール画面（トップページ）に遷移して認証完了を待つ
  */
 export async function goToSchedule(page: Page) {
+  // Welcome ダイアログが表示されないよう、ページロード前に localStorage を設定
+  await page.addInitScript(() => {
+    localStorage.setItem('visitcare-welcome-shown', 'true');
+  });
   await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('visitcare-welcome-shown', 'true'));
   await waitForAuth(page);
-  // データロード完了を待つ（「読み込み中...」が消えるまで）
-  await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 30_000 });
+  // データロード完了を待つ（並列ワーカー実行時のFirestore負荷を考慮し45秒）
+  await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 45_000 });
 }
 
 /**
  * マスタ管理画面に遷移して認証完了を待つ
  */
 export async function goToMasters(page: Page, tab: 'customers' | 'helpers' | 'unavailability') {
+  await page.addInitScript(() => {
+    localStorage.setItem('visitcare-welcome-shown', 'true');
+  });
   await page.goto(`/masters/${tab}/`);
-  await page.evaluate(() => localStorage.setItem('visitcare-welcome-shown', 'true'));
   await waitForAuth(page);
 }
 
@@ -34,8 +39,10 @@ export async function goToMasters(page: Page, tab: 'customers' | 'helpers' | 'un
  * 履歴画面に遷移して認証完了を待つ
  */
 export async function goToHistory(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('visitcare-welcome-shown', 'true');
+  });
   await page.goto('/history/');
-  await page.evaluate(() => localStorage.setItem('visitcare-welcome-shown', 'true'));
   await waitForAuth(page);
 }
 
