@@ -211,4 +211,60 @@ describe('validateDrop', () => {
       expect(result.allowed).toBe(false);
     });
   });
+
+  describe('時間軸移動（newStartTime/newEndTime）', () => {
+    it('新時刻で重複なし → 許可', () => {
+      const input = baseInput();
+      input.targetHelperOrders = [makeOrder({ id: 'existing', start_time: '09:00', end_time: '10:00' })];
+      // 元の時間（09:00-10:00）では重複するが、新時刻（11:00-12:00）では重複しない
+      const result = validateDrop({ ...input, newStartTime: '11:00', newEndTime: '12:00' });
+      expect(result.allowed).toBe(true);
+    });
+
+    it('新時刻で重複あり → 拒否', () => {
+      const input = baseInput();
+      input.targetHelperOrders = [makeOrder({ id: 'existing', start_time: '11:00', end_time: '12:00' })];
+      // 元の時間（09:00-10:00）では重複しないが、新時刻（11:00-12:00）では重複する
+      const result = validateDrop({ ...input, newStartTime: '11:00', newEndTime: '12:00' });
+      expect(result.allowed).toBe(false);
+    });
+
+    it('新時刻が勤務時間外 → 許可 + 警告', () => {
+      const input = baseInput();
+      // ヘルパー勤務: 08:00-18:00
+      const result = validateDrop({ ...input, newStartTime: '18:30', newEndTime: '19:30' });
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0]).toContain('勤務時間外');
+      }
+    });
+
+    it('新時刻が希望休と重複 → 拒否', () => {
+      const input = baseInput();
+      input.unavailability = [{
+        id: 'unavail-1',
+        staff_id: 'helper-b',
+        week_start_date: new Date('2026-02-09'),
+        unavailable_slots: [{
+          date: new Date('2026-02-09'),
+          all_day: false,
+          start_time: '14:00',
+          end_time: '16:00',
+        }],
+        submitted_at: new Date(),
+      }];
+      // 元の時間（09:00-10:00）では希望休と重複しないが、新時刻（14:30-15:30）では重複
+      const result = validateDrop({ ...input, newStartTime: '14:30', newEndTime: '15:30' });
+      expect(result.allowed).toBe(false);
+    });
+
+    it('newStartTime/newEndTime未指定 → 元の時刻で判定', () => {
+      const input = baseInput();
+      input.targetHelperOrders = [makeOrder({ id: 'existing', start_time: '09:30', end_time: '10:30' })];
+      // 元の時間（09:00-10:00）で重複判定
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(false);
+    });
+  });
 });

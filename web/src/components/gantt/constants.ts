@@ -130,6 +130,54 @@ export function calculateUnavailableBlocks(
   return blocks;
 }
 
+/** 分数 → "HH:MM" 文字列 */
+export function minutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/** "HH:MM" に分数を加算し、ガント範囲(7:00-21:00)にクランプ */
+export function addMinutesToTime(time: string, deltaMinutes: number): string {
+  const total = timeToMinutes(time) + deltaMinutes;
+  const ganttStartMin = GANTT_START_HOUR * 60;
+  const ganttEndMin = GANTT_END_HOUR * 60;
+  const clamped = Math.max(ganttStartMin, Math.min(total, ganttEndMin));
+  return minutesToTime(clamped);
+}
+
+/** 分数を10分単位にスナップ */
+export function snapTo10Min(minutes: number): number {
+  return Math.round(minutes / 10) * 10;
+}
+
+/** delta.x (px) から10分スナップ済みの時間オフセット(分)を計算 */
+export function deltaToTimeShift(deltaX: number, slotWidth: number): number {
+  const rawMinutes = (deltaX / slotWidth) * MINUTES_PER_SLOT;
+  return snapTo10Min(rawMinutes);
+}
+
+/** 時間シフト適用後のstart/endを計算（duration保持、ガント範囲クランプ） */
+export function computeShiftedTimes(
+  startTime: string,
+  endTime: string,
+  shiftMinutes: number,
+): { newStartTime: string; newEndTime: string } {
+  const duration = timeToMinutes(endTime) - timeToMinutes(startTime);
+  const ganttStartMin = GANTT_START_HOUR * 60;
+  const ganttEndMin = GANTT_END_HOUR * 60;
+
+  let newStartMin = timeToMinutes(startTime) + shiftMinutes;
+  // duration 保持のままクランプ
+  newStartMin = Math.max(ganttStartMin, Math.min(newStartMin, ganttEndMin - duration));
+  const newEndMin = newStartMin + duration;
+
+  return {
+    newStartTime: minutesToTime(newStartMin),
+    newEndTime: minutesToTime(newEndMin),
+  };
+}
+
 /** 2つの時間帯が重複するかチェック */
 export function isOverlapping(
   start1: string, end1: string,

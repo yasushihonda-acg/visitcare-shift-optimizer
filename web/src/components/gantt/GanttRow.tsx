@@ -23,6 +23,8 @@ interface GanttRowProps {
   day: DayOfWeek;
   dayDate: Date;
   activeOrder?: Order | null;
+  /** ドラッグ中の時刻プレビュー（時間軸移動用） */
+  previewTimes?: { startTime: string; endTime: string } | null;
 }
 
 /** ゴーストバー用の薄い背景色（サービスタイプ別） */
@@ -43,7 +45,7 @@ const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
 const SLOTS_PER_10MIN = 2;
 const TOTAL_10MIN_INTERVALS = (GANTT_END_HOUR - GANTT_START_HOUR) * 6; // 14h × 6 = 84
 
-export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder }: GanttRowProps) {
+export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder, previewTimes }: GanttRowProps) {
   const slotWidth = useSlotWidth();
   const pxPer10Min = SLOTS_PER_10MIN * slotWidth;
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
@@ -141,8 +143,11 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
         })}
         {/* ゴーストブロック（10分単位のドロップ先プレビュー） */}
         {isOver && dropZoneStatus !== 'idle' && dropZoneStatus !== 'invalid' && activeOrder && (() => {
-          const ghostStartCol = timeToColumn(activeOrder.start_time);
-          const ghostEndCol = timeToColumn(activeOrder.end_time);
+          // previewTimes がある場合は新しい時刻位置にゴーストを表示
+          const displayStart = previewTimes?.startTime ?? activeOrder.start_time;
+          const displayEnd = previewTimes?.endTime ?? activeOrder.end_time;
+          const ghostStartCol = timeToColumn(displayStart);
+          const ghostEndCol = timeToColumn(displayEnd);
           const ghostColor = GHOST_COLORS[activeOrder.service_type] ?? GHOST_COLORS.physical_care;
           const customerName = customers.get(activeOrder.customer_id);
           const ghostLabel = customerName
@@ -173,7 +178,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
                   left: blockLeft,
                   width: pxPer10Min,
                 }}
-                title={isFirst ? `${ghostLabel} ${activeOrder.start_time}-${activeOrder.end_time}` : undefined}
+                title={isFirst ? `${ghostLabel} ${displayStart}-${displayEnd}` : undefined}
               />
             );
           });
