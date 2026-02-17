@@ -63,7 +63,8 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       ref={setNodeRef}
       data-testid={`gantt-bar-${order.id}`}
       className={cn(
-        'absolute top-1 h-8 rounded-lg text-[11px] leading-8 px-2 truncate cursor-grab shadow-brand-sm transition-all duration-150',
+        'absolute top-1 h-8 rounded-lg text-[11px] leading-8 px-2 truncate cursor-grab shadow-brand-sm',
+        isDragging ? 'transition-none' : 'transition-all duration-150',
         colors.bar,
         colors.hover,
         'hover:shadow-brand hover:brightness-105 hover:-translate-y-px',
