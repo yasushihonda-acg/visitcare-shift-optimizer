@@ -69,6 +69,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
         'hover:shadow-md hover:scale-y-105',
         hasViolation && violationType === 'error' && 'ring-2 ring-red-500 ring-offset-1',
         hasViolation && violationType === 'warning' && 'ring-2 ring-yellow-500 ring-offset-1',
+        !hasViolation && order.manually_edited && 'ring-2 ring-blue-500 ring-offset-1',
         isDragging && 'opacity-50 z-50 shadow-lg cursor-grabbing scale-105'
       )}
       style={style}
