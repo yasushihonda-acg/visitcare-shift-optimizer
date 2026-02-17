@@ -63,11 +63,12 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       ref={setNodeRef}
       data-testid={`gantt-bar-${order.id}`}
       className={cn(
-        'absolute top-1 h-8 rounded-lg text-[11px] leading-8 px-2 truncate cursor-grab shadow-brand-sm',
+        'absolute top-1 h-8 rounded-lg text-xs font-medium leading-8 px-2 cursor-grab shadow-brand-sm',
+        'overflow-visible whitespace-nowrap text-shadow-bar',
         isDragging ? 'transition-none' : 'transition-all duration-150',
         colors.bar,
         colors.hover,
-        'hover:shadow-brand hover:brightness-105 hover:-translate-y-px',
+        'hover:shadow-brand hover:brightness-105 hover:-translate-y-px hover:z-20',
         hasViolation && violationType === 'error' && 'ring-2 ring-red-500 ring-offset-1',
         hasViolation && violationType === 'warning' && 'ring-2 ring-yellow-500 ring-offset-1',
         !hasViolation && order.manually_edited && 'ring-2 ring-blue-500 ring-offset-1',
@@ -79,7 +80,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       {...attributes}
       {...listeners}
     >
-      {width > 20 ? customerName : ''}
+      {customerName}
     </button>
   );
 });
