@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-17（手動編集表示フィーチャ実装）
-**現在のフェーズ**: Phase 0-5 完了 → UI視覚改善実装中
+**最終更新**: 2026-02-17（デモバナー + ガントバー視認性改善 + ゴースト同一行ドラッグ修正）
+**現在のフェーズ**: Phase 0-5 完了 → UI/UX細部改善完了
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -65,11 +65,30 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 - **PR #54**: ガントチャートをレスポンシブ幅に対応（画面幅いっぱいに表示）
 - **PR #55**: ガントチャートD&D時間軸移動機能を追加
 - **PR #56** ✅: E2Eテストのフレイキー問題を修正（Welcomeダイアログ競合対策）
-- **PR #57** ✅ **NEW**: 手動編集済みオーダーに青リング枠を表示
-  - **実装**: GanttBar.tsx に 1行追加 — `!hasViolation && order.manually_edited && 'ring-2 ring-blue-500 ring-offset-1'`
-  - **テスト**: GanttBar.test.tsx を新規作成、4ケース全パス
-  - **視覚優先順**: violation（赤/黄）> 手動編集（青） → ユーザーが違反を見落とさない
-  - **CI**: 全テスト 149/149 pass（新規4 + 既存145）
+- **PR #57** ✅: 手動編集済みオーダーに青リング枠を表示
+- **PR #65** ✅ **NEW**: デモ環境バナーをヘッダー上部に常時表示
+  - **実装**: layout.tsx に `NEXT_PUBLIC_AUTH_MODE !== 'required'` 判定で amber バー追加
+  - **表示**: 「デモ環境 — 本番データではありません」（デモ環境のみ表示）
+  - **テスト**: Next.js build確認済み
+
+- **PR #66** ✅ **NEW**: ガントバーのテキスト視認性を大幅改善
+  - **実装**: globals.css に `.text-shadow-bar` ユーティリティ追加（3層黒枠線: `0 0 4px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.35), 0 0 1px rgba(0,0,0,0.3)`）
+  - **GanttBar.tsx 修正**:
+    - `truncate` 廃止 → `overflow-visible whitespace-nowrap` で長い名前をバー外に拡張表示
+    - `text-shadow-bar` クラス追加（黒枠線効果）
+    - `text-[11px]` → `text-xs font-medium` で視認性向上
+    - `hover:z-20` でホバー時に最前面表示
+    - テキスト長閾値を廃止（常に顧客名を表示）
+  - **テスト**: 全テスト 157/157 pass
+
+- **PR #67** ✅ **NEW**: デモバナー文字サイズ拡大 + ゴースト同一行内ドラッグ追随修正
+  - **デモバナー**: `text-xs`(12px) → `text-sm`(14px)（視認性大幅向上）
+  - **ゴースト追随根本修正**:
+    - **根本原因**: `@dnd-kit/core` の `onDragOver` は droppable ターゲット変更時のみ発火。同一行内の水平ドラッグでゴースト更新されず
+    - **修正**: `onDragMove` ハンドラ追加（毎ピクセル発火）。共通の `processPreview` 関数で両者を処理
+    - **最適化**: `useRef` で前回スナップ値（ターゲットID + シフト分数）を保持し重複計算をスキップ → パフォーマンス向上
+    - **ファイル変更**: `useDragAndDrop.ts` (ロジック抽出), `page.tsx` (`onDragMove` 接続)
+  - **テスト**: 全テスト 157/157 pass ✅
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
