@@ -77,6 +77,7 @@ function SchedulePage() {
     dropZoneStatuses,
     activeOrder,
     previewTimes,
+    dropMessage,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
@@ -152,6 +153,7 @@ function SchedulePage() {
             activeOrder={activeOrder}
             onSlotWidthChange={handleSlotWidthChange}
             previewTimes={previewTimes}
+            dropMessage={dropMessage}
           />
         </DndContext>
       </main>

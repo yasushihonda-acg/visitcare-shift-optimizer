@@ -25,6 +25,8 @@ interface GanttRowProps {
   activeOrder?: Order | null;
   /** ドラッグ中の時刻プレビュー（時間軸移動用） */
   previewTimes?: { startTime: string; endTime: string } | null;
+  /** ドロップ拒否/警告の理由テキスト */
+  dropMessage?: string | null;
 }
 
 /** ゴーストバー用の薄い背景色（サービスタイプ別） */
@@ -45,7 +47,7 @@ const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
 const SLOTS_PER_10MIN = 2;
 const TOTAL_10MIN_INTERVALS = (GANTT_END_HOUR - GANTT_START_HOUR) * 6; // 14h × 6 = 84
 
-export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder, previewTimes }: GanttRowProps) {
+export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder, previewTimes, dropMessage }: GanttRowProps) {
   const slotWidth = useSlotWidth();
   const pxPer10Min = SLOTS_PER_10MIN * slotWidth;
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
@@ -183,6 +185,19 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
             );
           });
         })()}
+        {/* ドロップ拒否/警告の理由オーバーレイ */}
+        {isOver && dropMessage && (dropZoneStatus === 'invalid' || dropZoneStatus === 'warning') && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <span className={cn(
+              'px-2.5 py-1 rounded-md text-xs font-medium shadow-sm backdrop-blur-sm',
+              dropZoneStatus === 'invalid'
+                ? 'bg-red-50/90 text-red-700 border border-red-300'
+                : 'bg-yellow-50/90 text-yellow-700 border border-yellow-300'
+            )}>
+              {dropMessage}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
