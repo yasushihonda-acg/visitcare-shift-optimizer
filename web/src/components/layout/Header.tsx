@@ -34,11 +34,11 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
   const isLoggedIn = authMode === 'required' && user && !user.isAnonymous;
 
   return (
-    <header className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] px-4 py-3 shadow-md">
+    <header className="bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] px-4 py-3 shadow-brand">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
               <Heart className="h-4.5 w-4.5 text-white" />
             </div>
             <div>

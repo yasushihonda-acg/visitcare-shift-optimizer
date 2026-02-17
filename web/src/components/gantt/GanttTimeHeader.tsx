@@ -11,7 +11,7 @@ export function GanttTimeHeader() {
   );
 
   return (
-    <div className="flex border-b bg-gradient-to-b from-muted/80 to-muted/40 sticky top-0 z-10">
+    <div className="flex border-b bg-gradient-to-b from-accent/50 to-accent/20 backdrop-blur-sm sticky top-0 z-10">
       <div
         className="shrink-0 border-r px-2 py-1.5 text-xs font-semibold text-primary"
         style={{ width: HELPER_NAME_WIDTH_PX }}

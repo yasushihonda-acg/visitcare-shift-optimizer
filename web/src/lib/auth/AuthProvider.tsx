@@ -158,7 +158,7 @@ function LoginScreen({ onSignIn }: { onSignIn: () => Promise<void> }) {
     <div className="flex h-screen items-center justify-center bg-gradient-to-br from-[oklch(0.97_0.01_195)] to-[oklch(0.93_0.03_195)]">
       <div className="w-full max-w-sm space-y-6 rounded-2xl bg-white p-8 shadow-lg">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)]">
             <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
             </svg>

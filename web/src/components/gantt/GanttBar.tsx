@@ -21,16 +21,16 @@ interface GanttBarProps {
 
 const SERVICE_COLORS: Record<string, { bar: string; hover: string }> = {
   physical_care: {
-    bar: 'bg-gradient-to-r from-[oklch(0.55_0.15_230)] to-[oklch(0.60_0.12_210)] text-white',
-    hover: 'hover:from-[oklch(0.50_0.16_230)] hover:to-[oklch(0.55_0.13_210)]',
+    bar: 'bg-gradient-to-r from-[oklch(0.55_0.15_225)] to-[oklch(0.60_0.12_205)] text-white',
+    hover: 'hover:from-[oklch(0.50_0.16_225)] hover:to-[oklch(0.55_0.13_205)]',
   },
   daily_living: {
-    bar: 'bg-gradient-to-r from-[oklch(0.55_0.15_160)] to-[oklch(0.60_0.12_145)] text-white',
-    hover: 'hover:from-[oklch(0.50_0.16_160)] hover:to-[oklch(0.55_0.13_145)]',
+    bar: 'bg-gradient-to-r from-[oklch(0.55_0.15_162)] to-[oklch(0.60_0.12_147)] text-white',
+    hover: 'hover:from-[oklch(0.50_0.16_162)] hover:to-[oklch(0.55_0.13_147)]',
   },
   prevention: {
-    bar: 'bg-gradient-to-r from-[oklch(0.60_0.12_300)] to-[oklch(0.65_0.10_280)] text-white',
-    hover: 'hover:from-[oklch(0.55_0.13_300)] hover:to-[oklch(0.60_0.11_280)]',
+    bar: 'bg-gradient-to-r from-[oklch(0.60_0.12_298)] to-[oklch(0.65_0.10_278)] text-white',
+    hover: 'hover:from-[oklch(0.55_0.13_298)] hover:to-[oklch(0.60_0.11_278)]',
   },
 };
 
@@ -63,10 +63,10 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       ref={setNodeRef}
       data-testid={`gantt-bar-${order.id}`}
       className={cn(
-        'absolute top-1 h-8 rounded-md text-[11px] leading-8 px-1.5 truncate cursor-grab shadow-sm transition-all duration-150',
+        'absolute top-1 h-8 rounded-lg text-[11px] leading-8 px-2 truncate cursor-grab shadow-brand-sm transition-all duration-150',
         colors.bar,
         colors.hover,
-        'hover:shadow-md hover:scale-y-105',
+        'hover:shadow-brand hover:brightness-105 hover:-translate-y-px',
         hasViolation && violationType === 'error' && 'ring-2 ring-red-500 ring-offset-1',
         hasViolation && violationType === 'warning' && 'ring-2 ring-yellow-500 ring-offset-1',
         !hasViolation && order.manually_edited && 'ring-2 ring-blue-500 ring-offset-1',

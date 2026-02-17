@@ -47,7 +47,7 @@ export function DayTabs({ orderCounts }: DayTabsProps) {
             )}
             {/* アクティブインジケーター */}
             {isSelected && (
-              <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary" />
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.56_0.14_188)]" />
             )}
           </button>
         );

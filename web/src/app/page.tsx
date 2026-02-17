@@ -106,9 +106,9 @@ function SchedulePage() {
   if (loading) {
     return (
       <div className="flex h-screen flex-col">
-        <header className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] px-4 py-3 shadow-md">
+        <header className="bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] px-4 py-3 shadow-brand">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-white/15 animate-pulse" />
+            <div className="h-8 w-8 rounded-lg bg-white/20 animate-pulse" />
             <div className="h-5 w-24 rounded bg-white/20 animate-pulse" />
           </div>
         </header>
