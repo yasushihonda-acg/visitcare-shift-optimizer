@@ -149,6 +149,29 @@ export async function fetchOptimizationRuns(params?: {
   return data.runs;
 }
 
+export interface ResetAssignmentsResponse {
+  orders_reset: number;
+  week_start_date: string;
+}
+
+export async function resetAssignments(weekStartDate: string): Promise<ResetAssignmentsResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/reset-assignments`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ week_start_date: weekStartDate }),
+    }),
+  );
+
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+
+  return res.json();
+}
+
 export async function fetchOptimizationRunDetail(
   runId: string
 ): Promise<OptimizationRunDetailResponse> {

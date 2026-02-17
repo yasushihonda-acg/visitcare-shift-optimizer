@@ -79,6 +79,20 @@ class OptimizationRunListResponse(BaseModel):
     runs: list[OptimizationRunResponse]
 
 
+class ResetAssignmentsRequest(BaseModel):
+    week_start_date: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="リセット対象週の開始日（月曜日）YYYY-MM-DD",
+        examples=["2026-02-09"],
+    )
+
+
+class ResetAssignmentsResponse(BaseModel):
+    orders_reset: int = Field(description="リセットしたオーダー数")
+    week_start_date: str
+
+
 class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None

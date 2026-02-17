@@ -243,3 +243,69 @@ class TestFirestoreWriter:
         assert count == 501
         assert db.batch.call_count == 2  # 500 + 1
         assert batch.commit.call_count == 2
+
+
+class TestResetAssignmentsEndpoint:
+    """POST /reset-assignments のテスト"""
+
+    @patch("optimizer.api.routes.reset_assignments")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_reset_success(
+        self,
+        mock_get_db: MagicMock,
+        mock_reset: MagicMock,
+    ) -> None:
+        mock_get_db.return_value = MagicMock()
+        mock_reset.return_value = 30
+
+        response = client.post(
+            "/reset-assignments",
+            json={"week_start_date": "2026-02-09"},  # 月曜日
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["orders_reset"] == 30
+        assert data["week_start_date"] == "2026-02-09"
+        mock_reset.assert_called_once()
+
+    def test_not_monday_returns_422(self) -> None:
+        response = client.post(
+            "/reset-assignments",
+            json={"week_start_date": "2026-02-10"},  # 火曜日
+        )
+        assert response.status_code == 422
+        assert "月曜日ではありません" in response.json()["detail"]
+
+    @patch("optimizer.api.routes.reset_assignments")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_firestore_error_returns_500(
+        self,
+        mock_get_db: MagicMock,
+        mock_reset: MagicMock,
+    ) -> None:
+        mock_get_db.return_value = MagicMock()
+        mock_reset.side_effect = Exception("Firestore connection failed")
+
+        response = client.post(
+            "/reset-assignments",
+            json={"week_start_date": "2026-02-09"},
+        )
+        assert response.status_code == 500
+        assert "リセットエラー" in response.json()["detail"]
+
+    @patch("optimizer.api.routes.reset_assignments")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_zero_orders_reset(
+        self,
+        mock_get_db: MagicMock,
+        mock_reset: MagicMock,
+    ) -> None:
+        mock_get_db.return_value = MagicMock()
+        mock_reset.return_value = 0
+
+        response = client.post(
+            "/reset-assignments",
+            json={"week_start_date": "2026-02-09"},
+        )
+        assert response.status_code == 200
+        assert response.json()["orders_reset"] == 0

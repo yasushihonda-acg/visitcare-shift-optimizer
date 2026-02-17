@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from datetime import date, datetime, timedelta, timezone
 
 from google.cloud import firestore  # type: ignore[attr-defined]
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP  # type: ignore[import-untyped]
@@ -71,3 +72,53 @@ def save_optimization_run(
     doc_ref.set(doc_data)
     logger.info("最適化実行記録を保存: id=%s", run_id)
     return run_id
+
+
+def reset_assignments(
+    db: firestore.Client,
+    week_start: date,
+) -> int:
+    """対象週のオーダー割当をリセット（assigned_staff_ids=[], status=pending）
+
+    Returns:
+        リセットしたオーダー数
+    """
+    JST = timezone(timedelta(hours=9))
+    week_start_dt = datetime(
+        week_start.year, week_start.month, week_start.day, tzinfo=JST
+    )
+
+    # pending/assigned のみ対象（completed/cancelled は業務実績のため除外）
+    docs = list(
+        db.collection("orders")
+        .where("week_start_date", "==", week_start_dt)
+        .where("status", "in", ["pending", "assigned"])
+        .stream()
+    )
+
+    if not docs:
+        return 0
+
+    BATCH_LIMIT = 500
+    reset_count = 0
+
+    for i in range(0, len(docs), BATCH_LIMIT):
+        batch = db.batch()
+        chunk = docs[i : i + BATCH_LIMIT]
+
+        for doc in chunk:
+            batch.update(
+                doc.reference,
+                {
+                    "assigned_staff_ids": [],
+                    "status": "pending",
+                    "manually_edited": False,
+                    "updated_at": SERVER_TIMESTAMP,
+                },
+            )
+
+        batch.commit()
+        reset_count += len(chunk)
+
+    logger.info("オーダーリセット完了: %d件 (week=%s)", reset_count, week_start)
+    return reset_count
