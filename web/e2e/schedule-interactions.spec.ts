@@ -57,7 +57,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await expect(dialog.getByText('シフト最適化の実行')).toBeVisible();
   });
 
-  test('最適化ダイアログにテスト実行・実行・キャンセルの3ボタンが表示される', async ({ page }) => {
+  test('最適化ダイアログに実行・キャンセルの2ボタンが表示される', async ({ page }) => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
@@ -67,7 +67,6 @@ test.describe('スケジュール画面インタラクション', () => {
     await expect(dialog).toBeVisible();
 
     await expect(dialog.getByRole('button', { name: 'キャンセル', exact: true })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'テスト実行', exact: true })).toBeVisible();
     await expect(dialog.getByRole('button', { name: '実行', exact: true })).toBeVisible();
   });
 
@@ -83,7 +82,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await expect(dialog).toBeHidden();
   });
 
-  test('テスト実行（APIモック）で成功トーストが表示される', async ({ page }) => {
+  test('実行（APIモック）で成功トーストが表示される', async ({ page }) => {
     await mockOptimizerAPI(page, {
       body: {
         status: 'optimal',
@@ -103,9 +102,9 @@ test.describe('スケジュール画面インタラクション', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
 
-    await dialog.getByRole('button', { name: 'テスト実行' }).click();
+    await dialog.getByRole('button', { name: '実行', exact: true }).click();
 
-    await waitForToast(page, /最適化（テスト）完了/);
+    await waitForToast(page, /最適化完了/);
   });
 
   test('API失敗時（409）にエラートーストが表示される', async ({ page }) => {
@@ -121,7 +120,7 @@ test.describe('スケジュール画面インタラクション', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
 
-    await dialog.getByRole('button', { name: 'テスト実行' }).click();
+    await dialog.getByRole('button', { name: '実行', exact: true }).click();
 
     await waitForToast(page, /最適化不可/);
   });
