@@ -43,7 +43,7 @@ export default function RootLayout({
         className={`${dmSans.variable} ${notoSansJP.variable} ${notoSerifJP.variable} ${geistMono.variable} antialiased`}
       >
         {process.env.NEXT_PUBLIC_AUTH_MODE !== 'required' && (
-          <div className="bg-amber-500 text-white text-center text-xs py-1 font-medium tracking-wide">
+          <div className="bg-amber-500 text-white text-center text-sm py-1 font-medium tracking-wide">
             デモ環境 — 本番データではありません
           </div>
         )}

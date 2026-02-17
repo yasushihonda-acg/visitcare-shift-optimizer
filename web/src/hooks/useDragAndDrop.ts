@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
+import { useCallback, useRef, useState } from 'react';
+import type { DragStartEvent, DragEndEvent, DragOverEvent, DragMoveEvent } from '@dnd-kit/core';
 import { toast } from 'sonner';
 import { validateDrop } from '@/lib/dnd/validation';
 import { updateOrderAssignment, updateOrderAssignmentAndTime } from '@/lib/firestore/updateOrder';
@@ -27,6 +27,9 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
   const [previewTimes, setPreviewTimes] = useState<{ startTime: string; endTime: string } | null>(null);
   const [dropMessage, setDropMessage] = useState<string | null>(null);
 
+  // パフォーマンス最適化: 同一スナップ値なら再計算スキップ
+  const lastPreviewRef = useRef<{ targetId: string; shiftMinutes: number } | null>(null);
+
   const findOrder = useCallback(
     (orderId: string): Order | undefined => {
       for (const row of helperRows) {
@@ -39,6 +42,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
+    lastPreviewRef.current = null;
     const dragData = event.active.data.current as DragData | undefined;
     if (dragData) {
       const order = findOrder(dragData.orderId);
@@ -46,13 +50,15 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
     }
   }, [findOrder]);
 
-  const handleDragOver = useCallback(
-    (event: DragOverEvent) => {
+  /** ドラッグ中のプレビュー計算（handleDragOver / handleDragMove 共通） */
+  const processPreview = useCallback(
+    (event: Pick<DragOverEvent, 'active' | 'over' | 'delta'>) => {
       const dragData = event.active.data.current as DragData | undefined;
       if (!dragData || !event.over) {
         setDropZoneStatuses(new Map());
         setPreviewTimes(null);
         setDropMessage(null);
+        lastPreviewRef.current = null;
         return;
       }
 
@@ -63,6 +69,16 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
 
       // delta.x から時間シフトを計算
       const shiftMinutes = deltaToTimeShift(event.delta.x, slotWidth);
+
+      // 同一ターゲット + 同一シフト → 再計算スキップ（onDragMove 高頻度対策）
+      if (
+        lastPreviewRef.current?.targetId === targetHelperId &&
+        lastPreviewRef.current?.shiftMinutes === shiftMinutes
+      ) {
+        return;
+      }
+      lastPreviewRef.current = { targetId: targetHelperId, shiftMinutes };
+
       const hasTimeShift = shiftMinutes !== 0;
       const shifted = hasTimeShift
         ? computeShiftedTimes(order.start_time, order.end_time, shiftMinutes)
@@ -115,12 +131,24 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
     [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth]
   );
 
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => processPreview(event),
+    [processPreview]
+  );
+
+  /** 同一行内の水平ドラッグでもゴーストプレビューを更新 */
+  const handleDragMove = useCallback(
+    (event: DragMoveEvent) => processPreview(event),
+    [processPreview]
+  );
+
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       setDropZoneStatuses(new Map());
       setActiveOrder(null);
       setPreviewTimes(null);
       setDropMessage(null);
+      lastPreviewRef.current = null;
 
       const dragData = event.active.data.current as DragData | undefined;
       if (!dragData || !event.over) return;
@@ -216,6 +244,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
     setActiveOrder(null);
     setPreviewTimes(null);
     setDropMessage(null);
+    lastPreviewRef.current = null;
   }, []);
 
   return {
@@ -225,6 +254,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
     dropMessage,
     handleDragStart,
     handleDragOver,
+    handleDragMove,
     handleDragEnd,
     handleDragCancel,
   };
