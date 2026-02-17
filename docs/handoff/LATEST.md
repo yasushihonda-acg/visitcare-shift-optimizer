@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-17（E2Eテスト安定化完了）
-**現在のフェーズ**: Phase 0-5 完了 → E2Eテスト安定化✅完了
+**最終更新**: 2026-02-17（手動編集表示フィーチャ実装）
+**現在のフェーズ**: Phase 0-5 完了 → UI視覚改善実装中
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -62,19 +62,14 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
 
 ## 直近の実装（2026-02-16～2026-02-17）
 
-- **PR #51**: D&Dゴーストバー（ドロップ先プレビュー）を追加
-- **PR #52**: 時間目盛りを10分単位に変更し、ゴーストを10分ブロック表示に改善
-- **PR #53**: ドラッグ中の時間帯を全行横断でハイライト表示
 - **PR #54**: ガントチャートをレスポンシブ幅に対応（画面幅いっぱいに表示）
 - **PR #55**: ガントチャートD&D時間軸移動機能を追加
-- **PR #56** ✅ **完成**: E2Eテストのフレイキー問題を修正（Welcomeダイアログ競合対策）
-  - **問題**: ローカル実行で19/40テスト失敗、CI実行で40/40通過の不一致
-  - **根本原因**: `page.evaluate()` でlocalStorageを設定していたが `page.goto()` 後のため、Reactの `useEffect` が先に走りWelcomeダイアログが開く
-  - **修正**: `page.addInitScript()` に変更（ページロード前にlocalStorage設定）
-  - **リトライ追加**: `retries: 1-2`、timeout: 60_000 を各テストスイートに追加
-  - **新スクリプト**: `npm run test:e2e:fresh` で CI同等のクリーン実行が可能に
-  - **結果**: ローカル・CI共に40/40全テスト通過
-  - **CI全4ジョブ**: ✅ E2E (4m4s) + Firestore Rules (37s) + Web Tests (1m8s) + Optimizer Tests (3m26s)
+- **PR #56** ✅: E2Eテストのフレイキー問題を修正（Welcomeダイアログ競合対策）
+- **PR #57** ✅ **NEW**: 手動編集済みオーダーに青リング枠を表示
+  - **実装**: GanttBar.tsx に 1行追加 — `!hasViolation && order.manually_edited && 'ring-2 ring-blue-500 ring-offset-1'`
+  - **テスト**: GanttBar.test.tsx を新規作成、4ケース全パス
+  - **視覚優先順**: violation（赤/黄）> 手動編集（青） → ユーザーが違反を見落とさない
+  - **CI**: 全テスト 149/149 pass（新規4 + 既存145）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -141,19 +136,19 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **視覚的な手動編集表示** 🟢 — `manually_edited` フラグのオーダーに色表示（GanttBar.tsx改修）
+1. **手動編集E2Eテスト** 🟡 — オーダー手動編集シナリオをE2Eで検証（D&D + 青リング表示確認）
 2. **ユーザー向けUI微調整** 🟡 — 休日表示の視認性フィードバック、必要に応じてバッジ/グレーアウト濃度調整
-3. **追加E2Eテスト** 🟡 — オーダー手動編集シナリオなど
+3. **OrderDetailPanel表示** 🟡 — 手動編集フラグを詳細パネルに表示する（別タスク）
 4. **追加機能** 🟡 — 実績確認、利用者マスタの複合スロット管理、月単位レポート
 
-## 最新テスト結果サマリー（2026-02-17 PR #56マージ後）
+## 最新テスト結果サマリー（2026-02-17 PR #57マージ後）
 - **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 114/114 pass（+12 calculateUnavailableBlocks + 改善型アサーション）
+- **Web (Next.js)**: 118/118 pass ✅（+4 GanttBar手動編集テスト）
 - **Firestore Rules**: 69/69 pass
 - **E2E Tests (Playwright)**: 40/40 pass ✅（リトライ含む、schedule, schedule-dnd, schedule-interactions, masters, masters-crud, history）
 - **Seed**: 12/12 pass
 - **CI/CD**: 全4ジョブ成功（test-optimizer + test-web + test-firestore-rules + test-e2e） ✅
-- **合計**: 411テスト全パス ✅（+2 E2Eテスト増加）
+- **合計**: 415テスト全パス ✅（+4 新規GanttBarテスト）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
