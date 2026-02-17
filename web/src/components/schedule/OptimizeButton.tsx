@@ -61,7 +61,7 @@ export function OptimizeButton() {
         <Button
           size="sm"
           disabled={loading}
-          className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] text-white shadow-sm hover:shadow-md hover:brightness-110 transition-all duration-200"
+          className="rounded-full bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] text-white shadow-brand-sm hover:shadow-brand hover:brightness-110 transition-all duration-200"
         >
           {loading ? (
             <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -86,7 +86,7 @@ export function OptimizeButton() {
           <Button
             onClick={handleOptimize}
             disabled={loading}
-            className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] text-white"
+            className="bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] text-white"
           >
             {loading && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
             実行

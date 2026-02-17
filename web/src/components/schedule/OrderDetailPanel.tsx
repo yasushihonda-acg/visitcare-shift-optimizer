@@ -34,9 +34,9 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 const SERVICE_BADGE_STYLES: Record<string, string> = {
-  physical_care: 'bg-[oklch(0.55_0.15_230)]/10 text-[oklch(0.45_0.15_230)] border-[oklch(0.55_0.15_230)]/30',
-  daily_living: 'bg-[oklch(0.55_0.15_160)]/10 text-[oklch(0.45_0.15_160)] border-[oklch(0.55_0.15_160)]/30',
-  prevention: 'bg-[oklch(0.60_0.12_300)]/10 text-[oklch(0.50_0.12_300)] border-[oklch(0.60_0.12_300)]/30',
+  physical_care: 'bg-[oklch(0.55_0.15_225)]/10 text-[oklch(0.45_0.15_225)] border-[oklch(0.55_0.15_225)]/30',
+  daily_living: 'bg-[oklch(0.55_0.15_162)]/10 text-[oklch(0.45_0.15_162)] border-[oklch(0.55_0.15_162)]/30',
+  prevention: 'bg-[oklch(0.60_0.12_298)]/10 text-[oklch(0.50_0.12_298)] border-[oklch(0.60_0.12_298)]/30',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -79,7 +79,7 @@ export function OrderDetailPanel({
         </SheetHeader>
         <div className="mt-4 space-y-5">
           {/* 基本情報セクション */}
-          <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+          <div className="space-y-3 rounded-lg border bg-accent/30 p-3">
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">時間</span>
@@ -123,7 +123,7 @@ export function OrderDetailPanel({
                   <li key={h.id} className="flex items-center gap-2 text-sm">
                     <span>{h.name.family} {h.name.given}</span>
                     {h.can_physical_care && (
-                      <Badge variant="secondary" className="text-[10px] bg-[oklch(0.55_0.15_230)]/10 text-[oklch(0.45_0.15_230)]">身体可</Badge>
+                      <Badge variant="secondary" className="text-[10px] bg-[oklch(0.55_0.15_225)]/10 text-[oklch(0.45_0.15_225)]">身体可</Badge>
                     )}
                   </li>
                 ))}

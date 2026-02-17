@@ -48,7 +48,7 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle className="text-center">
+          <DialogTitle className="text-center font-serif">
             VisitCare シフト最適化の使い方
           </DialogTitle>
           <DialogDescription className="text-center">
@@ -91,7 +91,7 @@ export function WelcomeDialog({ open, onClose }: WelcomeDialogProps) {
             onClick={goNext}
             className={
               isLastStep
-                ? 'bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] text-white hover:opacity-90'
+                ? 'bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] text-white hover:opacity-90'
                 : ''
             }
           >

@@ -28,8 +28,8 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
   return (
     <div className="grid grid-cols-4 gap-3 px-4 py-3">
       {/* オーダー数 */}
-      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 shadow-sm">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+      <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-brand-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent">
           <ClipboardList className="h-4.5 w-4.5 text-primary" />
         </div>
         <div>
@@ -39,7 +39,7 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
       </div>
 
       {/* 割当済 */}
-      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 shadow-sm">
+      <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-brand-sm">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
           <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" />
         </div>
@@ -59,7 +59,7 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
       </div>
 
       {/* 未割当 */}
-      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 shadow-sm">
+      <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-brand-sm">
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${schedule.unassignedOrders.length > 0 ? 'bg-amber-500/10' : 'bg-muted'}`}>
           <AlertCircle className={`h-4.5 w-4.5 ${schedule.unassignedOrders.length > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
         </div>
@@ -72,8 +72,8 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
       </div>
 
       {/* ヘルパー */}
-      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 shadow-sm">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+      <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-brand-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent">
           <Users className="h-4.5 w-4.5 text-primary" />
         </div>
         <div>

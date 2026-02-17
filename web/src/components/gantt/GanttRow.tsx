@@ -29,9 +29,9 @@ interface GanttRowProps {
 
 /** ゴーストバー用の薄い背景色（サービスタイプ別） */
 const GHOST_COLORS: Record<string, string> = {
-  physical_care: 'bg-[oklch(0.55_0.15_230/0.3)]',
-  daily_living: 'bg-[oklch(0.55_0.15_160/0.3)]',
-  prevention: 'bg-[oklch(0.60_0.12_300/0.3)]',
+  physical_care: 'bg-[oklch(0.55_0.15_225/0.3)]',
+  daily_living: 'bg-[oklch(0.55_0.15_162/0.3)]',
+  prevention: 'bg-[oklch(0.60_0.12_298/0.3)]',
 };
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
@@ -71,7 +71,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
           key={i}
           className={cn(
             'absolute top-0 h-full border-l',
-            isHour ? 'border-border/25' : isHalf ? 'border-border/15' : 'border-border/8',
+            isHour ? 'border-border/30' : isHalf ? 'border-border/15' : 'border-border/[0.06]',
           )}
           style={{ left: i * pxPer10Min }}
         />
@@ -93,8 +93,8 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
       'flex border-b border-border/50 transition-colors duration-100',
       isDayOff
         ? 'bg-muted/50'
-        : isEven ? 'bg-card' : 'bg-muted/20',
-      !isDayOff && 'hover:bg-primary/[0.03]'
+        : isEven ? 'bg-card' : 'bg-muted/15',
+      !isDayOff && 'hover:bg-accent/40'
     )}>
       <div
         className={cn(

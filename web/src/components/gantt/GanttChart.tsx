@@ -63,7 +63,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
   return (
     <GanttScaleProvider value={slotWidth}>
       <div className="flex flex-col">
-        <div ref={containerRef} className="overflow-x-auto border rounded-lg shadow-sm">
+        <div ref={containerRef} className="overflow-x-auto border rounded-lg shadow-brand-sm">
           <GanttTimeHeader />
           <div className="relative">
             {schedule.helperRows.map((row, index) => (
