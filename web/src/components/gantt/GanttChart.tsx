@@ -25,9 +25,11 @@ interface GanttChartProps {
   onSlotWidthChange?: (slotWidth: number) => void;
   /** ドラッグ中の時刻プレビュー（時間軸移動用） */
   previewTimes?: { startTime: string; endTime: string } | null;
+  /** ドロップ拒否/警告の理由テキスト */
+  dropMessage?: string | null;
 }
 
-export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes }: GanttChartProps) {
+export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes, dropMessage }: GanttChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [slotWidth, setSlotWidth] = useState(SLOT_WIDTH_PX);
 
@@ -80,6 +82,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
                 dayDate={schedule.date}
                 activeOrder={activeOrder}
                 previewTimes={previewTimes}
+                dropMessage={dropMessage}
               />
             ))}
             {/* ドラッグ中の時間帯ハイライト（全行横断） */}

@@ -25,6 +25,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
   const [dropZoneStatuses, setDropZoneStatuses] = useState<Map<string, DropZoneStatus>>(new Map());
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [previewTimes, setPreviewTimes] = useState<{ startTime: string; endTime: string } | null>(null);
+  const [dropMessage, setDropMessage] = useState<string | null>(null);
 
   const findOrder = useCallback(
     (orderId: string): Order | undefined => {
@@ -51,6 +52,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
       if (!dragData || !event.over) {
         setDropZoneStatuses(new Map());
         setPreviewTimes(null);
+        setDropMessage(null);
         return;
       }
 
@@ -72,12 +74,14 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
       // 未割当セクションへのドロップは常に許可（時間変更なし）
       if (targetHelperId === 'unassigned-section') {
         setDropZoneStatuses(new Map([['unassigned-section', 'valid']]));
+        setDropMessage(null);
         return;
       }
 
       // 同じヘルパー + 時間変更なし → idle
       if (dragData.sourceHelperId === targetHelperId && !hasTimeShift) {
         setDropZoneStatuses(new Map([[targetHelperId, 'idle']]));
+        setDropMessage(null);
         return;
       }
 
@@ -100,6 +104,13 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
           ? 'warning'
           : 'valid';
       setDropZoneStatuses(new Map([[targetHelperId, status]]));
+
+      const message = !result.allowed
+        ? result.reason
+        : result.warnings.length > 0
+          ? result.warnings[0]
+          : null;
+      setDropMessage(message);
     },
     [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth]
   );
@@ -109,6 +120,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
       setDropZoneStatuses(new Map());
       setActiveOrder(null);
       setPreviewTimes(null);
+      setDropMessage(null);
 
       const dragData = event.active.data.current as DragData | undefined;
       if (!dragData || !event.over) return;
@@ -203,12 +215,14 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
     setDropZoneStatuses(new Map());
     setActiveOrder(null);
     setPreviewTimes(null);
+    setDropMessage(null);
   }, []);
 
   return {
     dropZoneStatuses,
     activeOrder,
     previewTimes,
+    dropMessage,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
