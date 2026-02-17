@@ -15,9 +15,11 @@ from optimizer.api.schemas import (
     OptimizationRunResponse,
     OptimizeRequest,
     OptimizeResponse,
+    ResetAssignmentsRequest,
+    ResetAssignmentsResponse,
 )
 from optimizer.data.firestore_loader import get_firestore_client, load_optimization_input
-from optimizer.data.firestore_writer import save_optimization_run, write_assignments
+from optimizer.data.firestore_writer import reset_assignments, save_optimization_run, write_assignments
 from optimizer.engine.solver import SoftWeights, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
 
@@ -258,4 +260,43 @@ def get_optimization_run(
             w_continuity=params.get("w_continuity", 3.0),
         ),
         assignments=assignments,
+    )
+
+
+@router.post(
+    "/reset-assignments",
+    response_model=ResetAssignmentsResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def reset_assignments_endpoint(
+    req: ResetAssignmentsRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> ResetAssignmentsResponse:
+    """対象週のオーダー割当をすべてリセット"""
+    # 日付パース
+    try:
+        week_start = date.fromisoformat(req.week_start_date)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    # 月曜日チェック
+    if week_start.weekday() != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{req.week_start_date} は月曜日ではありません"
+            f"（weekday={week_start.weekday()}）",
+        )
+
+    try:
+        db = get_firestore_client()
+        orders_reset = reset_assignments(db, week_start)
+    except Exception as e:
+        logger.error("リセット失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"リセットエラー: {e}"
+        ) from e
+
+    return ResetAssignmentsResponse(
+        orders_reset=orders_reset,
+        week_start_date=req.week_start_date,
     )
