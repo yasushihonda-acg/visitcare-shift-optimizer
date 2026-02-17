@@ -80,6 +80,7 @@ function SchedulePage() {
     dropMessage,
     handleDragStart,
     handleDragOver,
+    handleDragMove,
     handleDragEnd,
     handleDragCancel,
   } = useDragAndDrop({
@@ -140,6 +141,7 @@ function SchedulePage() {
           sensors={sensors}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
+          onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
