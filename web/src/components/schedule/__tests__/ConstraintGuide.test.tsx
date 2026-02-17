@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConstraintWeightsForm, DEFAULT_WEIGHTS } from '../ConstraintWeightsForm';
 
-describe('ConstraintGuide', () => {
+describe('ConstraintWeightsForm - 制約解説', () => {
   it('「制約の解説」トリガーを表示', () => {
     render(<ConstraintWeightsForm weights={{ ...DEFAULT_WEIGHTS }} onChange={vi.fn()} />);
     expect(screen.getByText('制約の解説')).toBeInTheDocument();

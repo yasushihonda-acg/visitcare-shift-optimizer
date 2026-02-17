@@ -88,9 +88,11 @@ def reset_assignments(
         week_start.year, week_start.month, week_start.day, tzinfo=JST
     )
 
+    # pending/assigned のみ対象（completed/cancelled は業務実績のため除外）
     docs = list(
         db.collection("orders")
         .where("week_start_date", "==", week_start_dt)
+        .where("status", "in", ["pending", "assigned"])
         .stream()
     )
 
