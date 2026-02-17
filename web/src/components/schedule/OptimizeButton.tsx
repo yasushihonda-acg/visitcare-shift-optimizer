@@ -28,16 +28,16 @@ export function OptimizeButton() {
   const [loading, setLoading] = useState(false);
   const [weights, setWeights] = useState<ConstraintWeights>({ ...DEFAULT_WEIGHTS });
 
-  const handleOptimize = async (dryRun: boolean) => {
+  const handleOptimize = async () => {
     setLoading(true);
     try {
       const result = await runOptimize({
         week_start_date: format(weekStart, 'yyyy-MM-dd'),
-        dry_run: dryRun,
+        dry_run: false,
         ...weights,
       });
       toast.success(
-        `最適化${dryRun ? '（テスト）' : ''}完了: ${result.assigned_count}/${result.total_orders}件割当 (${result.solve_time_seconds.toFixed(1)}秒)`
+        `最適化完了: ${result.assigned_count}/${result.total_orders}件割当 (${result.solve_time_seconds.toFixed(1)}秒)`
       );
       setOpen(false);
     } catch (err) {
@@ -83,11 +83,8 @@ export function OptimizeButton() {
           <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
             キャンセル
           </Button>
-          <Button variant="secondary" onClick={() => handleOptimize(true)} disabled={loading}>
-            テスト実行
-          </Button>
           <Button
-            onClick={() => handleOptimize(false)}
+            onClick={handleOptimize}
             disabled={loading}
             className="bg-gradient-to-r from-primary to-[oklch(0.45_0.10_210)] text-white"
           >
