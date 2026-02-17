@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { goToMasters, waitForToast } from './helpers';
 
 test.describe('利用者マスタ CRUD', () => {
+  // CI・並列実行時のFirestoreデータロード遅延対策
+  test.describe.configure({ retries: 1, timeout: 60_000 });
   test('利用者を新規追加できる', async ({ page }) => {
     await goToMasters(page, 'customers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
@@ -56,6 +58,7 @@ test.describe('利用者マスタ CRUD', () => {
 });
 
 test.describe('ヘルパーマスタ CRUD', () => {
+  test.describe.configure({ retries: 1, timeout: 60_000 });
   test('ヘルパーを新規追加できる', async ({ page }) => {
     await goToMasters(page, 'helpers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
@@ -107,6 +110,7 @@ test.describe('ヘルパーマスタ CRUD', () => {
 });
 
 test.describe('希望休管理 CRUD', () => {
+  test.describe.configure({ retries: 1, timeout: 60_000 });
   test('希望休を新規追加できる', async ({ page }) => {
     await goToMasters(page, 'unavailability');
     await expect(page.getByRole('button', { name: /新規|追加/ })).toBeVisible({ timeout: 10_000 });
