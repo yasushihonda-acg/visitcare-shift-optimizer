@@ -11,6 +11,7 @@ import { DayTabs } from '@/components/schedule/DayTabs';
 import { StatsBar } from '@/components/schedule/StatsBar';
 import { OptimizeButton } from '@/components/schedule/OptimizeButton';
 import { ResetButton } from '@/components/schedule/ResetButton';
+import { BulkCompleteButton } from '@/components/schedule/BulkCompleteButton';
 import { GanttChart } from '@/components/gantt/GanttChart';
 import { OrderDetailPanel } from '@/components/schedule/OrderDetailPanel';
 import { useScheduleData } from '@/hooks/useScheduleData';
@@ -131,6 +132,7 @@ function SchedulePage() {
       <div className="flex items-center justify-between border-b">
         <DayTabs orderCounts={orderCounts} />
         <div className="flex items-center gap-2 px-4">
+          <BulkCompleteButton schedule={schedule} />
           <ResetButton />
           <OptimizeButton />
         </div>

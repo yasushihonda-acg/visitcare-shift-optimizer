@@ -37,6 +37,44 @@ function makeOrder(overrides: Partial<Order> = {}): Order {
   };
 }
 
+describe('GanttBar - 完了/キャンセル表示', () => {
+  it('status: completed → 半透明 + チェックアイコン表示', () => {
+    const order = makeOrder({ status: 'completed' });
+    render(<GanttBar order={order} sourceHelperId="h1" />);
+
+    const bar = screen.getByTestId('gantt-bar-order-1');
+    expect(bar.className).toContain('opacity-50');
+    expect(bar.className).toContain('cursor-default');
+    expect(bar.querySelector('svg')).toBeTruthy();
+  });
+
+  it('status: cancelled → 半透明 + Xアイコン表示', () => {
+    const order = makeOrder({ status: 'cancelled' });
+    render(<GanttBar order={order} sourceHelperId="h1" />);
+
+    const bar = screen.getByTestId('gantt-bar-order-1');
+    expect(bar.className).toContain('opacity-50');
+    expect(bar.querySelector('svg')).toBeTruthy();
+  });
+
+  it('status: completed → manually_edited の青リングは表示されない', () => {
+    const order = makeOrder({ status: 'completed', manually_edited: true });
+    render(<GanttBar order={order} sourceHelperId="h1" />);
+
+    const bar = screen.getByTestId('gantt-bar-order-1');
+    expect(bar.className).not.toContain('ring-blue-500');
+  });
+
+  it('status: assigned → 通常表示（半透明なし）', () => {
+    const order = makeOrder({ status: 'assigned' });
+    render(<GanttBar order={order} sourceHelperId="h1" />);
+
+    const bar = screen.getByTestId('gantt-bar-order-1');
+    expect(bar.className).not.toContain('opacity-50');
+    expect(bar.className).toContain('cursor-grab');
+  });
+});
+
 describe('GanttBar - 手動編集リング表示', () => {
   it('manually_edited: true → 青リングクラスが適用される', () => {
     const order = makeOrder({ manually_edited: true });

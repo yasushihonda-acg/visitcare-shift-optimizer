@@ -598,6 +598,131 @@ describe('認証済みユーザー - orders 型バリデーション', () => {
 });
 
 // ============================================================
+// orders: status 遷移バリデーション
+// ============================================================
+describe('認証済みユーザー - orders status 遷移', () => {
+  async function setupOrderWithStatus(status: string) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'orders', 'order-status'), {
+        customer_id: 'customer-1',
+        assigned_staff_ids: ['helper-1'],
+        manually_edited: false,
+        service_type: 'physical_care',
+        start_time: '09:00',
+        end_time: '10:00',
+        status,
+        updated_at: new Date(),
+      });
+    });
+  }
+
+  it('assigned → completed の遷移が許可される', async () => {
+    await setupOrderWithStatus('assigned');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'completed',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('assigned → cancelled の遷移が許可される', async () => {
+    await setupOrderWithStatus('assigned');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'cancelled',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('pending → cancelled の遷移が許可される', async () => {
+    await setupOrderWithStatus('pending');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'cancelled',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('pending → completed の遷移は拒否される', async () => {
+    await setupOrderWithStatus('pending');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'completed',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('completed → assigned の遷移は拒否される（最終状態）', async () => {
+    await setupOrderWithStatus('completed');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'assigned',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('cancelled → assigned の遷移は拒否される（最終状態）', async () => {
+    await setupOrderWithStatus('cancelled');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'assigned',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('不正な status 値は拒否される', async () => {
+    await setupOrderWithStatus('assigned');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'invalid_status',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('assigned → assigned の同一ステータス送信は許可される（実質ノーオペレーション）', async () => {
+    // NOTE: Firestore Security Rules の diff().affectedKeys() は同一値フィールドを検出しない。
+    // そのため、同一ステータスの送信はルールレベルでは拒否できず、実質的なノーオペレーション
+    // （データは変わらない）として扱われる。同一ステータス遷移の防止はアプリ層で行うこと。
+    await setupOrderWithStatus('assigned');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'assigned',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('status と他の許可フィールドを同時に更新できる', async () => {
+    await setupOrderWithStatus('assigned');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'completed',
+        assigned_staff_ids: ['helper-1'],
+        manually_edited: false,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+});
+
+// ============================================================
 // RBAC: admin ロール
 // ============================================================
 describe('RBAC: admin ロール', () => {

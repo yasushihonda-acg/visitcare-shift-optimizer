@@ -1,16 +1,27 @@
 'use client';
 
+import { useState } from 'react';
 import { Clock, MapPin, User, AlertTriangle, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { StaffMultiSelect } from '@/components/masters/StaffMultiSelect';
 import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
-import type { Order, Customer, Helper } from '@/types';
+import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
+import type { Order, Customer, Helper, OrderStatus } from '@/types';
 import type { Violation } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
 
@@ -26,6 +37,16 @@ interface OrderDetailPanelProps {
   diff?: AssignmentDiff;
   saving?: boolean;
 }
+
+const NEXT_STATUSES: Record<OrderStatus, { value: OrderStatus; label: string }[]> = {
+  pending: [{ value: 'cancelled', label: 'キャンセル' }],
+  assigned: [
+    { value: 'completed', label: '完了（実績確認済み）' },
+    { value: 'cancelled', label: 'キャンセル' },
+  ],
+  completed: [],
+  cancelled: [],
+};
 
 const SERVICE_LABELS: Record<string, string> = {
   physical_care: '身体介護',
@@ -65,11 +86,30 @@ export function OrderDetailPanel({
   diff,
   saving,
 }: OrderDetailPanelProps) {
+  const [statusSaving, setStatusSaving] = useState(false);
+
   if (!order) return null;
 
   const customerName = customer
     ? `${customer.name.family} ${customer.name.given}`
     : order.customer_id;
+
+  const nextStatuses = NEXT_STATUSES[order.status] ?? [];
+  const isFinalized = order.status === 'completed' || order.status === 'cancelled';
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!isOrderStatus(newStatus)) return;
+    setStatusSaving(true);
+    try {
+      await updateOrderStatus(order.id, order.status, newStatus);
+      toast.success(`ステータスを「${STATUS_LABELS[newStatus]}」に変更しました`);
+    } catch (e) {
+      console.error('ステータス変更エラー:', e);
+      toast.error('ステータス変更に失敗しました');
+    } finally {
+      setStatusSaving(false);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -95,9 +135,31 @@ export function OrderDetailPanel({
             <div className="flex items-center gap-2 text-sm">
               <span className="h-4 w-4" />
               <span className="text-muted-foreground">ステータス</span>
-              <Badge variant="outline" className={`ml-auto ${STATUS_BADGE_STYLES[order.status] ?? ''}`}>
-                {STATUS_LABELS[order.status]}
-              </Badge>
+              <div className="ml-auto flex items-center gap-2">
+                <Badge variant="outline" className={STATUS_BADGE_STYLES[order.status] ?? ''}>
+                  {STATUS_LABELS[order.status]}
+                </Badge>
+                {nextStatuses.length > 0 && (
+                  <Select
+                    onValueChange={handleStatusChange}
+                    disabled={statusSaving}
+                  >
+                    <SelectTrigger
+                      className="h-7 w-auto min-w-[100px] text-xs"
+                      data-testid="status-change-select"
+                    >
+                      <SelectValue placeholder="変更..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nextStatuses.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </div>
             {order.manually_edited && (
               <div className="flex items-center gap-2 text-sm">
@@ -116,7 +178,7 @@ export function OrderDetailPanel({
               <h4 className="text-sm font-semibold">割当スタッフ</h4>
               {diff && helpers && <AssignmentDiffBadge diff={diff} helpers={helpers} />}
             </div>
-            {onStaffChange && helpers ? (
+            {onStaffChange && helpers && !isFinalized ? (
               <div className={saving ? 'opacity-50 pointer-events-none' : ''}>
                 <StaffMultiSelect
                   label="割当スタッフ"
