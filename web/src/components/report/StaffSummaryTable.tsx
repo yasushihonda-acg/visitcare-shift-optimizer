@@ -9,16 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatMinutesToHours } from '@/lib/report/aggregation';
 import type { StaffSummaryRow } from '@/lib/report/aggregation';
 
 interface StaffSummaryTableProps {
   rows: StaffSummaryRow[];
-}
-
-function formatHours(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
 }
 
 export function StaffSummaryTable({ rows }: StaffSummaryTableProps) {
@@ -47,7 +42,7 @@ export function StaffSummaryTable({ rows }: StaffSummaryTableProps) {
               <TableRow key={row.helperId}>
                 <TableCell className="font-medium">{row.name}</TableCell>
                 <TableCell className="text-right">{row.visitCount}件</TableCell>
-                <TableCell className="text-right">{formatHours(row.totalMinutes)}</TableCell>
+                <TableCell className="text-right">{formatMinutesToHours(row.totalMinutes)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

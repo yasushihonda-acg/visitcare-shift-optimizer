@@ -1,17 +1,12 @@
 'use client';
 
 import { ClipboardList } from 'lucide-react';
+import { formatMinutesToHours } from '@/lib/report/aggregation';
 import type { ServiceTypeSummaryItem } from '@/lib/report/aggregation';
 
 interface ServiceTypeSummaryCardProps {
   items: ServiceTypeSummaryItem[];
   totalMinutes: number;
-}
-
-function formatHours(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
 }
 
 const SERVICE_TYPE_COLORS: Record<string, string> = {
@@ -44,7 +39,7 @@ export function ServiceTypeSummaryCard({ items, totalMinutes }: ServiceTypeSumma
                   <span className="text-sm font-medium">{item.label}</span>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{item.visitCount}件</span>
-                    <span>{formatHours(item.totalMinutes)}</span>
+                    <span>{formatMinutesToHours(item.totalMinutes)}</span>
                     <span className="font-bold text-foreground">{pct}%</span>
                   </div>
                 </div>

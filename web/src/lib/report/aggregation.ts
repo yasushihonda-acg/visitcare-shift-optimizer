@@ -37,6 +37,13 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   daily_living: '生活援助',
 };
 
+/** 分数を "X時間Y分" 形式にフォーマット */
+export function formatMinutesToHours(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
+}
+
 // ── ユーティリティ ─────────────────────────────────────────────
 
 /** "HH:MM" → 分数 */
