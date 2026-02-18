@@ -27,7 +27,8 @@ test.describe('スケジュール画面インタラクション', () => {
     // 時間セクション
     await expect(panel.getByText('時間', { exact: true })).toBeVisible();
     // サービス種別（身体介護 or 生活援助 or 介護予防 のいずれか）
-    await expect(panel.getByText(/身体介護|生活援助|介護予防/)).toBeVisible();
+    // .first(): Badge要素と親divの両方がマッチするため strict mode violation を回避
+    await expect(panel.getByText(/身体介護|生活援助|介護予防/).first()).toBeVisible();
     // ステータス（割当済 or 未割当）
     await expect(panel.getByText(/割当済|未割当/)).toBeVisible();
   });
