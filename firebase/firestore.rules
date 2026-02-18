@@ -39,11 +39,24 @@ service cloud.firestore {
     // ── バリデーション関数 ──────────────────────────
 
     function isValidOrderUpdate() {
-      let allowedFields = ['assigned_staff_ids', 'manually_edited', 'updated_at', 'start_time', 'end_time'].toSet();
+      let allowedFields = ['assigned_staff_ids', 'manually_edited', 'updated_at', 'start_time', 'end_time', 'status'].toSet();
       let incomingFields = request.resource.data.diff(resource.data).affectedKeys();
       return incomingFields.hasOnly(allowedFields)
         && request.resource.data.assigned_staff_ids is list
-        && request.resource.data.manually_edited is bool;
+        && request.resource.data.manually_edited is bool
+        && (!('status' in incomingFields) || isValidStatusTransition());
+    }
+
+    // status 遷移バリデーション: assigned→completed/cancelled, pending→cancelled のみ許可
+    function isValidStatusTransition() {
+      let oldStatus = resource.data.status;
+      let newStatus = request.resource.data.status;
+      let validStatuses = ['pending', 'assigned', 'completed', 'cancelled'].toSet();
+      return validStatuses.hasAll([newStatus].toSet())
+        && (
+          (oldStatus == 'assigned' && (newStatus == 'completed' || newStatus == 'cancelled'))
+          || (oldStatus == 'pending' && newStatus == 'cancelled')
+        );
     }
 
     function isValidCustomer() {
