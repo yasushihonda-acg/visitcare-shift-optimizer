@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-18（手動編集フラグ青リングE2Eテスト追加 PR #68）
-**現在のフェーズ**: Phase 0-5 完了 → UI/UX細部改善完了
+**最終更新**: 2026-02-18（オーダー実績確認機能 PR #71）
+**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能実装済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -158,20 +158,38 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **ビジュアル確認**: 本番環境で日曜タブを表示、非勤務日行に「休」バッジと斜線グレーアウトが表示
 - **デプロイ**: CI全4ジョブ通過、本番反映完了
 
+- **PR #69** ✅: OrderDetailPanelに手動編集済みバッジを追加
+  - **実装**: 手動編集済みオーダーの詳細パネルに「手動編集済み」バッジを表示
+  - **CI**: 全ジョブ成功
+
+- **PR #70** ✅: 休日表示の視認性改善（斜線強調・バッジ強化）
+  - **実装**: 休日行の斜線パターン強調 + 「休」バッジのスタイル強化
+  - **CI**: 全ジョブ成功（7m43s）
+
+- **PR #71** ✅ **NEW**: オーダー実績確認機能
+  - **Firestoreルール**: `isValidStatusTransition()` — status遷移バリデーション（同一ステータス遷移ガード含む）
+  - **updateOrder.ts**: `updateOrderStatus()`, `bulkUpdateOrderStatus()`, `isValidTransition()`, `isOrderStatus()` 追加
+  - **GanttBar**: completed/cancelled で半透明+アイコン表示、D&D無効化
+  - **OrderDetailPanel**: ステータス変更Select UI追加、finalized時スタッフ編集無効
+  - **BulkCompleteButton**: 一括実績確認ダイアログ（日本語曜日表示）
+  - **StatsBar**: 実績確認カード（完了率プログレスバー、キャンセル分母除外）
+  - **コードレビュー修正済み**: HIGH-1(同一遷移ガード), MEDIUM-1〜4(型ガード/DRY/エラーログ/完了率計算), LOW-1(曜日表示)
+  - **テスト**: Vitest 180/180 pass (+8), Firestore Rules +1テスト
+
 ## 次のアクション（優先度順）
 
-1. **ユーザー向けUI微調整** 🟡 — 休日表示の視認性フィードバック、必要に応じてバッジ/グレーアウト濃度調整
-2. **OrderDetailPanel表示** 🟡 — 手動編集フラグを詳細パネルに表示する（別タスク）
-3. **追加機能** 🟡 — 実績確認、利用者マスタの複合スロット管理、月単位レポート
+1. **PR #71 マージ**: CIパス確認後にマージ
+2. **追加機能** 🟡 — 利用者マスタの複合スロット管理、月単位レポート
+3. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
 
-## 最新テスト結果サマリー（2026-02-18 PR #68マージ後）
+## 最新テスト結果サマリー（2026-02-18 PR #71 レビュー修正後）
 - **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 118/118 pass
-- **Firestore Rules**: 69/69 pass
-- **E2E Tests (Playwright)**: 43/43 pass ✅（schedule, schedule-dnd, schedule-interactions, schedule-manual-edit, masters, masters-crud, history）
+- **Web (Next.js)**: 180/180 pass (+62 新規: updateOrder 17, GanttBar 8, その他)
+- **Firestore Rules**: 70/70 pass (+1 同一ステータス遷移テスト)
+- **E2E Tests (Playwright)**: 43/43 pass ✅
 - **Seed**: 12/12 pass
-- **CI/CD**: 全4ジョブ成功（test-optimizer + test-web + test-firestore-rules + test-e2e） ✅
-- **合計**: 418テスト全パス ✅（+3 新規E2Eテスト schedule-manual-edit）
+- **CI/CD**: PRブランチ `feat/order-status-confirmation` からCI実行中
+- **合計**: 461テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
