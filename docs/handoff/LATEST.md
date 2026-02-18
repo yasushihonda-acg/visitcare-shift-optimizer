@@ -178,17 +178,16 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **PR #71 マージ**: CIパス確認後にマージ
-2. **追加機能** 🟡 — 利用者マスタの複合スロット管理、月単位レポート
-3. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
+1. **追加機能** 🟡 — 利用者マスタの複合スロット管理、月単位レポート
+2. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
 
-## 最新テスト結果サマリー（2026-02-18 PR #71 レビュー修正後）
+## 最新テスト結果サマリー（2026-02-18 PR #72 E2Eフレイキー修正後）
 - **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 180/180 pass (+62 新規: updateOrder 17, GanttBar 8, その他)
-- **Firestore Rules**: 70/70 pass (+1 同一ステータス遷移テスト)
+- **Web (Next.js)**: 180/180 pass
+- **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 43/43 pass ✅
 - **Seed**: 12/12 pass
-- **CI/CD**: PRブランチ `feat/order-status-confirmation` からCI実行中
+- **CI/CD**: mainブランチ全6ジョブ成功（テスト4 + デプロイ2）✅
 - **合計**: 461テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
