@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, MapPin, User, AlertTriangle } from 'lucide-react';
+import { Clock, MapPin, User, AlertTriangle, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
@@ -99,6 +99,14 @@ export function OrderDetailPanel({
                 {STATUS_LABELS[order.status]}
               </Badge>
             </div>
+            {order.manually_edited && (
+              <div className="flex items-center gap-2 text-sm">
+                <Pencil className="h-4 w-4 text-blue-500" />
+                <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+                  手動編集済み
+                </Badge>
+              </div>
+            )}
           </div>
 
           {/* 割当スタッフ */}
