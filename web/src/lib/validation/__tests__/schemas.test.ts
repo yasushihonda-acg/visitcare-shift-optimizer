@@ -202,6 +202,50 @@ describe('customerSchema', () => {
     };
     expect(customerSchema.safeParse(data).success).toBe(false);
   });
+
+  it('同一曜日で時間帯が重複するスロットはエラー', () => {
+    const data = {
+      ...validCustomer(),
+      weekly_services: {
+        monday: [
+          { start_time: '09:00', end_time: '10:30', service_type: 'physical_care', staff_count: 1 },
+          { start_time: '10:00', end_time: '11:00', service_type: 'daily_living', staff_count: 1 },
+        ],
+      },
+    };
+    const result = customerSchema.safeParse(data);
+    expect(result.success).toBe(false);
+  });
+
+  it('同一曜日で境界接触（端と端が一致）は重複とみなさない', () => {
+    const data = {
+      ...validCustomer(),
+      weekly_services: {
+        monday: [
+          { start_time: '09:00', end_time: '10:00', service_type: 'physical_care', staff_count: 1 },
+          { start_time: '10:00', end_time: '11:00', service_type: 'daily_living', staff_count: 1 },
+        ],
+      },
+    };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('複数曜日で各曜日が独立して重複チェックされる', () => {
+    const data = {
+      ...validCustomer(),
+      weekly_services: {
+        monday: [
+          { start_time: '09:00', end_time: '10:00', service_type: 'physical_care', staff_count: 1 },
+        ],
+        wednesday: [
+          { start_time: '13:00', end_time: '14:30', service_type: 'physical_care', staff_count: 1 },
+          { start_time: '14:00', end_time: '15:00', service_type: 'daily_living', staff_count: 1 },
+        ],
+      },
+    };
+    const result = customerSchema.safeParse(data);
+    expect(result.success).toBe(false);
+  });
 });
 
 // ================================================================
