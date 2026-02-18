@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-17（デモバナー + ガントバー視認性改善 + ゴースト同一行ドラッグ修正）
+**最終更新**: 2026-02-18（手動編集フラグ青リングE2Eテスト追加 PR #68）
 **現在のフェーズ**: Phase 0-5 完了 → UI/UX細部改善完了
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -13,9 +13,9 @@
 - **Phase 4d-security**: RBAC (Custom Claims 3役体系) + Firestoreセキュリティルール
 - **Google Maps**: Distance Matrix API実装 + Geocoding API (座標ジオコーディング完了)
 - **UI/UXピーク**: 週切替(カレンダーピッカー)、制約パラメータUI、マスタ間タブナビゲーション
-- **E2E**: Playwright 38テスト全パス（schedule, masters, history対応）
+- **E2E**: Playwright 43テスト全パス（schedule, schedule-dnd, schedule-interactions, schedule-manual-edit, masters, masters-crud, history）
 - **ドキュメント**: ユーザーマニュアル + トラブルシューティングガイド
-- **テスト合計**: 408テスト全パス（Optimizer 156 + Web 114 + Firestore 69 + E2E 38 + Seed 12）
+- **テスト合計**: 418テスト全パス（Optimizer 156 + Web 118 + Firestore 69 + E2E 43 + Seed 12）
 
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
@@ -81,7 +81,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest (134件)
     - テキスト長閾値を廃止（常に顧客名を表示）
   - **テスト**: 全テスト 157/157 pass
 
-- **PR #67** ✅ **NEW**: デモバナー文字サイズ拡大 + ゴースト同一行内ドラッグ追随修正
+- **PR #68** ✅ **NEW**: 手動編集フラグ（青リング）のE2Eテスト追加
+  - **実装**: `web/e2e/schedule-manual-edit.spec.ts` 新規作成（3テスト）
+  - **テスト内容**: D&D前の初期状態（青リングなし）、ヘルパー行間D&D後の青リング表示、水平D&D（時間変更）後の青リング表示
+  - **テスト**: E2E 40 → 43件 ✅ CI全ジョブ成功
+
+- **PR #67** ✅: デモバナー文字サイズ拡大 + ゴースト同一行内ドラッグ追随修正
   - **デモバナー**: `text-xs`(12px) → `text-sm`(14px)（視認性大幅向上）
   - **ゴースト追随根本修正**:
     - **根本原因**: `@dnd-kit/core` の `onDragOver` は droppable ターゲット変更時のみ発火。同一行内の水平ドラッグでゴースト更新されず
@@ -155,19 +160,18 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **手動編集E2Eテスト** 🟡 — オーダー手動編集シナリオをE2Eで検証（D&D + 青リング表示確認）
-2. **ユーザー向けUI微調整** 🟡 — 休日表示の視認性フィードバック、必要に応じてバッジ/グレーアウト濃度調整
-3. **OrderDetailPanel表示** 🟡 — 手動編集フラグを詳細パネルに表示する（別タスク）
-4. **追加機能** 🟡 — 実績確認、利用者マスタの複合スロット管理、月単位レポート
+1. **ユーザー向けUI微調整** 🟡 — 休日表示の視認性フィードバック、必要に応じてバッジ/グレーアウト濃度調整
+2. **OrderDetailPanel表示** 🟡 — 手動編集フラグを詳細パネルに表示する（別タスク）
+3. **追加機能** 🟡 — 実績確認、利用者マスタの複合スロット管理、月単位レポート
 
-## 最新テスト結果サマリー（2026-02-17 PR #57マージ後）
+## 最新テスト結果サマリー（2026-02-18 PR #68マージ後）
 - **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 118/118 pass ✅（+4 GanttBar手動編集テスト）
+- **Web (Next.js)**: 118/118 pass
 - **Firestore Rules**: 69/69 pass
-- **E2E Tests (Playwright)**: 40/40 pass ✅（リトライ含む、schedule, schedule-dnd, schedule-interactions, masters, masters-crud, history）
+- **E2E Tests (Playwright)**: 43/43 pass ✅（schedule, schedule-dnd, schedule-interactions, schedule-manual-edit, masters, masters-crud, history）
 - **Seed**: 12/12 pass
 - **CI/CD**: 全4ジョブ成功（test-optimizer + test-web + test-firestore-rules + test-e2e） ✅
-- **合計**: 415テスト全パス ✅（+4 新規GanttBarテスト）
+- **合計**: 418テスト全パス ✅（+3 新規E2Eテスト schedule-manual-edit）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
