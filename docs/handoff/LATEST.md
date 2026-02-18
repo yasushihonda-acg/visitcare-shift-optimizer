@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-18（オーダー実績確認機能 PR #71）
-**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能実装済み
+**最終更新**: 2026-02-19（週間サービス時間帯重複チェック PR #73）
+**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能 + 利用者マスタ重複チェック実装済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -166,6 +166,13 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
   - **実装**: 休日行の斜線パターン強調 + 「休」バッジのスタイル強化
   - **CI**: 全ジョブ成功（7m43s）
 
+- **PR #73** ✅ **NEW**: 利用者マスタの週間サービス時間帯重複チェック
+  - **timeOverlap.ts**: `detectOverlaps(slots)` ユーティリティ追加（O(n²)判定、境界接触は重複なし）
+  - **schemas.ts**: `weeklyServicesSchema` に `.superRefine()` 追加（同一曜日内の重複スロットで保存ブロック）
+  - **WeeklyServicesEditor.tsx**: リアルタイム赤枠表示・曜日ヘッダーに「時間帯重複」バッジ・スロット行に警告文
+  - **テスト**: timeOverlap 11件 + スキーマ統合 3件追加 → Web 194/194 pass、合計475テスト全パス
+  - **CI**: PR時4ジョブ成功（main push時は支払い問題により失敗中）
+
 - **PR #71** ✅ **NEW**: オーダー実績確認機能
   - **Firestoreルール**: `isValidStatusTransition()` — status遷移バリデーション（同一ステータス遷移ガード含む）
   - **updateOrder.ts**: `updateOrderStatus()`, `bulkUpdateOrderStatus()`, `isValidTransition()`, `isOrderStatus()` 追加
@@ -187,7 +194,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 - **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 43/43 pass ✅
 - **Seed**: 12/12 pass
-- **CI/CD**: mainブランチ全4テストジョブ成功 ✅
+- **CI/CD**: PR時テストジョブ成功 ✅（mainブランチ push時はGitHub Actions支払い問題で一時停止中）
 - **合計**: 475テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
