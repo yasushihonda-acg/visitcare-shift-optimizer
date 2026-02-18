@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut, HelpCircle } from 'lucide-react';
+import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut, HelpCircle, BarChart2 } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -105,6 +105,14 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
                 <Link href="/history">
                   <History className="mr-2 h-4 w-4" />
                   実行履歴
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>レポート</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href="/report">
+                  <BarChart2 className="mr-2 h-4 w-4" />
+                  月次レポート
                 </Link>
               </DropdownMenuItem>
               {onShowWelcome && (
