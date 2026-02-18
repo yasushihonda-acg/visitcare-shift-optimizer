@@ -27,8 +27,9 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
   const assignRate = schedule.totalOrders > 0
     ? Math.round((assignedCount / schedule.totalOrders) * 100)
     : 0;
-  const completionRate = schedule.totalOrders > 0
-    ? Math.round((completedCount / schedule.totalOrders) * 100)
+  const completionDenominator = schedule.totalOrders - cancelledCount;
+  const completionRate = completionDenominator > 0
+    ? Math.round((completedCount / completionDenominator) * 100)
     : 0;
 
   return (

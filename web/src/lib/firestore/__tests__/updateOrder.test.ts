@@ -15,7 +15,7 @@ vi.mock('@/lib/firebase', () => ({
   getDb: vi.fn(() => ({})),
 }));
 
-import { updateOrderStatus, bulkUpdateOrderStatus } from '../updateOrder';
+import { updateOrderStatus, bulkUpdateOrderStatus, isValidTransition, isOrderStatus } from '../updateOrder';
 
 describe('updateOrderStatus - 状態遷移バリデーション', () => {
   it('assigned → completed は許可される', async () => {
@@ -52,6 +52,48 @@ describe('updateOrderStatus - 状態遷移バリデーション', () => {
     await expect(updateOrderStatus('o1', 'completed', 'completed')).rejects.toThrow(
       'Invalid status transition'
     );
+  });
+
+  it('assigned → assigned はエラーになる（同一ステータス）', async () => {
+    await expect(updateOrderStatus('o1', 'assigned', 'assigned')).rejects.toThrow(
+      'Invalid status transition'
+    );
+  });
+});
+
+describe('isValidTransition - 純粋関数テスト', () => {
+  it('assigned → completed は true', () => {
+    expect(isValidTransition('assigned', 'completed')).toBe(true);
+  });
+
+  it('assigned → assigned は false（同一ステータス）', () => {
+    expect(isValidTransition('assigned', 'assigned')).toBe(false);
+  });
+
+  it('completed → completed は false', () => {
+    expect(isValidTransition('completed', 'completed')).toBe(false);
+  });
+
+  it('pending → cancelled は true', () => {
+    expect(isValidTransition('pending', 'cancelled')).toBe(true);
+  });
+
+  it('pending → completed は false', () => {
+    expect(isValidTransition('pending', 'completed')).toBe(false);
+  });
+});
+
+describe('isOrderStatus - 型ガードテスト', () => {
+  it('有効な status 値は true', () => {
+    expect(isOrderStatus('pending')).toBe(true);
+    expect(isOrderStatus('assigned')).toBe(true);
+    expect(isOrderStatus('completed')).toBe(true);
+    expect(isOrderStatus('cancelled')).toBe(true);
+  });
+
+  it('無効な値は false', () => {
+    expect(isOrderStatus('invalid')).toBe(false);
+    expect(isOrderStatus('')).toBe(false);
   });
 });
 

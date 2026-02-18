@@ -26,6 +26,18 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
+const ORDER_STATUSES: readonly string[] = ['pending', 'assigned', 'completed', 'cancelled'];
+
+/** OrderStatus 型ガード */
+export function isOrderStatus(value: string): value is OrderStatus {
+  return ORDER_STATUSES.includes(value);
+}
+
+/** 状態遷移が有効か判定する純粋関数 */
+export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return VALID_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
 /**
  * オーダーのステータスを更新する。
  * 状態遷移バリデーションを実施し、不正な遷移はエラーにする。
@@ -35,8 +47,7 @@ export async function updateOrderStatus(
   currentStatus: OrderStatus,
   newStatus: OrderStatus,
 ): Promise<void> {
-  const allowed = VALID_TRANSITIONS[currentStatus];
-  if (!allowed?.includes(newStatus)) {
+  if (!isValidTransition(currentStatus, newStatus)) {
     throw new Error(`Invalid status transition: ${currentStatus} → ${newStatus}`);
   }
   const orderRef = doc(getDb(), 'orders', orderId);
@@ -59,8 +70,7 @@ export async function bulkUpdateOrderStatus(
   let count = 0;
 
   for (const { id, currentStatus } of orders) {
-    const allowed = VALID_TRANSITIONS[currentStatus];
-    if (allowed?.includes(newStatus)) {
+    if (isValidTransition(currentStatus, newStatus)) {
       const orderRef = doc(db, 'orders', id);
       batch.update(orderRef, {
         status: newStatus,

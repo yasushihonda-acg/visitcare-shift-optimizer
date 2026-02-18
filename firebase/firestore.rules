@@ -48,11 +48,13 @@ service cloud.firestore {
     }
 
     // status 遷移バリデーション: assigned→completed/cancelled, pending→cancelled のみ許可
+    // 同一ステータスへの遷移は不許可
     function isValidStatusTransition() {
       let oldStatus = resource.data.status;
       let newStatus = request.resource.data.status;
       let validStatuses = ['pending', 'assigned', 'completed', 'cancelled'].toSet();
-      return validStatuses.hasAll([newStatus].toSet())
+      return oldStatus != newStatus
+        && validStatuses.hasAll([newStatus].toSet())
         && (
           (oldStatus == 'assigned' && (newStatus == 'completed' || newStatus == 'cancelled'))
           || (oldStatus == 'pending' && newStatus == 'cancelled')

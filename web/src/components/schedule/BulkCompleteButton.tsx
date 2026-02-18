@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { bulkUpdateOrderStatus } from '@/lib/firestore/updateOrder';
+import { DAY_OF_WEEK_LABELS } from '@/types';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 
 interface BulkCompleteButtonProps {
@@ -38,7 +39,8 @@ export function BulkCompleteButton({ schedule }: BulkCompleteButtonProps) {
       );
       toast.success(`${count}件のオーダーを実績確認済みにしました`);
       setOpen(false);
-    } catch {
+    } catch (e) {
+      console.error('一括完了エラー:', e);
       toast.error('一括完了に失敗しました');
     } finally {
       setSaving(false);
@@ -62,7 +64,7 @@ export function BulkCompleteButton({ schedule }: BulkCompleteButtonProps) {
         <DialogHeader>
           <DialogTitle>一括実績確認</DialogTitle>
           <DialogDescription>
-            {schedule.day}の割当済みオーダー{assignedOrders.length}件を
+            {DAY_OF_WEEK_LABELS[schedule.day]}の割当済みオーダー{assignedOrders.length}件を
             すべて「完了（実績確認済み）」に変更します。
           </DialogDescription>
         </DialogHeader>

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { StaffMultiSelect } from '@/components/masters/StaffMultiSelect';
 import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
-import { updateOrderStatus } from '@/lib/firestore/updateOrder';
+import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
 import type { Order, Customer, Helper, OrderStatus } from '@/types';
 import type { Violation } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
@@ -98,11 +98,13 @@ export function OrderDetailPanel({
   const isFinalized = order.status === 'completed' || order.status === 'cancelled';
 
   const handleStatusChange = async (newStatus: string) => {
+    if (!isOrderStatus(newStatus)) return;
     setStatusSaving(true);
     try {
-      await updateOrderStatus(order.id, order.status, newStatus as OrderStatus);
+      await updateOrderStatus(order.id, order.status, newStatus);
       toast.success(`ステータスを「${STATUS_LABELS[newStatus]}」に変更しました`);
     } catch (e) {
+      console.error('ステータス変更エラー:', e);
       toast.error('ステータス変更に失敗しました');
     } finally {
       setStatusSaving(false);

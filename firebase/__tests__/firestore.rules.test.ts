@@ -694,6 +694,17 @@ describe('認証済みユーザー - orders status 遷移', () => {
     );
   });
 
+  it('assigned → assigned の同一ステータス遷移は拒否される', async () => {
+    await setupOrderWithStatus('assigned');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'assigned',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
   it('status と他の許可フィールドを同時に更新できる', async () => {
     await setupOrderWithStatus('assigned');
     const authed = testEnv.authenticatedContext('user-1');
