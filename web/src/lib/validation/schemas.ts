@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { detectOverlaps } from './timeOverlap';
 
 const timeStringSchema = z.string().regex(/^\d{2}:\d{2}$/, '時刻はHH:MM形式で入力してください');
 
@@ -27,8 +28,22 @@ const availabilitySlotSchema = z.object({
   end_time: timeStringSchema,
 });
 
-// Partial<Record<DayOfWeek, ServiceSlot[]>> を表現
-const weeklyServicesSchema = z.record(z.string(), z.array(serviceSlotSchema));
+// Partial<Record<DayOfWeek, ServiceSlot[]>> を表現（同一曜日内の時間帯重複チェック付き）
+const weeklyServicesSchema = z.record(z.string(), z.array(serviceSlotSchema)).superRefine(
+  (weeklyServices, ctx) => {
+    for (const [day, slots] of Object.entries(weeklyServices)) {
+      if (!slots || slots.length < 2) continue;
+      const overlaps = detectOverlaps(slots);
+      if (overlaps.size > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [day],
+          message: `時間帯が重複しているスロットがあります（スロット: ${[...overlaps].map((i) => i + 1).join(', ')}番目）`,
+        });
+      }
+    }
+  }
+);
 
 const weeklyAvailabilitySchema = z.record(z.string(), z.array(availabilitySlotSchema));
 

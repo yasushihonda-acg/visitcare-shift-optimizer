@@ -17,6 +17,7 @@ import {
   type DayOfWeek,
   type ServiceSlot,
 } from '@/types';
+import { detectOverlaps } from '@/lib/validation/timeOverlap';
 
 interface WeeklyServicesEditorProps {
   value: Partial<Record<DayOfWeek, ServiceSlot[]>>;
@@ -85,6 +86,7 @@ export function WeeklyServicesEditor({
         {DAY_OF_WEEK_ORDER.map((day) => {
           const slots = value[day] ?? [];
           const isExpanded = expandedDays.has(day);
+          const overlaps = detectOverlaps(slots);
 
           return (
             <div key={day} className="border-b last:border-b-0 pb-1 last:pb-0">
@@ -105,6 +107,11 @@ export function WeeklyServicesEditor({
                       ({slots.length}件)
                     </span>
                   )}
+                  {overlaps.size > 0 && (
+                    <span className="ml-1 text-xs text-destructive font-semibold">
+                      時間帯重複
+                    </span>
+                  )}
                 </button>
                 <Button
                   type="button"
@@ -120,71 +127,83 @@ export function WeeklyServicesEditor({
 
               {isExpanded && slots.length > 0 && (
                 <div className="ml-4 space-y-2 pb-2">
-                  {slots.map((slot, idx) => (
-                    <div
-                      key={idx}
-                      className="flex flex-wrap items-center gap-2 rounded bg-muted/50 p-2"
-                    >
-                      <Input
-                        type="time"
-                        value={slot.start_time}
-                        onChange={(e) =>
-                          updateSlot(day, idx, 'start_time', e.target.value)
-                        }
-                        className="h-8 w-28"
-                      />
-                      <span className="text-sm text-muted-foreground">〜</span>
-                      <Input
-                        type="time"
-                        value={slot.end_time}
-                        onChange={(e) =>
-                          updateSlot(day, idx, 'end_time', e.target.value)
-                        }
-                        className="h-8 w-28"
-                      />
-                      <Select
-                        value={slot.service_type}
-                        onValueChange={(v) =>
-                          updateSlot(day, idx, 'service_type', v)
-                        }
+                  {slots.map((slot, idx) => {
+                    const hasOverlap = overlaps.has(idx);
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex flex-wrap items-center gap-2 rounded p-2 ${
+                          hasOverlap
+                            ? 'border border-destructive bg-destructive/5'
+                            : 'bg-muted/50'
+                        }`}
                       >
-                        <SelectTrigger className="h-8 w-28">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="physical_care">身体介護</SelectItem>
-                          <SelectItem value="daily_living">生活援助</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="flex items-center gap-1">
                         <Input
-                          type="number"
-                          min={1}
-                          max={3}
-                          value={slot.staff_count}
+                          type="time"
+                          value={slot.start_time}
                           onChange={(e) =>
-                            updateSlot(
-                              day,
-                              idx,
-                              'staff_count',
-                              parseInt(e.target.value) || 1
-                            )
+                            updateSlot(day, idx, 'start_time', e.target.value)
                           }
-                          className="h-8 w-16"
+                          className="h-8 w-28"
                         />
-                        <span className="text-xs text-muted-foreground">名</span>
+                        <span className="text-sm text-muted-foreground">〜</span>
+                        <Input
+                          type="time"
+                          value={slot.end_time}
+                          onChange={(e) =>
+                            updateSlot(day, idx, 'end_time', e.target.value)
+                          }
+                          className="h-8 w-28"
+                        />
+                        <Select
+                          value={slot.service_type}
+                          onValueChange={(v) =>
+                            updateSlot(day, idx, 'service_type', v)
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-28">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="physical_care">身体介護</SelectItem>
+                            <SelectItem value="daily_living">生活援助</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={3}
+                            value={slot.staff_count}
+                            onChange={(e) =>
+                              updateSlot(
+                                day,
+                                idx,
+                                'staff_count',
+                                parseInt(e.target.value) || 1
+                              )
+                            }
+                            className="h-8 w-16"
+                          />
+                          <span className="text-xs text-muted-foreground">名</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          onClick={() => removeSlot(day, idx)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        {hasOverlap && (
+                          <p className="w-full text-xs text-destructive">
+                            他のスロットと時間帯が重複しています
+                          </p>
+                        )}
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        onClick={() => removeSlot(day, idx)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
