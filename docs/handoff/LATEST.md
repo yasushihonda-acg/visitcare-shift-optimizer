@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-19（週間サービス時間帯重複チェック PR #73）
-**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能 + 利用者マスタ重複チェック実装済み
+**最終更新**: 2026-02-19（月次レポート画面 PR #75）
+**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能 + 利用者マスタ重複チェック + 月次レポート実装済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -183,19 +183,28 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
   - **コードレビュー修正済み**: HIGH-1(同一遷移ガード), MEDIUM-1〜4(型ガード/DRY/エラーログ/完了率計算), LOW-1(曜日表示)
   - **テスト**: Vitest 180/180 pass (+8), Firestore Rules +1テスト
 
+- **PR #75** ✅ **NEW**: 月次レポート画面を追加（/report）
+  - **画面**: `web/src/app/report/page.tsx` — 月セレクタ + 4カード構成
+  - **コンポーネント**: `MonthSelector`, `StatusSummaryCard`, `ServiceTypeSummaryCard`, `StaffSummaryTable`, `CustomerSummaryTable`（`web/src/components/report/`）
+  - **フック**: `useMonthlyOrders`（月単位Firestoreクエリ）, `useMonthlyReport`（集計ロジック）
+  - **リファクタ**: `formatMinutesToHours` を `aggregation.ts` に集約しDRY解消
+  - **テスト**: Web 219/219 pass（+25）
+  - **CI**: PR時全ジョブ成功 ✅（main push時 in_progress — 支払い問題の影響なし）
+  - **ブランチ**: `feat/monthly-report`（2コミット未マージ — PR #75 オープン中）
+
 ## 次のアクション（優先度順）
 
-1. **追加機能** 🟡 — 月単位レポート
+1. **PR #75マージ**: 月次レポート画面 — CIの `in_progress` 確認後にマージ
 2. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
 
-## 最新テスト結果サマリー（2026-02-19 PR #73 時間帯重複チェック後）
+## 最新テスト結果サマリー（2026-02-19 PR #75 月次レポート後）
 - **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 194/194 pass（+14: timeOverlap 11件 + スキーマ統合 3件）
+- **Web (Next.js)**: 219/219 pass（+25: 月次レポート関連）
 - **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 43/43 pass ✅
 - **Seed**: 12/12 pass
-- **CI/CD**: PR時テストジョブ成功 ✅（mainブランチ push時はGitHub Actions支払い問題で一時停止中）
-- **合計**: 475テスト全パス ✅
+- **CI/CD**: PR時テストジョブ成功 ✅（mainブランチ push時 in_progress — 2026-02-18T17:39:57Z）
+- **合計**: 500テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
