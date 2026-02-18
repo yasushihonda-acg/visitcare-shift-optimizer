@@ -75,7 +75,8 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   const dropBox = await target.boundingBox();
   if (!dragBox || !dropBox) throw new Error('Could not get bounding box for drag source or target');
 
-  const startX = dragBox.x + dragBox.width / 2;
+  // overflow-visible バーの隣接テキスト遮蔽を回避するため、ソースは左端付近を使用
+  const startX = dragBox.x + 5;
   const startY = dragBox.y + dragBox.height / 2;
   const endX = dropBox.x + dropBox.width / 2;
   const endY = dropBox.y + dropBox.height / 2;
@@ -120,7 +121,8 @@ export async function dragOrderHorizontally(page: Page, source: Locator, offsetX
   const box = await source.boundingBox();
   if (!box) throw new Error('Could not get bounding box for drag source');
 
-  const startX = box.x + box.width / 2;
+  // overflow-visible バーの隣接テキスト遮蔽を回避するため、左端付近を使用
+  const startX = box.x + 5;
   const startY = box.y + box.height / 2;
   const endX = startX + offsetX;
 
