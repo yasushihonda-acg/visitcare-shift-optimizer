@@ -178,17 +178,17 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **追加機能** 🟡 — 利用者マスタの複合スロット管理、月単位レポート
+1. **追加機能** 🟡 — 月単位レポート
 2. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
 
-## 最新テスト結果サマリー（2026-02-18 PR #72 E2Eフレイキー修正後）
+## 最新テスト結果サマリー（2026-02-19 PR #73 時間帯重複チェック後）
 - **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 180/180 pass
+- **Web (Next.js)**: 194/194 pass（+14: timeOverlap 11件 + スキーマ統合 3件）
 - **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 43/43 pass ✅
 - **Seed**: 12/12 pass
-- **CI/CD**: mainブランチ全6ジョブ成功（テスト4 + デプロイ2）✅
-- **合計**: 461テスト全パス ✅
+- **CI/CD**: mainブランチ全4テストジョブ成功 ✅
+- **合計**: 475テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
