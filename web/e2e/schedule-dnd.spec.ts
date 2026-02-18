@@ -11,17 +11,30 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
-    const box = await firstBar.boundingBox();
+    // overflow-visible による隣接バーのテキスト遮蔽を回避するため、
+    // 単独バーの行を優先的に選択する
+    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
+    const rowCount = await ganttRows.count();
+    let targetBar = page.locator('[data-testid^="gantt-bar-"]').first();
+    for (let i = 0; i < rowCount; i++) {
+      const row = ganttRows.nth(i);
+      const bars = row.locator('[data-testid^="gantt-bar-"]');
+      if (await bars.count() === 1) {
+        targetBar = bars.first();
+        break;
+      }
+    }
+
+    const box = await targetBar.boundingBox();
     if (!box) throw new Error('Could not get bounding box');
 
-    // ドラッグ開始（mousedown + 5px以上移動）
-    await firstBar.hover();
+    // ドラッグ開始（mousedown + 5px以上移動）— 左端付近から開始して遮蔽を回避
+    await page.mouse.move(box.x + 5, box.y + box.height / 2);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2 + 15, box.y + box.height / 2 + 15, { steps: 5 });
+    await page.mouse.move(box.x + 5 + 15, box.y + box.height / 2 + 15, { steps: 5 });
 
     // isDragging状態ではopacity-50クラスが付く
-    await expect(firstBar).toHaveCSS('opacity', '0.5');
+    await expect(targetBar).toHaveCSS('opacity', '0.5');
 
     // ドラッグキャンセル
     await page.keyboard.press('Escape');
@@ -177,10 +190,10 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     const box = await firstBar.boundingBox();
     if (!box) throw new Error('Could not get bounding box');
 
-    // ドラッグ開始 → 水平移動
-    await firstBar.hover();
+    // ドラッグ開始 → 水平移動（左端付近から開始して隣接バー遮蔽を回避）
+    await page.mouse.move(box.x + 5, box.y + box.height / 2);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 10 });
+    await page.mouse.move(box.x + 5 + 80, box.y + box.height / 2, { steps: 10 });
 
     // Escapeでキャンセル
     await page.keyboard.press('Escape');
@@ -202,10 +215,10 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     const box = await firstBar.boundingBox();
     if (!box) throw new Error('Could not get bounding box');
 
-    // ドラッグ開始
-    await firstBar.hover();
+    // ドラッグ開始（左端付近から開始して隣接バー遮蔽を回避）
+    await page.mouse.move(box.x + 5, box.y + box.height / 2);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2 + 50, { steps: 5 });
+    await page.mouse.move(box.x + 5 + 50, box.y + box.height / 2 + 50, { steps: 5 });
 
     // ドラッグキャンセル
     await page.keyboard.press('Escape');
