@@ -94,7 +94,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
     <div className={cn(
       'flex border-b border-border/50 transition-colors duration-100',
       isDayOff
-        ? 'bg-muted/50'
+        ? 'bg-muted/60'
         : isEven ? 'bg-card' : 'bg-muted/15',
       !isDayOff && 'hover:bg-accent/40'
     )}>
@@ -108,7 +108,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
       >
         <span className="truncate">{helperName}</span>
         {isDayOff && (
-          <span className="shrink-0 text-[10px] px-1 py-0.5 rounded bg-muted-foreground/15 text-muted-foreground/70 leading-none">
+          <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded bg-gray-400/20 text-gray-500 font-medium leading-none">
             休
           </span>
         )}

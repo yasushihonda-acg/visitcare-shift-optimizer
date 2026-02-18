@@ -10,18 +10,18 @@ interface UnavailableBlocksOverlayProps {
 const BLOCK_STYLES: Record<UnavailableBlockType, { background: string; backgroundColor: string }> = {
   off_hours: {
     background:
-      'repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px)',
-    backgroundColor: 'rgba(0,0,0,0.05)',
+      'repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px)',
+    backgroundColor: 'rgba(0,0,0,0.04)',
   },
   day_off: {
     background:
-      'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(0,0,0,0.10) 4px, rgba(0,0,0,0.10) 5px)',
-    backgroundColor: 'rgba(0,0,0,0.08)',
+      'repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 5px)',
+    backgroundColor: 'rgba(0,0,0,0.12)',
   },
   unavailable: {
     background:
-      'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(220,80,80,0.15) 4px, rgba(220,80,80,0.15) 5px)',
-    backgroundColor: 'rgba(220,80,80,0.08)',
+      'repeating-linear-gradient(135deg, transparent, transparent 3px, rgba(220,80,80,0.25) 3px, rgba(220,80,80,0.25) 5px)',
+    backgroundColor: 'rgba(220,80,80,0.12)',
   },
 };
 
