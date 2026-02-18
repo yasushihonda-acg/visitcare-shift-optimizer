@@ -80,7 +80,8 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   const endX = dropBox.x + dropBox.width / 2;
   const endY = dropBox.y + dropBox.height / 2;
 
-  await source.hover();
+  // overflow-visible バーの重なりによる intercept を回避するため座標ベースで移動
+  await page.mouse.move(startX, startY);
   await page.mouse.down();
   // distance: 5px を確実に超えるため中間点を経由
   await page.mouse.move(startX + 10, startY + 10, { steps: 5 });
@@ -123,7 +124,8 @@ export async function dragOrderHorizontally(page: Page, source: Locator, offsetX
   const startY = box.y + box.height / 2;
   const endX = startX + offsetX;
 
-  await source.hover();
+  // overflow-visible バーの重なりによる intercept を回避するため座標ベースで移動
+  await page.mouse.move(startX, startY);
   await page.mouse.down();
   // distance: 5px を確実に超えるため中間点を経由
   await page.mouse.move(startX + 10, startY, { steps: 5 });

@@ -80,7 +80,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       {...attributes}
       {...listeners}
     >
-      <span className="pointer-events-none">{customerName}</span>
+      {customerName}
     </button>
   );
 });

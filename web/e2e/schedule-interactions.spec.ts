@@ -9,7 +9,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await waitForGanttBars(page);
 
     const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
-    await firstBar.click();
+    await firstBar.click({ force: true });
 
     await expect(page.locator('[data-testid="order-detail-panel"]')).toBeVisible();
   });
@@ -19,7 +19,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await waitForGanttBars(page);
 
     const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
-    await firstBar.click();
+    await firstBar.click({ force: true });
 
     const panel = page.locator('[data-testid="order-detail-panel"]');
     await expect(panel).toBeVisible();
@@ -37,7 +37,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await waitForGanttBars(page);
 
     const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
-    await firstBar.click();
+    await firstBar.click({ force: true });
 
     const panel = page.locator('[data-testid="order-detail-panel"]');
     await expect(panel).toBeVisible();

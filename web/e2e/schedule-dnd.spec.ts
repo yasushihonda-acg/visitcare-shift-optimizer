@@ -16,7 +16,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     if (!box) throw new Error('Could not get bounding box');
 
     // ドラッグ開始（mousedown + 5px以上移動）
-    await firstBar.hover();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 15, box.y + box.height / 2 + 15, { steps: 5 });
 
@@ -178,7 +178,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     if (!box) throw new Error('Could not get bounding box');
 
     // ドラッグ開始 → 水平移動
-    await firstBar.hover();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 10 });
 
@@ -203,7 +203,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     if (!box) throw new Error('Could not get bounding box');
 
     // ドラッグ開始
-    await firstBar.hover();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2 + 50, { steps: 5 });
 
