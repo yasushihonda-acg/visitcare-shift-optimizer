@@ -58,7 +58,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-02-19）
+## 直近の実装（2026-02-19 ～ 2026-02-20）
 
 - **PR #85** ✅: ヘルパー編集UIに `customer_training_status` と `name.short` を追加
   - `shared/types/helper.ts` + Python モデルにフィールド追加
@@ -92,6 +92,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - UI: `HelperEditDialog` に性別 Select、`CustomerEditDialog` にスタッフ性別要件 Select を追加
   - Seed CSV: `helpers.csv` に `gender` 列（20名分）、`customers.csv` に `gender_requirement` 列（女性限定18名・男性限定2名）
   - テスト: 4ケース新規（TDD: RED→GREEN確認済み）、Python 238件 / Web 247件 / E2E 全pass
+
+- **hotfix（2026-02-20）** ✅: ドキュメント整合性監査で発見した漏れを修正
+  - `optimizer/models/customer.py` に外部連携ID（`kaiso_id` / `karakara_id` / `cura_id`）を追加（PR #83 で UI/TS 追加時の Python 側反映漏れ）
+  - `docs/schema/firestore-schema.md` の `ServiceSlot.service_type` / `orders.service_type` を PR #89 の8種に更新（ドキュメント未更新漏れ）
 
 ## 最新テスト結果サマリー（2026-02-20 PR #90 マージ後）
 - **Optimizer**: 238件 pass
