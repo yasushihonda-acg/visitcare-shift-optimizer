@@ -4,7 +4,15 @@
  */
 
 // リテラル型はそのまま再利用
-export type ServiceType = 'physical_care' | 'daily_living';
+export type ServiceType =
+  | 'physical_care'
+  | 'daily_living'
+  | 'mixed'
+  | 'prevention'
+  | 'private'
+  | 'disability'
+  | 'transport_support'
+  | 'severe_visiting';
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 export type TimeString = string;
 export type EmploymentType = 'full_time' | 'part_time';

@@ -167,6 +167,12 @@ export function WeeklyServicesEditor({
                           <SelectContent>
                             <SelectItem value="physical_care">身体介護</SelectItem>
                             <SelectItem value="daily_living">生活援助</SelectItem>
+                            <SelectItem value="mixed">混合（身体+生活）</SelectItem>
+                            <SelectItem value="prevention">介護予防</SelectItem>
+                            <SelectItem value="private">自費サービス</SelectItem>
+                            <SelectItem value="disability">障がい福祉</SelectItem>
+                            <SelectItem value="transport_support">移動支援</SelectItem>
+                            <SelectItem value="severe_visiting">重度訪問介護</SelectItem>
                           </SelectContent>
                         </Select>
                         <div className="flex items-center gap-1">

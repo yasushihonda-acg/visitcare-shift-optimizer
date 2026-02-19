@@ -25,13 +25,23 @@ interface UnassignedSectionProps {
 const SERVICE_LABELS: Record<string, string> = {
   physical_care: '身体',
   daily_living: '生活',
+  mixed: '混合',
   prevention: '予防',
+  private: '自費',
+  disability: '障がい',
+  transport_support: '移動',
+  severe_visiting: '重度',
 };
 
 const SERVICE_BADGE_COLORS: Record<string, string> = {
   physical_care: 'bg-[oklch(0.55_0.15_230)]/10 text-[oklch(0.45_0.15_230)] border-[oklch(0.55_0.15_230)]/30',
   daily_living: 'bg-[oklch(0.55_0.15_160)]/10 text-[oklch(0.45_0.15_160)] border-[oklch(0.55_0.15_160)]/30',
+  mixed: 'bg-[oklch(0.58_0.14_50)]/10 text-[oklch(0.48_0.14_50)] border-[oklch(0.58_0.14_50)]/30',
   prevention: 'bg-[oklch(0.60_0.12_300)]/10 text-[oklch(0.50_0.12_300)] border-[oklch(0.60_0.12_300)]/30',
+  private: 'bg-[oklch(0.60_0.12_350)]/10 text-[oklch(0.50_0.12_350)] border-[oklch(0.60_0.12_350)]/30',
+  disability: 'bg-[oklch(0.58_0.14_120)]/10 text-[oklch(0.48_0.14_120)] border-[oklch(0.58_0.14_120)]/30',
+  transport_support: 'bg-[oklch(0.60_0.12_200)]/10 text-[oklch(0.50_0.12_200)] border-[oklch(0.60_0.12_200)]/30',
+  severe_visiting: 'bg-[oklch(0.53_0.18_25)]/10 text-[oklch(0.43_0.18_25)] border-[oklch(0.53_0.18_25)]/30',
 };
 
 function UnassignedOrderItem({

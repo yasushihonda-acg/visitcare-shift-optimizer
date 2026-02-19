@@ -39,8 +39,8 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
     return { allowed: false, reason: `${helper.name.family} はNGスタッフです` };
   }
 
-  // 資格不適合
-  if (order.service_type === 'physical_care' && !helper.can_physical_care) {
+  // 資格不適合（身体介護・混合は can_physical_care 必須）
+  if ((order.service_type === 'physical_care' || order.service_type === 'mixed') && !helper.can_physical_care) {
     return { allowed: false, reason: `${helper.name.family} は身体介護の資格がありません` };
   }
 

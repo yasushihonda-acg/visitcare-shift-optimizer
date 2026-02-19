@@ -35,6 +35,12 @@ export interface ServiceTypeSummaryItem {
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   physical_care: '身体介護',
   daily_living: '生活援助',
+  mixed: '混合（身体+生活）',
+  prevention: '介護予防',
+  private: '自費サービス',
+  disability: '障がい福祉',
+  transport_support: '移動支援',
+  severe_visiting: '重度訪問介護',
 };
 
 /** 分数を "X時間Y分" 形式にフォーマット */

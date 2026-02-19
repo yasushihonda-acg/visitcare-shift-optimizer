@@ -33,7 +33,12 @@ interface GanttRowProps {
 const GHOST_COLORS: Record<string, string> = {
   physical_care: 'bg-[oklch(0.55_0.15_225/0.3)]',
   daily_living: 'bg-[oklch(0.55_0.15_162/0.3)]',
+  mixed: 'bg-[oklch(0.58_0.14_50/0.3)]',
   prevention: 'bg-[oklch(0.60_0.12_298/0.3)]',
+  private: 'bg-[oklch(0.60_0.12_350/0.3)]',
+  disability: 'bg-[oklch(0.58_0.14_120/0.3)]',
+  transport_support: 'bg-[oklch(0.60_0.12_200/0.3)]',
+  severe_visiting: 'bg-[oklch(0.53_0.18_25/0.3)]',
 };
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {

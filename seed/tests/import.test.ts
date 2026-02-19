@@ -95,7 +95,7 @@ describe('Firestore import integration', () => {
     expect(data.date).toBeDefined();
     expect(data.start_time).toMatch(/^\d{2}:\d{2}$/);
     expect(data.end_time).toMatch(/^\d{2}:\d{2}$/);
-    expect(['physical_care', 'daily_living']).toContain(data.service_type);
+    expect(['physical_care', 'daily_living', 'mixed', 'prevention', 'private', 'disability', 'transport_support', 'severe_visiting']).toContain(data.service_type);
     expect(data.status).toBe('pending');
     expect(data.manually_edited).toBe(false);
   });
