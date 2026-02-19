@@ -4,8 +4,14 @@ import logging
 import re
 from datetime import UTC, date, datetime
 
+import google.auth  # type: ignore[import-untyped]
 from fastapi import APIRouter, Depends, HTTPException, Query
 from googleapiclient.discovery import build  # type: ignore[import-untyped]
+
+_SHEETS_SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
 
 from optimizer.api.auth import require_manager_or_above
 from optimizer.api.schemas import (
@@ -363,9 +369,11 @@ def export_report(
     customer_summary = aggregate_customer_summary(orders, customers)
 
     # Google Sheets APIクライアント構築
+    # Drive API は cloud-platform スコープ非対応のため、明示的にスコープを指定
     try:
-        sheets_service = build("sheets", "v4")
-        drive_service = build("drive", "v3")
+        credentials, _ = google.auth.default(scopes=_SHEETS_SCOPES)
+        sheets_service = build("sheets", "v4", credentials=credentials)
+        drive_service = build("drive", "v3", credentials=credentials)
     except Exception as e:
         logger.error("Google API クライアント構築失敗: %s", e, exc_info=True)
         raise HTTPException(
