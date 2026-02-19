@@ -37,6 +37,36 @@ interface ServiceRow {
   staff_count: string;
 }
 
+interface IrregularPatternRow {
+  customer_id: string;
+  type: string;
+  description: string;
+  active_weeks: string;
+}
+
+/** 日付が月の第何週（0-based）かを返す */
+function getWeekOfMonth(d: Date): number {
+  return Math.floor((d.getDate() - 1) / 7);
+}
+
+/** 不定期パターンに基づき、指定日にサービスを実施するかを判定 */
+function shouldGenerateOrder(
+  patterns: IrregularPatternRow[],
+  orderDate: Date,
+): boolean {
+  if (patterns.length === 0) return true;
+
+  for (const p of patterns) {
+    if (p.type === 'temporary_stop') return false;
+    if ((p.type === 'biweekly' || p.type === 'monthly') && p.active_weeks) {
+      const weekOfMonth = getWeekOfMonth(orderDate);
+      const activeWeeks = p.active_weeks.split(',').map((w) => parseInt(w.trim(), 10));
+      if (!activeWeeks.includes(weekOfMonth)) return false;
+    }
+  }
+  return true;
+}
+
 /**
  * weekly_services からオーダーを生成
  * weekStartDate: 週の月曜日（YYYY-MM-DD）
@@ -46,6 +76,7 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
     weekStartDate = getCurrentMonday();
   }
   const services = parseCSV<ServiceRow>(resolve(DATA_DIR, 'customer-services.csv'));
+  const irregularPatterns = parseCSV<IrregularPatternRow>(resolve(DATA_DIR, 'customer-irregular-patterns.csv'));
   const now = Timestamp.now();
 
   const weekStart = new Date(weekStartDate + 'T00:00:00+09:00');
@@ -71,6 +102,10 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
 
     const orderDate = new Date(weekStart);
     orderDate.setDate(orderDate.getDate() + dayOffset);
+
+    // 不定期パターンに基づきスキップ判定
+    const customerPatterns = irregularPatterns.filter((p) => p.customer_id === s.customer_id);
+    if (!shouldGenerateOrder(customerPatterns, orderDate)) continue;
 
     const orderId = `ORD-${weekStartDate.replace(/-/g, '')}-${String(orderNum).padStart(4, '0')}`;
     orderNum++;

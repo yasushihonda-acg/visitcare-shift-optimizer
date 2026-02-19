@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WeeklyServicesEditor } from './WeeklyServicesEditor';
 import { StaffMultiSelect } from './StaffMultiSelect';
+import { IrregularPatternEditor } from './IrregularPatternEditor';
 import { CustomerLocationPicker } from './CustomerLocationPicker';
 import { customerSchema, type CustomerFormValues } from '@/lib/validation/schemas';
 import { createCustomer, updateCustomer } from '@/lib/firestore/customers';
@@ -293,6 +294,18 @@ export function CustomerEditDialog({
             )}
           />
 
+          {/* 不定期パターン */}
+          <Controller
+            name="irregular_patterns"
+            control={control}
+            render={({ field }) => (
+              <IrregularPatternEditor
+                value={field.value ?? []}
+                onChange={field.onChange}
+              />
+            )}
+          />
+
           <DialogFooter>
             <Button
               type="button"
@@ -324,6 +337,7 @@ function getDefaults(customer?: Customer): CustomerFormValues {
       service_manager: '',
       household_id: '',
       notes: '',
+      irregular_patterns: [],
     };
   }
   return {
@@ -336,5 +350,6 @@ function getDefaults(customer?: Customer): CustomerFormValues {
     service_manager: customer.service_manager,
     household_id: customer.household_id ?? '',
     notes: customer.notes ?? '',
+    irregular_patterns: customer.irregular_patterns ?? [],
   };
 }

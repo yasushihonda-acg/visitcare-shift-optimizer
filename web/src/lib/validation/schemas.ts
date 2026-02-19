@@ -47,6 +47,13 @@ const weeklyServicesSchema = z.record(z.string(), z.array(serviceSlotSchema)).su
 
 const weeklyAvailabilitySchema = z.record(z.string(), z.array(availabilitySlotSchema));
 
+// ---- IrregularPattern ----
+const irregularPatternSchema = z.object({
+  type: z.enum(['biweekly', 'monthly', 'temporary_stop']),
+  description: z.string().min(1, '説明は必須です'),
+  active_weeks: z.array(z.number().int().min(0).max(3)).optional(),
+});
+
 // ---- Customer ----
 export const customerSchema = z.object({
   name: personNameSchema,
@@ -58,6 +65,7 @@ export const customerSchema = z.object({
   household_id: z.string().optional(),
   service_manager: z.string().min(1, 'サービス提供責任者は必須です'),
   notes: z.string().optional(),
+  irregular_patterns: z.array(irregularPatternSchema).optional(),
 });
 
 export type CustomerFormValues = z.infer<typeof customerSchema>;
