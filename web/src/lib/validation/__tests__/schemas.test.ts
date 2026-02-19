@@ -246,6 +246,98 @@ describe('customerSchema', () => {
     const result = customerSchema.safeParse(data);
     expect(result.success).toBe(false);
   });
+
+  // ---- irregular_patterns ----
+
+  it('irregular_patternsなしでパースできる', () => {
+    expect(customerSchema.safeParse(validCustomer()).success).toBe(true);
+  });
+
+  it('irregular_patterns空配列はOK', () => {
+    const data = { ...validCustomer(), irregular_patterns: [] };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('biweeklyパターンでパースできる', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'biweekly', description: '隔週（第1・3週）', active_weeks: [0, 2] },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('monthlyパターンでパースできる', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'monthly', description: '月2回（第1・3週）', active_weeks: [0, 2] },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('temporary_stopパターンでパースできる', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'temporary_stop', description: '入院中（3/15まで）' },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('複数パターンを設定できる', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'biweekly', description: '隔週', active_weeks: [1, 3] },
+        { type: 'temporary_stop', description: '一時中止' },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('不正なtype値はエラー', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'weekly', description: '毎週' },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('descriptionが空文字はエラー', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'biweekly', description: '' },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('active_weeksの範囲外の値（4以上）はエラー', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'biweekly', description: '隔週', active_weeks: [0, 4] },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('active_weeksの負の値はエラー', () => {
+    const data = {
+      ...validCustomer(),
+      irregular_patterns: [
+        { type: 'monthly', description: '月1回', active_weeks: [-1] },
+      ],
+    };
+    expect(customerSchema.safeParse(data).success).toBe(false);
+  });
 });
 
 // ================================================================

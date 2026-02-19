@@ -66,4 +66,16 @@ class UnavailableSlot(BaseModel):
     end_time: str | None = None  # "HH:MM"
 
 
+class IrregularPatternType(str, Enum):
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+    TEMPORARY_STOP = "temporary_stop"
+
+
+class IrregularPattern(BaseModel):
+    type: IrregularPatternType
+    description: str
+    active_weeks: list[int] | None = None
+
+
 StaffConstraintTypeLiteral = Literal["ng", "preferred"]

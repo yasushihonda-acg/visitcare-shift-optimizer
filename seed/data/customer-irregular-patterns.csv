@@ -1,0 +1,6 @@
+customer_id,type,description,active_weeks
+C005,biweekly,隔週（第1・3週）,"0,2"
+C012,biweekly,隔週（第2・4週）,"1,3"
+C020,monthly,月2回（第1・3週）,"0,2"
+C030,temporary_stop,入院中（3月末まで）,
+C045,monthly,月1回（第1週のみ）,0

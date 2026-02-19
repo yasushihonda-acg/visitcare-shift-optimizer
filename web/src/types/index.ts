@@ -12,6 +12,7 @@ export type TransportationType = 'car' | 'bicycle' | 'walk';
 export type TrainingStatus = 'training' | 'independent';
 export type OrderStatus = 'pending' | 'assigned' | 'completed' | 'cancelled';
 export type StaffConstraintType = 'ng' | 'preferred';
+export type IrregularPatternType = 'biweekly' | 'monthly' | 'temporary_stop';
 
 export const DAY_OF_WEEK_ORDER: DayOfWeek[] = [
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
@@ -52,6 +53,12 @@ export interface UnavailableSlot {
   end_time?: TimeString;
 }
 
+export interface IrregularPattern {
+  type: IrregularPatternType;
+  description: string;
+  active_weeks?: number[];
+}
+
 export interface Customer {
   id: string;
   name: PersonName;
@@ -60,6 +67,7 @@ export interface Customer {
   ng_staff_ids: string[];
   preferred_staff_ids: string[];
   weekly_services: Partial<Record<DayOfWeek, ServiceSlot[]>>;
+  irregular_patterns?: IrregularPattern[];
   household_id?: string;
   service_manager: string;
   notes?: string;

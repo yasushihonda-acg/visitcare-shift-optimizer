@@ -32,10 +32,18 @@ interface ConstraintRow {
   constraint_type: string;
 }
 
+interface IrregularPatternRow {
+  customer_id: string;
+  type: string;
+  description: string;
+  active_weeks: string;
+}
+
 export async function importCustomers(): Promise<number> {
   const customers = parseCSV<CustomerRow>(resolve(DATA_DIR, 'customers.csv'));
   const services = parseCSV<ServiceRow>(resolve(DATA_DIR, 'customer-services.csv'));
   const constraints = parseCSV<ConstraintRow>(resolve(DATA_DIR, 'customer-staff-constraints.csv'));
+  const irregularRows = parseCSV<IrregularPatternRow>(resolve(DATA_DIR, 'customer-irregular-patterns.csv'));
 
   const now = Timestamp.now();
 
@@ -70,6 +78,17 @@ export async function importCustomers(): Promise<number> {
       .filter((ct) => ct.constraint_type === 'preferred')
       .map((ct) => ct.staff_id);
 
+    // 不定期パターン
+    const patterns = irregularRows
+      .filter((r) => r.customer_id === c.id)
+      .map((r) => ({
+        type: r.type,
+        description: r.description,
+        ...(r.active_weeks
+          ? { active_weeks: r.active_weeks.split(',').map((w) => parseInt(w.trim(), 10)) }
+          : {}),
+      }));
+
     return {
       id: c.id,
       data: {
@@ -80,6 +99,7 @@ export async function importCustomers(): Promise<number> {
         preferred_staff_ids: preferredStaffIds,
         weekly_services: weeklyServices,
         ...(c.household_id ? { household_id: c.household_id } : {}),
+        ...(patterns.length > 0 ? { irregular_patterns: patterns } : {}),
         service_manager: c.service_manager,
         ...(c.notes ? { notes: c.notes } : {}),
         created_at: now,

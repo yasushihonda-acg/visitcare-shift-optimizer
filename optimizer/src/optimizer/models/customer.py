@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 
-from .common import DayOfWeek, GeoLocation, ServiceSlot
+from .common import DayOfWeek, GeoLocation, IrregularPattern, ServiceSlot
 
 
 class Customer(BaseModel):
@@ -15,5 +15,6 @@ class Customer(BaseModel):
     preferred_staff_ids: list[str] = []
     weekly_services: dict[DayOfWeek, list[ServiceSlot]] = {}
     household_id: str | None = None
+    irregular_patterns: list[IrregularPattern] = []
     service_manager: str = ""
     notes: str | None = None

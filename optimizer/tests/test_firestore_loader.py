@@ -167,6 +167,47 @@ class TestLoadCustomers:
         db = _mock_db_with_collections({"customers": [doc]})
         assert load_customers(db) == []
 
+    def test_irregular_patterns_loaded(self) -> None:
+        """irregular_patternsがFirestoreから正しく読み込まれる"""
+        doc = _mock_doc(
+            "C010",
+            {
+                "name": {"family": "鈴木", "given": "一郎"},
+                "address": "鹿児島市天文館",
+                "location": {"lat": 31.59, "lng": 130.56},
+                "ng_staff_ids": [],
+                "preferred_staff_ids": [],
+                "weekly_services": {},
+                "service_manager": "管理者B",
+                "irregular_patterns": [
+                    {
+                        "type": "biweekly",
+                        "description": "隔週（第1・3週）",
+                        "active_weeks": [0, 2],
+                    },
+                    {
+                        "type": "temporary_stop",
+                        "description": "入院中",
+                    },
+                ],
+            },
+        )
+        db = _mock_db_with_collections({"customers": [doc]})
+        customers = load_customers(db)
+        assert len(customers) == 1
+        c = customers[0]
+        assert len(c.irregular_patterns) == 2
+        assert c.irregular_patterns[0].type.value == "biweekly"
+        assert c.irregular_patterns[0].active_weeks == [0, 2]
+        assert c.irregular_patterns[1].type.value == "temporary_stop"
+        assert c.irregular_patterns[1].active_weeks is None
+
+    def test_irregular_patterns_empty_by_default(self) -> None:
+        """irregular_patternsが未設定の場合は空リスト"""
+        db = _mock_db_with_collections({"customers": [self._sample_customer_doc()]})
+        c = load_customers(db)[0]
+        assert c.irregular_patterns == []
+
 
 # --- Helperローダーテスト ---
 

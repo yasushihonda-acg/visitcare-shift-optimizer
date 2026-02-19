@@ -12,6 +12,7 @@ from optimizer.models import (
     GeoLocation,
     Helper,
     HoursRange,
+    IrregularPattern,
     OptimizationInput,
     Order,
     ServiceSlot,
@@ -94,6 +95,10 @@ def load_customers(db: firestore.Client) -> list[Customer]:
                 preferred_staff_ids=d.get("preferred_staff_ids", []),
                 weekly_services=weekly_services,
                 household_id=d.get("household_id") or None,
+                irregular_patterns=[
+                    IrregularPattern(**p)
+                    for p in d.get("irregular_patterns", [])
+                ],
                 service_manager=d.get("service_manager", ""),
                 notes=d.get("notes") or None,
             )
