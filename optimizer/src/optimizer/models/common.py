@@ -48,6 +48,17 @@ class StaffConstraintType(str, Enum):
     PREFERRED = "preferred"
 
 
+class Gender(str, Enum):
+    MALE = "male"
+    FEMALE = "female"
+
+
+class GenderRequirement(str, Enum):
+    ANY = "any"
+    FEMALE = "female"
+    MALE = "male"
+
+
 class GeoLocation(BaseModel):
     lat: float
     lng: float

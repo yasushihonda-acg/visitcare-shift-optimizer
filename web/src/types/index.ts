@@ -21,6 +21,8 @@ export type TrainingStatus = 'training' | 'independent';
 export type OrderStatus = 'pending' | 'assigned' | 'completed' | 'cancelled';
 export type StaffConstraintType = 'ng' | 'preferred';
 export type IrregularPatternType = 'biweekly' | 'monthly' | 'temporary_stop';
+export type Gender = 'male' | 'female';
+export type GenderRequirement = 'any' | 'female' | 'male';
 
 export const DAY_OF_WEEK_ORDER: DayOfWeek[] = [
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
@@ -78,6 +80,7 @@ export interface Customer {
   irregular_patterns?: IrregularPattern[];
   household_id?: string;
   service_manager: string;
+  gender_requirement?: GenderRequirement;
   kaiso_id?: string;
   karakara_id?: string;
   cura_id?: string;
@@ -97,6 +100,7 @@ export interface Helper {
   available_hours: { min: number; max: number };
   customer_training_status: Record<string, TrainingStatus>;
   employment_type: EmploymentType;
+  gender?: Gender;
   split_shift_allowed?: boolean;
   created_at: Date;
   updated_at: Date;

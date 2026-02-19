@@ -100,6 +100,7 @@ def load_customers(db: firestore.Client) -> list[Customer]:
                     for p in d.get("irregular_patterns", [])
                 ],
                 service_manager=d.get("service_manager", ""),
+                gender_requirement=d.get("gender_requirement", "any"),
                 notes=d.get("notes") or None,
             )
         )
@@ -146,6 +147,7 @@ def load_helpers(db: firestore.Client) -> list[Helper]:
                 ),
                 customer_training_status=d.get("customer_training_status", {}),
                 employment_type=d.get("employment_type", "full_time"),
+                gender=d.get("gender", "female"),
                 split_shift_allowed=d.get("split_shift_allowed", False),
             )
         )

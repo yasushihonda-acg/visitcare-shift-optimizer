@@ -1,6 +1,7 @@
 import { Timestamp } from 'firebase-admin/firestore';
 import {
   DayOfWeek,
+  GenderRequirement,
   GeoLocation,
   IrregularPattern,
   PersonName,
@@ -19,6 +20,7 @@ export interface Customer {
   household_id?: string;
   irregular_patterns?: IrregularPattern[];
   service_manager: string;
+  gender_requirement?: GenderRequirement;
   kaiso_id?: string;
   karakara_id?: string;
   cura_id?: string;

@@ -20,6 +20,7 @@ function validHelper() {
     name: { family: '佐藤', given: '花子' },
     qualifications: ['初任者研修'],
     can_physical_care: true,
+    gender: 'female' as const,
     transportation: 'car' as const,
     weekly_availability: {},
     preferred_hours: { min: 20, max: 40 },

@@ -15,6 +15,7 @@ interface CustomerRow {
   service_manager: string;
   household_id: string;
   notes: string;
+  gender_requirement: string;
 }
 
 interface ServiceRow {
@@ -102,6 +103,7 @@ export async function importCustomers(): Promise<number> {
         ...(patterns.length > 0 ? { irregular_patterns: patterns } : {}),
         service_manager: c.service_manager,
         ...(c.notes ? { notes: c.notes } : {}),
+        ...(c.gender_requirement ? { gender_requirement: c.gender_requirement } : {}),
         created_at: now,
         updated_at: now,
       },

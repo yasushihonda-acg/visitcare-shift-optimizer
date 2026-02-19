@@ -168,6 +168,25 @@ export function HelperEditDialog({
               </div>
             </div>
 
+            <div className="space-y-1">
+              <Label>性別</Label>
+              <Controller
+                name="gender"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="max-w-[200px]">
+                      <SelectValue placeholder="選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="female">女性</SelectItem>
+                      <SelectItem value="male">男性</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
             <Controller
               name="can_physical_care"
               control={control}
@@ -378,6 +397,7 @@ function getDefaults(helper?: Helper): HelperFormValues {
       name: { family: '', given: '' },
       qualifications: [],
       can_physical_care: false,
+      gender: 'female',
       transportation: 'bicycle',
       weekly_availability: {},
       preferred_hours: { min: 0, max: 40 },
@@ -391,6 +411,7 @@ function getDefaults(helper?: Helper): HelperFormValues {
     name: helper.name,
     qualifications: helper.qualifications,
     can_physical_care: helper.can_physical_care,
+    gender: helper.gender ?? 'female',
     transportation: helper.transportation,
     weekly_availability: helper.weekly_availability,
     preferred_hours: helper.preferred_hours,

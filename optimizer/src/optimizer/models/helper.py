@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 
-from .common import AvailabilitySlot, DayOfWeek, EmploymentType, TrainingStatus, TransportationType
+from .common import AvailabilitySlot, DayOfWeek, EmploymentType, Gender, TrainingStatus, TransportationType
 
 
 class HoursRange(BaseModel):
@@ -23,4 +23,5 @@ class Helper(BaseModel):
     available_hours: HoursRange
     customer_training_status: dict[str, TrainingStatus] = {}
     employment_type: EmploymentType
+    gender: Gender = Gender.FEMALE
     split_shift_allowed: bool = False
