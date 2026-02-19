@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-19（月次レポート画面 PR #75 マージ済み）
-**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能 + 利用者マスタ重複チェック + 月次レポート実装済み・マージ済み
+**最終更新**: 2026-02-19（Google Sheets エクスポート PR #76 マージ済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認機能 + 利用者マスタ重複チェック + 月次レポート + Google Sheetsエクスポート実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -192,19 +192,30 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
   - **CI**: PR時全ジョブ成功 ✅（main push時 in_progress — 支払い問題の影響なし）
   - **ブランチ**: `feat/monthly-report` → **main マージ済み（PR #75 → c7dc088）**
 
+- **PR #76** ✅ **NEW**: Google Sheets エクスポート機能（Phase 5a）
+  - **エンドポイント**: `POST /export-report`（`optimizer/src/optimizer/api/routes.py`）
+  - **Pythonモジュール**: `optimizer/src/optimizer/report/`（aggregation, sheets_writer, models）
+  - **FE**: `ExportButton` コンポーネント（`web/src/components/report/ExportButton.tsx`）、`/report` 画面に組み込み
+  - **設計**: ADR-015（`docs/adr/ADR-015-google-sheets-export.md`）— バックエンド経由でSheets API呼び出し、ADC認証
+  - **テスト**: Python 223/223 pass（+67: report集計・Sheets・export_report）、Web 224/224 pass（+5）
+  - **CI**: PR時全ジョブ成功 ✅（Optimizer/Web/Firestore/E2E 全 pass）
+  - **ブランチ**: `feature/phase5a-google-sheets-export` → **main マージ済み（PR #76 → 3962887）**
+  - **注意**: Cloud Run SA に Sheets/Drive API 権限付与が本番利用の前提条件
+
 ## 次のアクション（優先度順）
 
-1. **次フェーズ方針決定**: Phase 5a（Google Sheets連携）・5b（メール通知）・6（モバイル）等を検討
-2. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
+1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番エクスポート前に必須）
+2. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+3. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
 
-## 最新テスト結果サマリー（2026-02-19 PR #75 月次レポート後）
-- **Optimizer**: 156/156 pass
-- **Web (Next.js)**: 219/219 pass（+25: 月次レポート関連）
+## 最新テスト結果サマリー（2026-02-19 PR #76 Google Sheets エクスポート後）
+- **Optimizer**: 223/223 pass（+67: report関連）
+- **Web (Next.js)**: 224/224 pass（+5: exportReport API）
 - **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 43/43 pass ✅
 - **Seed**: 12/12 pass
-- **CI/CD**: PR時テストジョブ成功 ✅（mainブランチ push時 in_progress — 2026-02-18T17:39:57Z）
-- **合計**: 500テスト全パス ✅
+- **CI/CD**: PR時全ジョブ成功 ✅（2026-02-19）
+- **合計**: 572テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:

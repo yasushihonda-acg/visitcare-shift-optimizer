@@ -30,9 +30,9 @@
 {
   "spreadsheet_id": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms",
   "spreadsheet_url": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms",
-  "title": "月次レポート_2026-02",
+  "title": "月次レポート 2026年2月",
   "year_month": "2026-02",
-  "sheets_created": ["ヘルパー別稼働時間", "サービス種別分布", "利用者別サービス回数", "曜日別負荷"],
+  "sheets_created": 4,
   "shared_with": "user@example.com"
 }
 ```
