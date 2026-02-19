@@ -1,14 +1,18 @@
 """APIルーティング"""
 
 import logging
+import re
 from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from googleapiclient.discovery import build  # type: ignore[import-untyped]
 
 from optimizer.api.auth import require_manager_or_above
 from optimizer.api.schemas import (
     AssignmentResponse,
     ErrorResponse,
+    ExportReportRequest,
+    ExportReportResponse,
     OptimizationParametersResponse,
     OptimizationRunDetailResponse,
     OptimizationRunListResponse,
@@ -18,10 +22,23 @@ from optimizer.api.schemas import (
     ResetAssignmentsRequest,
     ResetAssignmentsResponse,
 )
-from optimizer.data.firestore_loader import get_firestore_client, load_optimization_input
+from optimizer.data.firestore_loader import (
+    get_firestore_client,
+    load_all_customers,
+    load_all_helpers,
+    load_monthly_orders,
+    load_optimization_input,
+)
 from optimizer.data.firestore_writer import reset_assignments, save_optimization_run, write_assignments
 from optimizer.engine.solver import SoftWeights, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
+from optimizer.report.aggregation import (
+    aggregate_customer_summary,
+    aggregate_service_type_summary,
+    aggregate_staff_summary,
+    aggregate_status_summary,
+)
+from optimizer.report.sheets_writer import create_monthly_report_spreadsheet
 
 logger = logging.getLogger(__name__)
 
@@ -299,4 +316,94 @@ def reset_assignments_endpoint(
     return ResetAssignmentsResponse(
         orders_reset=orders_reset,
         week_start_date=req.week_start_date,
+    )
+
+
+@router.post(
+    "/export-report",
+    response_model=ExportReportResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+    },
+)
+def export_report(
+    req: ExportReportRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> ExportReportResponse:
+    """月次レポートをGoogle Sheetsにエクスポートし、スプレッドシートURLを返す"""
+    # フォーマット検証（patternで既にチェック済みだが念のため）
+    if not re.match(r"^\d{4}-\d{2}$", req.year_month):
+        raise HTTPException(status_code=400, detail="year_month は YYYY-MM 形式で指定してください")
+
+    # Firestoreからデータ読み込み
+    try:
+        db = get_firestore_client()
+        orders = load_monthly_orders(db, req.year_month)
+        helpers = load_all_helpers(db)
+        customers = load_all_customers(db)
+    except Exception as e:
+        logger.error("Firestore読み込み失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Firestore読み込みエラー: {e}"
+        ) from e
+
+    if not orders:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{req.year_month} のオーダーデータが見つかりません",
+        )
+
+    # 集計
+    status_summary = aggregate_status_summary(orders)
+    service_type_summary = aggregate_service_type_summary(orders)
+    staff_summary = aggregate_staff_summary(orders, helpers)
+    customer_summary = aggregate_customer_summary(orders, customers)
+
+    # Google Sheets APIクライアント構築
+    try:
+        sheets_service = build("sheets", "v4")
+        drive_service = build("drive", "v3")
+    except Exception as e:
+        logger.error("Google API クライアント構築失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=503, detail=f"Google Sheets API に接続できませんでした: {e}"
+        ) from e
+
+    # スプレッドシート作成
+    try:
+        result = create_monthly_report_spreadsheet(
+            service=sheets_service,
+            drive_service=drive_service,
+            year_month=req.year_month,
+            status_summary=status_summary.model_dump(),
+            service_type_summary=[item.model_dump() for item in service_type_summary],
+            staff_summary=[row.model_dump() for row in staff_summary],
+            customer_summary=[row.model_dump() for row in customer_summary],
+            share_with_email=req.user_email,
+        )
+    except Exception as e:
+        logger.error("スプレッドシート作成失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"スプレッドシートの作成に失敗しました: {e}"
+        ) from e
+
+    year, month = req.year_month.split("-")
+    title = f"月次レポート {year}年{int(month)}月"
+
+    logger.info(
+        "スプレッドシート作成完了: id=%s, year_month=%s",
+        result["spreadsheet_id"],
+        req.year_month,
+    )
+
+    return ExportReportResponse(
+        spreadsheet_id=result["spreadsheet_id"],
+        spreadsheet_url=result["spreadsheet_url"],
+        title=title,
+        year_month=req.year_month,
+        sheets_created=4,
+        shared_with=req.user_email,
     )

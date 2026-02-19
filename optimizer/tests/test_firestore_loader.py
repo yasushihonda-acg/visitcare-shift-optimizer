@@ -9,8 +9,11 @@ from optimizer.data.firestore_loader import (
     _build_staff_count_lookup,
     _date_to_day_of_week,
     _ts_to_date_str,
+    load_all_customers,
+    load_all_helpers,
     load_customers,
     load_helpers,
+    load_monthly_orders,
     load_optimization_input,
     load_orders,
     load_staff_constraints,
@@ -538,3 +541,194 @@ class TestLoadOptimizationInput:
         assert len(inp.travel_times) == 1
         assert len(inp.staff_unavailabilities) == 0
         assert len(inp.staff_constraints) == 0
+
+
+# --- 月次ローダーテスト ---
+
+
+class TestLoadMonthlyOrders:
+    def test_basic_loading(self) -> None:
+        """月次オーダーの基本取得"""
+        doc = _mock_doc(
+            "ORD0001",
+            {
+                "customer_id": "C001",
+                "date": datetime(2026, 2, 10),
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "service_type": "physical_care",
+                "status": "completed",
+                "assigned_staff_ids": ["H001"],
+                "staff_count": 1,
+            },
+        )
+        db = _mock_db_with_collections({"orders": [doc]})
+        orders = load_monthly_orders(db, "2026-02")
+        assert len(orders) == 1
+        o = orders[0]
+        assert o["id"] == "ORD0001"
+        assert o["customer_id"] == "C001"
+        assert o["date"] == "2026-02-10"
+        assert o["start_time"] == "09:00"
+        assert o["end_time"] == "10:00"
+        assert o["service_type"] == "physical_care"
+        assert o["status"] == "completed"
+        assert o["assigned_staff_ids"] == ["H001"]
+        assert o["staff_count"] == 1
+
+    def test_all_statuses_included(self) -> None:
+        """全ステータスのオーダーが含まれる"""
+        docs = [
+            _mock_doc(
+                f"ORD{i:04d}",
+                {
+                    "customer_id": "C001",
+                    "date": datetime(2026, 2, 10),
+                    "start_time": "09:00",
+                    "end_time": "10:00",
+                    "service_type": "physical_care",
+                    "status": status,
+                    "assigned_staff_ids": [],
+                },
+            )
+            for i, status in enumerate(["pending", "assigned", "completed", "cancelled"])
+        ]
+        db = _mock_db_with_collections({"orders": docs})
+        orders = load_monthly_orders(db, "2026-02")
+        assert len(orders) == 4
+        statuses = {o["status"] for o in orders}
+        assert statuses == {"pending", "assigned", "completed", "cancelled"}
+
+    def test_empty_orders(self) -> None:
+        """オーダーなしの場合"""
+        db = _mock_db_with_collections({"orders": []})
+        orders = load_monthly_orders(db, "2026-02")
+        assert orders == []
+
+    def test_null_doc_skipped(self) -> None:
+        """to_dictがNoneのドキュメントはスキップ"""
+        doc = MagicMock()
+        doc.id = "ORD_NULL"
+        doc.to_dict.return_value = None
+        db = _mock_db_with_collections({"orders": [doc]})
+        orders = load_monthly_orders(db, "2026-02")
+        assert orders == []
+
+    def test_december_year_boundary(self) -> None:
+        """12月→翌年1月の境界テスト"""
+        doc = _mock_doc(
+            "ORD0001",
+            {
+                "customer_id": "C001",
+                "date": datetime(2025, 12, 15),
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "service_type": "daily_living",
+                "status": "completed",
+                "assigned_staff_ids": ["H001"],
+            },
+        )
+        db = _mock_db_with_collections({"orders": [doc]})
+        orders = load_monthly_orders(db, "2025-12")
+        assert len(orders) == 1
+
+    def test_default_assigned_staff_ids(self) -> None:
+        """assigned_staff_idsがない場合はデフォルト空リスト"""
+        doc = _mock_doc(
+            "ORD0001",
+            {
+                "customer_id": "C001",
+                "date": datetime(2026, 2, 10),
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "service_type": "physical_care",
+                "status": "pending",
+            },
+        )
+        db = _mock_db_with_collections({"orders": [doc]})
+        orders = load_monthly_orders(db, "2026-02")
+        assert orders[0]["assigned_staff_ids"] == []
+        assert orders[0]["staff_count"] == 1
+
+
+class TestLoadAllHelpers:
+    def test_basic_loading(self) -> None:
+        """ヘルパーの基本取得（集計用フラットdict形式）"""
+        doc = _mock_doc(
+            "H001",
+            {
+                "name": {"family": "鈴木", "given": "花子"},
+                "qualifications": ["介護福祉士"],
+                "can_physical_care": True,
+            },
+        )
+        db = _mock_db_with_collections({"helpers": [doc]})
+        helpers = load_all_helpers(db)
+        assert len(helpers) == 1
+        h = helpers[0]
+        assert h["id"] == "H001"
+        assert h["family_name"] == "鈴木"
+        assert h["given_name"] == "花子"
+
+    def test_empty_collection(self) -> None:
+        db = _mock_db_with_collections({"helpers": []})
+        assert load_all_helpers(db) == []
+
+    def test_null_doc_skipped(self) -> None:
+        doc = MagicMock()
+        doc.id = "H999"
+        doc.to_dict.return_value = None
+        db = _mock_db_with_collections({"helpers": [doc]})
+        assert load_all_helpers(db) == []
+
+    def test_multiple_helpers(self) -> None:
+        docs = [
+            _mock_doc("H001", {"name": {"family": "鈴木", "given": "花子"}}),
+            _mock_doc("H002", {"name": {"family": "田中", "given": "一郎"}}),
+        ]
+        db = _mock_db_with_collections({"helpers": docs})
+        helpers = load_all_helpers(db)
+        assert len(helpers) == 2
+        assert helpers[0]["id"] == "H001"
+        assert helpers[1]["id"] == "H002"
+
+
+class TestLoadAllCustomers:
+    def test_basic_loading(self) -> None:
+        """利用者の基本取得（集計用フラットdict形式）"""
+        doc = _mock_doc(
+            "C001",
+            {
+                "name": {"family": "山田", "given": "太郎"},
+                "address": "鹿児島市",
+            },
+        )
+        db = _mock_db_with_collections({"customers": [doc]})
+        customers = load_all_customers(db)
+        assert len(customers) == 1
+        c = customers[0]
+        assert c["id"] == "C001"
+        assert c["family_name"] == "山田"
+        assert c["given_name"] == "太郎"
+
+    def test_empty_collection(self) -> None:
+        db = _mock_db_with_collections({"customers": []})
+        assert load_all_customers(db) == []
+
+    def test_null_doc_skipped(self) -> None:
+        doc = MagicMock()
+        doc.id = "C999"
+        doc.to_dict.return_value = None
+        db = _mock_db_with_collections({"customers": [doc]})
+        assert load_all_customers(db) == []
+
+    def test_multiple_customers(self) -> None:
+        docs = [
+            _mock_doc("C001", {"name": {"family": "山田", "given": "太郎"}}),
+            _mock_doc("C002", {"name": {"family": "佐藤", "given": "花子"}}),
+        ]
+        db = _mock_db_with_collections({"customers": docs})
+        customers = load_all_customers(db)
+        assert len(customers) == 2
+        assert customers[0]["id"] == "C001"
+        assert customers[1]["id"] == "C002"

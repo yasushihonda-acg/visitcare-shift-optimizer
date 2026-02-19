@@ -142,3 +142,77 @@ class TestApiContract:
         assert "order_id" in assignment
         assert "staff_ids" in assignment
         assert isinstance(assignment["staff_ids"], list)
+
+
+# FEが期待するExportReportResponseの全フィールド
+EXPECTED_EXPORT_FIELDS = {
+    "spreadsheet_id",
+    "spreadsheet_url",
+    "title",
+    "year_month",
+    "sheets_created",
+    "shared_with",
+}
+
+
+class TestExportReportContract:
+    """POST /export-report のFE-BE契約テスト"""
+
+    @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
+    @patch("optimizer.api.routes.build")
+    @patch("optimizer.api.routes.load_all_customers")
+    @patch("optimizer.api.routes.load_all_helpers")
+    @patch("optimizer.api.routes.load_monthly_orders")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_export_response_has_all_required_fields(
+        self,
+        mock_get_db: MagicMock,
+        mock_load_orders: MagicMock,
+        mock_load_helpers: MagicMock,
+        mock_load_customers: MagicMock,
+        mock_build: MagicMock,
+        mock_create_sheet: MagicMock,
+    ) -> None:
+        """FEが期待する全フィールドがエクスポートレスポンスに含まれる"""
+        mock_load_orders.return_value = [
+            {
+                "id": "o1",
+                "customer_id": "c1",
+                "date": "2026-02-01",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "service_type": "physical_care",
+                "status": "completed",
+                "assigned_staff_ids": [],
+                "staff_count": 1,
+            }
+        ]
+        mock_load_helpers.return_value = []
+        mock_load_customers.return_value = []
+        mock_create_sheet.return_value = {
+            "spreadsheet_id": "ss-123",
+            "spreadsheet_url": "https://docs.google.com/spreadsheets/d/ss-123",
+        }
+
+        response = client.post("/export-report", json={"year_month": "2026-02"})
+        assert response.status_code == 200
+        data = response.json()
+
+        missing = EXPECTED_EXPORT_FIELDS - set(data.keys())
+        assert not missing, f"レスポンスに不足フィールド: {missing}"
+
+    def test_export_report_invalid_year_month_returns_422(self) -> None:
+        """year_month が YYYY-MM 形式でない場合は 422"""
+        response = client.post("/export-report", json={"year_month": "2026/02"})
+        assert response.status_code == 422
+
+    @patch("optimizer.api.routes.load_monthly_orders")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_export_report_not_found_returns_detail(
+        self, mock_get_db: MagicMock, mock_load_orders: MagicMock
+    ) -> None:
+        """データなし 404 レスポンスに detail フィールドがある"""
+        mock_load_orders.return_value = []
+        response = client.post("/export-report", json={"year_month": "2025-01"})
+        assert response.status_code == 404
+        assert "detail" in response.json()
