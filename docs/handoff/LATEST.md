@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-19（PR #89 マージ済み）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種）実装済み・マージ済み
+**最終更新**: 2026-02-20（PR #90 マージ済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -85,13 +85,19 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - 資格制約: `constraints.py` で `_PHYSICAL_CARE_TYPES = {physical_care, mixed}` — mixedも `can_physical_care` 必須
   - UI: WeeklyServicesEditor・GanttBar・GanttRow・UnassignedSection・OrderDetailPanel・ServiceTypeSummaryCard 全対応
   - Seed CSV: 2件追加（C003/thursday/mixed, C007/friday/prevention）
-  - テスト: Python 234件 / Web 247件 / E2E 41件 全pass
 
-## 最新テスト結果サマリー（2026-02-19 PR #89 マージ後）
-- **Optimizer**: 234件 pass
+- **PR #90** ✅: 性別制約をソルバーのハード制約として実装（Closes #82）
+  - 型定義: `Gender`（`male`/`female`）・`GenderRequirement`（`any`/`female`/`male`）を TS・Python 両方に追加
+  - Optimizer: `_add_gender_constraint()` 追加 — `gender_requirement` が `any` 以外の利用者に対し性別不一致スタッフを割当禁止
+  - UI: `HelperEditDialog` に性別 Select、`CustomerEditDialog` にスタッフ性別要件 Select を追加
+  - Seed CSV: `helpers.csv` に `gender` 列（20名分）、`customers.csv` に `gender_requirement` 列（女性限定18名・男性限定2名）
+  - テスト: 4ケース新規（TDD: RED→GREEN確認済み）、Python 238件 / Web 247件 / E2E 全pass
+
+## 最新テスト結果サマリー（2026-02-20 PR #90 マージ後）
+- **Optimizer**: 238件 pass
 - **Web (Next.js)**: 247件 pass
 - **Firestore Rules**: 70/70 pass
-- **E2E Tests (Playwright)**: 41/43 pass（2 skipped）
+- **E2E Tests (Playwright)**: 全pass
 - **CI/CD**: 全チェック SUCCESS
 
 ## 重要なドキュメント
@@ -113,12 +119,10 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番Sheetsエクスポート前に必須）
-2. **オープンIssue対応**: #82（利用者制約条件 女性限定・アレルギー等）
-3. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+2. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 1件
-  - #82: feat: 利用者の制約条件（女性限定・アレルギー等）を構造化フィールドで管理する [enhancement]
+- **オープンIssue**: 0件
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
