@@ -5,7 +5,6 @@ import { X, Search, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -27,11 +26,6 @@ interface CustomerTrainingStatusEditorProps {
   onChange: (val: Record<string, TrainingStatus>) => void;
   customers: Map<string, Customer>;
 }
-
-const STATUS_LABELS: Record<TrainingStatus, string> = {
-  training: '同行研修中',
-  independent: '独り立ち',
-};
 
 export function CustomerTrainingStatusEditor({
   value,
