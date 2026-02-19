@@ -160,6 +160,7 @@ class TestExportReportContract:
 
     @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
     @patch("optimizer.api.routes.build")
+    @patch("optimizer.api.routes.google.auth.default")
     @patch("optimizer.api.routes.load_all_customers")
     @patch("optimizer.api.routes.load_all_helpers")
     @patch("optimizer.api.routes.load_monthly_orders")
@@ -170,6 +171,7 @@ class TestExportReportContract:
         mock_load_orders: MagicMock,
         mock_load_helpers: MagicMock,
         mock_load_customers: MagicMock,
+        mock_google_auth: MagicMock,
         mock_build: MagicMock,
         mock_create_sheet: MagicMock,
     ) -> None:
@@ -189,6 +191,7 @@ class TestExportReportContract:
         ]
         mock_load_helpers.return_value = []
         mock_load_customers.return_value = []
+        mock_google_auth.return_value = (MagicMock(), "test-project")
         mock_create_sheet.return_value = {
             "spreadsheet_id": "ss-123",
             "spreadsheet_url": "https://docs.google.com/spreadsheets/d/ss-123",
