@@ -23,14 +23,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { WeeklyAvailabilityEditor } from './WeeklyAvailabilityEditor';
+import { CustomerTrainingStatusEditor } from './CustomerTrainingStatusEditor';
 import { helperSchema, type HelperFormValues } from '@/lib/validation/schemas';
 import { createHelper, updateHelper } from '@/lib/firestore/helpers';
-import type { Helper } from '@/types';
+import type { Helper, Customer } from '@/types';
 
 interface HelperEditDialogProps {
   open: boolean;
   onClose: () => void;
   helper?: Helper;
+  customers: Map<string, Customer>;
 }
 
 const QUALIFICATION_OPTIONS = [
@@ -43,6 +45,7 @@ export function HelperEditDialog({
   open,
   onClose,
   helper,
+  customers,
 }: HelperEditDialogProps) {
   const isNew = !helper;
 
@@ -77,12 +80,16 @@ export function HelperEditDialog({
   };
 
   const onSubmit = async (data: HelperFormValues) => {
+    const saveData = {
+      ...data,
+      customer_training_status: data.customer_training_status ?? {},
+    };
     try {
       if (isNew) {
-        await createHelper(data);
+        await createHelper(saveData);
         toast.success('ヘルパーを追加しました');
       } else {
-        await updateHelper(helper.id, data);
+        await updateHelper(helper.id, saveData);
         toast.success('ヘルパー情報を更新しました');
       }
       onClose();
@@ -130,6 +137,19 @@ export function HelperEditDialog({
                   </p>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="name.short">短縮名</Label>
+              <Input
+                id="name.short"
+                {...register('name.short')}
+                placeholder="佐花"
+                className="max-w-[200px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                ガントチャートやレポートで表示される名前
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -297,6 +317,27 @@ export function HelperEditDialog({
             />
           </div>
 
+          <hr className="my-4" />
+
+          {/* 利用者別研修状態セクション */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">利用者別研修状態</h3>
+            <p className="text-xs text-muted-foreground">
+              「同行研修中」の利用者には、このヘルパーを単独で割り当てません
+            </p>
+            <Controller
+              name="customer_training_status"
+              control={control}
+              render={({ field }) => (
+                <CustomerTrainingStatusEditor
+                  value={field.value ?? {}}
+                  onChange={field.onChange}
+                  customers={customers}
+                />
+              )}
+            />
+          </div>
+
           <DialogFooter>
             <Button
               type="button"
@@ -327,6 +368,7 @@ function getDefaults(helper?: Helper): HelperFormValues {
       preferred_hours: { min: 0, max: 40 },
       available_hours: { min: 0, max: 40 },
       employment_type: 'part_time',
+      customer_training_status: {},
     };
   }
   return {
@@ -338,5 +380,6 @@ function getDefaults(helper?: Helper): HelperFormValues {
     preferred_hours: helper.preferred_hours,
     available_hours: helper.available_hours,
     employment_type: helper.employment_type,
+    customer_training_status: helper.customer_training_status ?? {},
   };
 }

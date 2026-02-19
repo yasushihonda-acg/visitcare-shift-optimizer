@@ -63,6 +63,11 @@ export const customerSchema = z.object({
 export type CustomerFormValues = z.infer<typeof customerSchema>;
 
 // ---- Helper ----
+const trainingStatusSchema = z.record(
+  z.string(),
+  z.enum(['training', 'independent']),
+);
+
 export const helperSchema = z.object({
   name: personNameSchema,
   qualifications: z.array(z.string()),
@@ -78,6 +83,7 @@ export const helperSchema = z.object({
     max: z.number().min(0),
   }),
   employment_type: z.enum(['full_time', 'part_time']),
+  customer_training_status: trainingStatusSchema.optional(),
 });
 
 export type HelperFormValues = z.infer<typeof helperSchema>;
