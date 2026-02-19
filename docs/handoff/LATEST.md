@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-19（Google Sheets エクスポート PR #76 マージ済み）
+**最終更新**: 2026-02-19（CIテスト修正 push 済み）
 **現在のフェーズ**: Phase 0-5a 完了 → 実績確認機能 + 利用者マスタ重複チェック + 月次レポート + Google Sheetsエクスポート実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -206,15 +206,22 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番エクスポート前に必須）
 2. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
-3. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
+3. **UI改善継続** — ユーザーフィードバックに応じた微調整
 
-## 最新テスト結果サマリー（2026-02-19 PR #76 Google Sheets エクスポート後）
+## 直近の修正（2026-02-19）
+
+- **618b2d7** CI修正: `google.auth.default` をテストでモックし忘れたため ADC 非存在の CI 環境で 503 返却 → テスト4件失敗を修正
+  - 対象: `tests/test_export_report.py`（test_success/test_with_email_share/test_december_year_boundary）、`tests/test_api_contract.py`（test_export_response_has_all_required_fields）
+  - 修正: `@patch("optimizer.api.routes.google.auth.default")` + `return_value = (MagicMock(), "test-project")` 追加
+  - CI: 全4ジョブ成功確認済み ✅
+
+## 最新テスト結果サマリー（2026-02-19 CIテスト修正後）
 - **Optimizer**: 223/223 pass（+67: report関連）
 - **Web (Next.js)**: 224/224 pass（+5: exportReport API）
 - **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 43/43 pass ✅
 - **Seed**: 12/12 pass
-- **CI/CD**: PR時全ジョブ成功 ✅（2026-02-19）
+- **CI/CD**: main push 全ジョブ成功 ✅（2026-02-19 618b2d7）
 - **合計**: 572テスト全パス ✅
 
 ## 参考資料（ローカルExcel）
