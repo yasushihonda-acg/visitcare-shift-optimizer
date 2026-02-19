@@ -5,6 +5,7 @@ import pulp
 from optimizer.engine.solver import _orders_overlap, _time_to_minutes
 from optimizer.models import (
     DayOfWeek,
+    GenderRequirement,
     OptimizationInput,
     ServiceType,
     StaffConstraintType,
@@ -26,6 +27,7 @@ def add_all_hard_constraints(
     _add_qualification_constraint(prob, x, inp)
     _add_no_overlap_constraint(prob, x, inp)
     _add_ng_staff_constraint(prob, x, inp)
+    _add_gender_constraint(prob, x, inp)
     _add_availability_constraint(prob, x, inp)
     _add_unavailability_constraint(prob, x, inp)
     _add_travel_time_constraint(prob, x, inp, travel_lookup)
@@ -96,6 +98,22 @@ def _add_ng_staff_constraint(
         for h in inp.helpers:
             if (o.customer_id, h.id) in ng_pairs:
                 prob += x[h.id, o.id] == 0, f"ng_{h.id}_{o.id}"
+
+
+def _add_gender_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """N: 性別制約 — gender_requirementと一致しないスタッフを割り当てない"""
+    customer_map = {c.id: c for c in inp.customers}
+    for o in inp.orders:
+        c = customer_map[o.customer_id]
+        if c.gender_requirement == GenderRequirement.ANY:
+            continue
+        for h in inp.helpers:
+            if h.gender != c.gender_requirement:
+                prob += x[h.id, o.id] == 0, f"gender_{h.id}_{o.id}"
 
 
 def _add_availability_constraint(

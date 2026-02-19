@@ -25,6 +25,7 @@
 | household_id | string | No | 同一世帯ID（連続訪問用） |
 | irregular_patterns | IrregularPattern[] | No | 不定期パターン |
 | service_manager | string | Yes | 担当サ責名 |
+| gender_requirement | `'any' \| 'female' \| 'male'` | No | スタッフ性別要件（省略時は `any`） |
 | kaiso_id | string | No | 介ソルID |
 | karakara_id | string | No | カカラID |
 | cura_id | string | No | CURA ID |
@@ -56,6 +57,7 @@
 | available_hours | `{ min, max }` | Yes | 対応可能時間（時/週） |
 | customer_training_status | `Record<string, TrainingStatus>` | Yes | 利用者別研修状態 |
 | employment_type | `'full_time' \| 'part_time'` | Yes | 雇用形態 |
+| gender | `'male' \| 'female'` | Yes | 性別 |
 | split_shift_allowed | boolean | No | 分断勤務可（午前・午後の非連続勤務） |
 | created_at | Timestamp | Yes | 作成日時 |
 | updated_at | Timestamp | Yes | 更新日時 |

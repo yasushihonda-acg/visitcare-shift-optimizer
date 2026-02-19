@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 
-from .common import DayOfWeek, GeoLocation, IrregularPattern, ServiceSlot
+from .common import DayOfWeek, GenderRequirement, GeoLocation, IrregularPattern, ServiceSlot
 
 
 class Customer(BaseModel):
@@ -17,4 +17,5 @@ class Customer(BaseModel):
     household_id: str | None = None
     irregular_patterns: list[IrregularPattern] = []
     service_manager: str = ""
+    gender_requirement: GenderRequirement = GenderRequirement.ANY
     notes: str | None = None

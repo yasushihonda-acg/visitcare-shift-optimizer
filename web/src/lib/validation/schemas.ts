@@ -67,6 +67,7 @@ export const customerSchema = z.object({
   weekly_services: weeklyServicesSchema,
   household_id: z.string().optional(),
   service_manager: z.string().min(1, 'サービス提供責任者は必須です'),
+  gender_requirement: z.enum(['any', 'female', 'male']).optional(),
   notes: z.string().optional(),
   irregular_patterns: z.array(irregularPatternSchema).optional(),
   kaiso_id: z.string().optional(),
@@ -86,6 +87,7 @@ export const helperSchema = z.object({
   name: personNameSchema,
   qualifications: z.array(z.string()),
   can_physical_care: z.boolean(),
+  gender: z.enum(['male', 'female']),
   transportation: z.enum(['car', 'bicycle', 'walk']),
   weekly_availability: weeklyAvailabilitySchema,
   preferred_hours: z.object({

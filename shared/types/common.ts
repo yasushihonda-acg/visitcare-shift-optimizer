@@ -26,6 +26,12 @@ export type TransportationType = 'car' | 'bicycle' | 'walk';
 /** 研修状態 */
 export type TrainingStatus = 'training' | 'independent';
 
+/** 性別 */
+export type Gender = 'male' | 'female';
+
+/** 性別要件 */
+export type GenderRequirement = 'any' | 'female' | 'male';
+
 /** オーダーステータス */
 export type OrderStatus = 'pending' | 'assigned' | 'completed' | 'cancelled';
 

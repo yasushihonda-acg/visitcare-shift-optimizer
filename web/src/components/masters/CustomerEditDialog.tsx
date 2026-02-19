@@ -19,6 +19,13 @@ import { WeeklyServicesEditor } from './WeeklyServicesEditor';
 import { StaffMultiSelect } from './StaffMultiSelect';
 import { IrregularPatternEditor } from './IrregularPatternEditor';
 import { CustomerLocationPicker } from './CustomerLocationPicker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { customerSchema, type CustomerFormValues } from '@/lib/validation/schemas';
 import { createCustomer, updateCustomer } from '@/lib/firestore/customers';
 import { geocodeAddress } from '@/lib/geocoding';
@@ -286,6 +293,27 @@ export function CustomerEditDialog({
             </div>
           </div>
 
+          {/* スタッフ性別要件 */}
+          <div className="space-y-1">
+            <Label>スタッフ性別要件</Label>
+            <Controller
+              name="gender_requirement"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value ?? 'any'} onValueChange={field.onChange}>
+                  <SelectTrigger className="max-w-[200px]">
+                    <SelectValue placeholder="指定なし" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">指定なし</SelectItem>
+                    <SelectItem value="female">女性のみ</SelectItem>
+                    <SelectItem value="male">男性のみ</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
           {/* NGスタッフ */}
           <Controller
             name="ng_staff_ids"
@@ -369,6 +397,7 @@ function getDefaults(customer?: Customer): CustomerFormValues {
       preferred_staff_ids: [],
       weekly_services: {},
       service_manager: '',
+      gender_requirement: 'any',
       household_id: '',
       notes: '',
       irregular_patterns: [],
@@ -385,6 +414,7 @@ function getDefaults(customer?: Customer): CustomerFormValues {
     preferred_staff_ids: customer.preferred_staff_ids,
     weekly_services: customer.weekly_services,
     service_manager: customer.service_manager,
+    gender_requirement: customer.gender_requirement ?? 'any',
     household_id: customer.household_id ?? '',
     notes: customer.notes ?? '',
     irregular_patterns: customer.irregular_patterns ?? [],
