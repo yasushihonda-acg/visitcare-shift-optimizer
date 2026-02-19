@@ -112,7 +112,7 @@ def _add_gender_constraint(
         if c.gender_requirement == GenderRequirement.ANY:
             continue
         for h in inp.helpers:
-            if h.gender != c.gender_requirement:
+            if h.gender.value != c.gender_requirement.value:
                 prob += x[h.id, o.id] == 0, f"gender_{h.id}_{o.id}"
 
 

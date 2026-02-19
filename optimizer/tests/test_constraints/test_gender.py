@@ -13,7 +13,7 @@ from optimizer.models import (
 )
 
 
-def _h(id: str, gender: str) -> Helper:
+def _h(id: str, gender: Gender) -> Helper:
     return Helper(
         id=id, family_name="テスト", given_name=id, can_physical_care=True,
         transportation="car", preferred_hours=HoursRange(min=4, max=8),
@@ -42,7 +42,7 @@ class TestGenderConstraint:
         """女性限定利用者には女性スタッフのみ割り当てられる"""
         inp = OptimizationInput(
             customers=[_c("C1", gender_requirement="female")],
-            helpers=[_h("H1", "male"), _h("H2", "female")],
+            helpers=[_h("H1", Gender.MALE), _h("H2", Gender.FEMALE)],
             orders=[_o("O1", "C1")],
             travel_times=[], staff_unavailabilities=[], staff_constraints=[],
         )
@@ -55,7 +55,7 @@ class TestGenderConstraint:
         """男性限定利用者には男性スタッフのみ割り当てられる"""
         inp = OptimizationInput(
             customers=[_c("C1", gender_requirement="male")],
-            helpers=[_h("H1", "female"), _h("H2", "male")],
+            helpers=[_h("H1", Gender.FEMALE), _h("H2", Gender.MALE)],
             orders=[_o("O1", "C1")],
             travel_times=[], staff_unavailabilities=[], staff_constraints=[],
         )
@@ -68,7 +68,7 @@ class TestGenderConstraint:
         """指定なし（any）の場合は全性別のスタッフが割り当て可能"""
         inp = OptimizationInput(
             customers=[_c("C1", gender_requirement="any")],
-            helpers=[_h("H1", "male"), _h("H2", "female")],
+            helpers=[_h("H1", Gender.MALE), _h("H2", Gender.FEMALE)],
             orders=[_o("O1", "C1")],
             travel_times=[], staff_unavailabilities=[], staff_constraints=[],
         )
@@ -80,7 +80,7 @@ class TestGenderConstraint:
         """条件を満たすスタッフがいない場合はInfeasible"""
         inp = OptimizationInput(
             customers=[_c("C1", gender_requirement="female")],
-            helpers=[_h("H1", "male"), _h("H2", "male")],
+            helpers=[_h("H1", Gender.MALE), _h("H2", Gender.MALE)],
             orders=[_o("O1", "C1")],
             travel_times=[], staff_unavailabilities=[], staff_constraints=[],
         )

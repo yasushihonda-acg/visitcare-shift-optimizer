@@ -9,8 +9,6 @@ from optimizer.models import (
     AvailabilitySlot,
     Customer,
     DayOfWeek,
-    Gender,
-    GenderRequirement,
     GeoLocation,
     Helper,
     HoursRange,
