@@ -39,7 +39,7 @@
 |-----------|-----|------|
 | start_time | string (HH:MM) | 開始時刻 |
 | end_time | string (HH:MM) | 終了時刻 |
-| service_type | `'physical_care' \| 'daily_living'` | サービス種別 |
+| service_type | `'physical_care' \| 'daily_living' \| 'mixed' \| 'prevention' \| 'private' \| 'disability' \| 'transport_support' \| 'severe_visiting'` | サービス種別 |
 | staff_count | number | 必要スタッフ数 |
 
 ---
@@ -73,7 +73,7 @@
 | date | Timestamp | Yes | サービス実施日 |
 | start_time | string (HH:MM) | Yes | 開始時刻 |
 | end_time | string (HH:MM) | Yes | 終了時刻 |
-| service_type | `'physical_care' \| 'daily_living'` | Yes | サービス種別 |
+| service_type | `'physical_care' \| 'daily_living' \| 'mixed' \| 'prevention' \| 'private' \| 'disability' \| 'transport_support' \| 'severe_visiting'` | Yes | サービス種別 |
 | assigned_staff_ids | string[] | Yes | 割当スタッフID |
 | status | `'pending' \| 'assigned' \| 'completed' \| 'cancelled'` | Yes | ステータス |
 | linked_order_id | string | No | 連続訪問リンク先オーダーID |

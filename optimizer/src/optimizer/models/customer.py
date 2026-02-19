@@ -18,4 +18,7 @@ class Customer(BaseModel):
     irregular_patterns: list[IrregularPattern] = []
     service_manager: str = ""
     gender_requirement: GenderRequirement = GenderRequirement.ANY
+    kaiso_id: str | None = None
+    karakara_id: str | None = None
+    cura_id: str | None = None
     notes: str | None = None
