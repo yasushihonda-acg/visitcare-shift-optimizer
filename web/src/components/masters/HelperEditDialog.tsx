@@ -411,7 +411,7 @@ function getDefaults(helper?: Helper): HelperFormValues {
     name: helper.name,
     qualifications: helper.qualifications,
     can_physical_care: helper.can_physical_care,
-    gender: helper.gender,
+    gender: helper.gender ?? 'female',
     transportation: helper.transportation,
     weekly_availability: helper.weekly_availability,
     preferred_hours: helper.preferred_hours,
