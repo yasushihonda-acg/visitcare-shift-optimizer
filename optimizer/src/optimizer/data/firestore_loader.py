@@ -146,6 +146,7 @@ def load_helpers(db: firestore.Client) -> list[Helper]:
                 ),
                 customer_training_status=d.get("customer_training_status", {}),
                 employment_type=d.get("employment_type", "full_time"),
+                split_shift_allowed=d.get("split_shift_allowed", False),
             )
         )
     return helpers

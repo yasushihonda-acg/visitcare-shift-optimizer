@@ -66,6 +66,9 @@ export const customerSchema = z.object({
   service_manager: z.string().min(1, 'サービス提供責任者は必須です'),
   notes: z.string().optional(),
   irregular_patterns: z.array(irregularPatternSchema).optional(),
+  kaiso_id: z.string().optional(),
+  karakara_id: z.string().optional(),
+  cura_id: z.string().optional(),
 });
 
 export type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -92,6 +95,7 @@ export const helperSchema = z.object({
   }),
   employment_type: z.enum(['full_time', 'part_time']),
   customer_training_status: trainingStatusSchema.optional(),
+  split_shift_allowed: z.boolean().optional(),
 });
 
 export type HelperFormValues = z.infer<typeof helperSchema>;

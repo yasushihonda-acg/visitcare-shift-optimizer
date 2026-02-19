@@ -83,6 +83,7 @@ export function HelperEditDialog({
     const saveData = {
       ...data,
       customer_training_status: data.customer_training_status ?? {},
+      split_shift_allowed: data.split_shift_allowed ?? false,
     };
     try {
       if (isNew) {
@@ -177,6 +178,20 @@ export function HelperEditDialog({
                     onCheckedChange={field.onChange}
                   />
                   身体介護対応可
+                </label>
+              )}
+            />
+
+            <Controller
+              name="split_shift_allowed"
+              control={control}
+              render={({ field }) => (
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                  />
+                  分断勤務可（午前・午後の非連続勤務）
                 </label>
               )}
             />
@@ -369,6 +384,7 @@ function getDefaults(helper?: Helper): HelperFormValues {
       available_hours: { min: 0, max: 40 },
       employment_type: 'part_time',
       customer_training_status: {},
+      split_shift_allowed: false,
     };
   }
   return {
@@ -381,5 +397,6 @@ function getDefaults(helper?: Helper): HelperFormValues {
     available_hours: helper.available_hours,
     employment_type: helper.employment_type,
     customer_training_status: helper.customer_training_status ?? {},
+    split_shift_allowed: helper.split_shift_allowed ?? false,
   };
 }

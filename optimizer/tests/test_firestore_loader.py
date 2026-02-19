@@ -263,6 +263,32 @@ class TestLoadHelpers:
         h = load_helpers(db)[0]
         assert h.customer_training_status.get("C010") == "training"
 
+    def test_split_shift_allowed_default(self) -> None:
+        """split_shift_allowedが未設定の場合はFalse"""
+        db = _mock_db_with_collections({"helpers": [self._sample_helper_doc()]})
+        h = load_helpers(db)[0]
+        assert h.split_shift_allowed is False
+
+    def test_split_shift_allowed_true(self) -> None:
+        """split_shift_allowed=Trueが正しく読み込まれる"""
+        doc = _mock_doc(
+            "H002",
+            {
+                "name": {"family": "田中", "given": "太郎"},
+                "qualifications": [],
+                "can_physical_care": False,
+                "transportation": "bicycle",
+                "weekly_availability": {},
+                "preferred_hours": {"min": 10.0, "max": 20.0},
+                "available_hours": {"min": 8.0, "max": 24.0},
+                "employment_type": "part_time",
+                "split_shift_allowed": True,
+            },
+        )
+        db = _mock_db_with_collections({"helpers": [doc]})
+        h = load_helpers(db)[0]
+        assert h.split_shift_allowed is True
+
 
 # --- Orderローダーテスト ---
 

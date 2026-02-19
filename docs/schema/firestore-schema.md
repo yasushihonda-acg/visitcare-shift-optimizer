@@ -56,6 +56,7 @@
 | available_hours | `{ min, max }` | Yes | 対応可能時間（時/週） |
 | customer_training_status | `Record<string, TrainingStatus>` | Yes | 利用者別研修状態 |
 | employment_type | `'full_time' \| 'part_time'` | Yes | 雇用形態 |
+| split_shift_allowed | boolean | No | 分断勤務可（午前・午後の非連続勤務） |
 | created_at | Timestamp | Yes | 作成日時 |
 | updated_at | Timestamp | Yes | 更新日時 |
 

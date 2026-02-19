@@ -338,6 +338,37 @@ describe('customerSchema', () => {
     };
     expect(customerSchema.safeParse(data).success).toBe(false);
   });
+
+  // ---- 外部連携ID ----
+
+  it('外部連携IDなしでパースできる', () => {
+    expect(customerSchema.safeParse(validCustomer()).success).toBe(true);
+  });
+
+  it('kaiso_idを設定できる', () => {
+    const data = { ...validCustomer(), kaiso_id: 'KS-001' };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('karakara_idを設定できる', () => {
+    const data = { ...validCustomer(), karakara_id: 'KK-001' };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('cura_idを設定できる', () => {
+    const data = { ...validCustomer(), cura_id: 'CR-001' };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('全外部連携IDを同時に設定できる', () => {
+    const data = {
+      ...validCustomer(),
+      kaiso_id: 'KS-001',
+      karakara_id: 'KK-001',
+      cura_id: 'CR-001',
+    };
+    expect(customerSchema.safeParse(data).success).toBe(true);
+  });
 });
 
 // ================================================================
@@ -438,6 +469,22 @@ describe('helperSchema', () => {
       },
     };
     expect(helperSchema.safeParse(data).success).toBe(false);
+  });
+
+  // ---- split_shift_allowed ----
+
+  it('split_shift_allowedなしでパースできる', () => {
+    expect(helperSchema.safeParse(validHelper()).success).toBe(true);
+  });
+
+  it('split_shift_allowed=trueでパースできる', () => {
+    const data = { ...validHelper(), split_shift_allowed: true };
+    expect(helperSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('split_shift_allowed=falseでパースできる', () => {
+    const data = { ...validHelper(), split_shift_allowed: false };
+    expect(helperSchema.safeParse(data).success).toBe(true);
   });
 });
 

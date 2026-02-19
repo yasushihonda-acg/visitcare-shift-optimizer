@@ -23,3 +23,4 @@ class Helper(BaseModel):
     available_hours: HoursRange
     customer_training_status: dict[str, TrainingStatus] = {}
     employment_type: EmploymentType
+    split_shift_allowed: bool = False
