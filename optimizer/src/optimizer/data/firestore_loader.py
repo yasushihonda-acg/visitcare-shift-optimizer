@@ -307,6 +307,100 @@ def load_staff_constraints(customers: list[Customer]) -> list[StaffConstraint]:
     return constraints
 
 
+def load_monthly_orders(
+    db: firestore.Client,
+    year_month: str,
+) -> list[dict[str, object]]:
+    """指定月のオーダーを全ステータスで取得（月次レポート集計用）
+
+    Args:
+        db: Firestoreクライアント
+        year_month: 'YYYY-MM' 形式の年月文字列
+
+    Returns:
+        オーダーのdict リスト（集計ロジック向けのフラットなdict形式）
+    """
+    JST = timezone(timedelta(hours=9))
+    year, month = (int(x) for x in year_month.split("-"))
+    month_start = datetime(year, month, 1, tzinfo=JST)
+    # 翌月初を計算
+    if month == 12:
+        next_month_start = datetime(year + 1, 1, 1, tzinfo=JST)
+    else:
+        next_month_start = datetime(year, month + 1, 1, tzinfo=JST)
+
+    docs = (
+        db.collection("orders")
+        .where("date", ">=", month_start)
+        .where("date", "<", next_month_start)
+        .stream()
+    )
+
+    orders: list[dict[str, object]] = []
+    for doc in docs:
+        d = doc.to_dict()
+        if d is None:
+            continue
+        orders.append(
+            {
+                "id": doc.id,
+                "customer_id": d.get("customer_id", ""),
+                "date": _ts_to_date_str(d["date"]),
+                "start_time": d.get("start_time", ""),
+                "end_time": d.get("end_time", ""),
+                "service_type": d.get("service_type", ""),
+                "status": d.get("status", ""),
+                "assigned_staff_ids": d.get("assigned_staff_ids", []),
+                "staff_count": d.get("staff_count", 1),
+            }
+        )
+    return orders
+
+
+def load_all_helpers(db: firestore.Client) -> list[dict[str, object]]:
+    """全ヘルパーを取得（月次レポート集計用）
+
+    Returns:
+        ヘルパーのdict リスト（集計ロジック向けのフラットなdict形式）
+    """
+    helpers: list[dict[str, object]] = []
+    for doc in db.collection("helpers").stream():
+        d = doc.to_dict()
+        if d is None:
+            continue
+        name = d.get("name", {})
+        helpers.append(
+            {
+                "id": doc.id,
+                "family_name": name.get("family", ""),
+                "given_name": name.get("given", ""),
+            }
+        )
+    return helpers
+
+
+def load_all_customers(db: firestore.Client) -> list[dict[str, object]]:
+    """全利用者を取得（月次レポート集計用）
+
+    Returns:
+        利用者のdict リスト（集計ロジック向けのフラットなdict形式）
+    """
+    customers: list[dict[str, object]] = []
+    for doc in db.collection("customers").stream():
+        d = doc.to_dict()
+        if d is None:
+            continue
+        name = d.get("name", {})
+        customers.append(
+            {
+                "id": doc.id,
+                "family_name": name.get("family", ""),
+                "given_name": name.get("given", ""),
+            }
+        )
+    return customers
+
+
 def load_optimization_input(
     db: firestore.Client,
     week_start: date,

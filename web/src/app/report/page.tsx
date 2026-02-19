@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { startOfMonth } from 'date-fns';
 import { Header } from '@/components/layout/Header';
+import { ExportButton } from '@/components/report/ExportButton';
 import { MonthSelector } from '@/components/report/MonthSelector';
 import { StaffSummaryTable } from '@/components/report/StaffSummaryTable';
 import { CustomerSummaryTable } from '@/components/report/CustomerSummaryTable';
@@ -36,7 +37,10 @@ export default function ReportPage() {
           {/* ヘッダー行 */}
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-bold">月次レポート</h1>
-            <MonthSelector month={month} onChange={setMonth} />
+            <div className="flex items-center gap-3">
+              <MonthSelector month={month} onChange={setMonth} />
+              <ExportButton month={month} />
+            </div>
           </div>
 
           {loading ? (

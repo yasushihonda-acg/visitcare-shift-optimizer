@@ -187,3 +187,35 @@ export async function fetchOptimizationRunDetail(
 
   return res.json();
 }
+
+export interface ExportReportRequest {
+  year_month: string; // YYYY-MM
+  user_email?: string;
+}
+
+export interface ExportReportResponse {
+  spreadsheet_id: string;
+  spreadsheet_url: string;
+  title: string;
+  year_month: string;
+  sheets_created: number;
+  shared_with: string | null;
+}
+
+export async function exportReport(request: ExportReportRequest): Promise<ExportReportResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/export-report`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(request),
+    }),
+  );
+
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+
+  return res.json();
+}

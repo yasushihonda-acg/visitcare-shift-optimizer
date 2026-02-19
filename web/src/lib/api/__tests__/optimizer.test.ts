@@ -6,7 +6,7 @@ vi.mock('@/lib/firebase', () => ({
   getDb: () => ({}),
 }));
 
-import { runOptimize, fetchOptimizationRuns, OptimizeApiError } from '../optimizer';
+import { runOptimize, fetchOptimizationRuns, exportReport, OptimizeApiError } from '../optimizer';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -130,6 +130,78 @@ describe('runOptimize', () => {
     await expect(runOptimize({ week_start_date: 'invalid' }))
       .rejects.toThrow(OptimizeApiError);
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('exportReport', () => {
+  const mockExportResponse = {
+    spreadsheet_id: 'ss-123',
+    spreadsheet_url: 'https://docs.google.com/spreadsheets/d/ss-123',
+    title: '月次レポート 2026年2月',
+    year_month: '2026-02',
+    sheets_created: 4,
+    shared_with: null,
+  };
+
+  it('正常系: スプレッドシートURLが返る', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockExportResponse),
+    });
+
+    const result = await exportReport({ year_month: '2026-02' });
+    expect(result.spreadsheet_id).toBe('ss-123');
+    expect(result.sheets_created).toBe(4);
+    expect(result.shared_with).toBeNull();
+  });
+
+  it('user_email付きリクエストが正しく送信される', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({ ...mockExportResponse, shared_with: 'manager@example.com' }),
+    });
+
+    const result = await exportReport({
+      year_month: '2026-02',
+      user_email: 'manager@example.com',
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.user_email).toBe('manager@example.com');
+    expect(result.shared_with).toBe('manager@example.com');
+  });
+
+  it('404: データなしエラー', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: () => Promise.resolve({ detail: 'オーダーが見つかりません' }),
+    });
+
+    await expect(exportReport({ year_month: '2025-01' })).rejects.toThrow(OptimizeApiError);
+  });
+
+  it('500: スプレッドシート作成エラー', async () => {
+    // 500はリトライ対象外なので即座にエラーになる
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ detail: 'スプレッドシートの作成に失敗しました' }),
+    });
+
+    await expect(exportReport({ year_month: '2026-02' })).rejects.toThrow(OptimizeApiError);
+  });
+
+  it('POSTメソッドで /export-report へ送信', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockExportResponse),
+    });
+
+    await exportReport({ year_month: '2026-02' });
+    expect(mockFetch.mock.calls[0][0]).toMatch('/export-report');
+    expect(mockFetch.mock.calls[0][1].method).toBe('POST');
   });
 });
 

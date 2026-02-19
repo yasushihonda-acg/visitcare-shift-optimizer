@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-19（月次レポート画面 PR #75）
-**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能 + 利用者マスタ重複チェック + 月次レポート実装済み
+**最終更新**: 2026-02-19（月次レポート画面 PR #75 マージ済み）
+**現在のフェーズ**: Phase 0-5 完了 → 実績確認機能 + 利用者マスタ重複チェック + 月次レポート実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -190,11 +190,11 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
   - **リファクタ**: `formatMinutesToHours` を `aggregation.ts` に集約しDRY解消
   - **テスト**: Web 219/219 pass（+25）
   - **CI**: PR時全ジョブ成功 ✅（main push時 in_progress — 支払い問題の影響なし）
-  - **ブランチ**: `feat/monthly-report`（2コミット未マージ — PR #75 オープン中）
+  - **ブランチ**: `feat/monthly-report` → **main マージ済み（PR #75 → c7dc088）**
 
 ## 次のアクション（優先度順）
 
-1. **PR #75マージ**: 月次レポート画面 — CIの `in_progress` 確認後にマージ
+1. **次フェーズ方針決定**: Phase 5a（Google Sheets連携）・5b（メール通知）・6（モバイル）等を検討
 2. **UI改善継続** 🟡 — ユーザーフィードバックに応じた微調整
 
 ## 最新テスト結果サマリー（2026-02-19 PR #75 月次レポート後）

@@ -93,6 +93,28 @@ class ResetAssignmentsResponse(BaseModel):
     week_start_date: str
 
 
+class ExportReportRequest(BaseModel):
+    year_month: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}$",
+        description="エクスポート対象年月 YYYY-MM",
+        examples=["2026-02"],
+    )
+    user_email: str | None = Field(
+        default=None,
+        description="スプレッドシートを共有するメールアドレス（省略可）",
+    )
+
+
+class ExportReportResponse(BaseModel):
+    spreadsheet_id: str
+    spreadsheet_url: str
+    title: str
+    year_month: str
+    sheets_created: int = Field(description="作成したシート数（常に4）")
+    shared_with: str | None = Field(description="共有先メールアドレス（共有しない場合はnull）")
+
+
 class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None
