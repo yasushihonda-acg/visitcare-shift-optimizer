@@ -70,6 +70,9 @@ export interface Customer {
   irregular_patterns?: IrregularPattern[];
   household_id?: string;
   service_manager: string;
+  kaiso_id?: string;
+  karakara_id?: string;
+  cura_id?: string;
   notes?: string;
   created_at: Date;
   updated_at: Date;
@@ -86,6 +89,7 @@ export interface Helper {
   available_hours: { min: number; max: number };
   customer_training_status: Record<string, TrainingStatus>;
   employment_type: EmploymentType;
+  split_shift_allowed?: boolean;
   created_at: Date;
   updated_at: Date;
 }

@@ -252,6 +252,40 @@ export function CustomerEditDialog({
             <Input id="notes" {...register('notes')} placeholder="特記事項" />
           </div>
 
+          {/* 外部連携ID */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">外部連携ID（任意）</Label>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="kaiso_id" className="text-xs text-muted-foreground">介ソルID</Label>
+                <Input
+                  id="kaiso_id"
+                  {...register('kaiso_id')}
+                  placeholder="KS-001"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="karakara_id" className="text-xs text-muted-foreground">カカラID</Label>
+                <Input
+                  id="karakara_id"
+                  {...register('karakara_id')}
+                  placeholder="KK-001"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="cura_id" className="text-xs text-muted-foreground">CURA ID</Label>
+                <Input
+                  id="cura_id"
+                  {...register('cura_id')}
+                  placeholder="CR-001"
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* NGスタッフ */}
           <Controller
             name="ng_staff_ids"
@@ -338,6 +372,9 @@ function getDefaults(customer?: Customer): CustomerFormValues {
       household_id: '',
       notes: '',
       irregular_patterns: [],
+      kaiso_id: '',
+      karakara_id: '',
+      cura_id: '',
     };
   }
   return {
@@ -351,5 +388,8 @@ function getDefaults(customer?: Customer): CustomerFormValues {
     household_id: customer.household_id ?? '',
     notes: customer.notes ?? '',
     irregular_patterns: customer.irregular_patterns ?? [],
+    kaiso_id: customer.kaiso_id ?? '',
+    karakara_id: customer.karakara_id ?? '',
+    cura_id: customer.cura_id ?? '',
   };
 }
