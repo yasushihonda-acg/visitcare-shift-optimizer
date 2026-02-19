@@ -9,6 +9,12 @@ from pydantic import BaseModel
 class ServiceType(str, Enum):
     PHYSICAL_CARE = "physical_care"
     DAILY_LIVING = "daily_living"
+    MIXED = "mixed"
+    PREVENTION = "prevention"
+    PRIVATE = "private"
+    DISABILITY = "disability"
+    TRANSPORT_SUPPORT = "transport_support"
+    SEVERE_VISITING = "severe_visiting"
 
 
 class DayOfWeek(str, Enum):

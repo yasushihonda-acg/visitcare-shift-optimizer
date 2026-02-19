@@ -17,7 +17,10 @@ const geoLocationSchema = z.object({
 const serviceSlotSchema = z.object({
   start_time: timeStringSchema,
   end_time: timeStringSchema,
-  service_type: z.enum(['physical_care', 'daily_living'], {
+  service_type: z.enum([
+    'physical_care', 'daily_living', 'mixed', 'prevention',
+    'private', 'disability', 'transport_support', 'severe_visiting',
+  ], {
     error: 'サービス種別は必須です',
   }),
   staff_count: z.number().int().min(1, '必要人数は1以上です').max(3),

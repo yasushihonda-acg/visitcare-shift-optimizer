@@ -65,7 +65,7 @@ class TestGenerateOrders:
     def test_order_count(self, seed_data_dir: Path) -> None:
         customers = load_customers(seed_data_dir)
         orders = generate_orders(customers, date(2025, 1, 6))
-        assert len(orders) == 160
+        assert len(orders) == 162
 
     def test_order_dates(self, seed_data_dir: Path) -> None:
         customers = load_customers(seed_data_dir)
@@ -157,6 +157,6 @@ class TestLoadOptimizationInput:
         inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         assert len(inp.customers) == 50
         assert len(inp.helpers) == 20
-        assert len(inp.orders) == 160
+        assert len(inp.orders) == 162
         assert len(inp.travel_times) > 0
         assert len(inp.staff_constraints) == 19

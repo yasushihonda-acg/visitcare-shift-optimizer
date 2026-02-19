@@ -34,16 +34,19 @@ def add_all_hard_constraints(
     _add_walk_distance_constraint(prob, x, inp, travel_lookup)
 
 
+_PHYSICAL_CARE_TYPES = {ServiceType.PHYSICAL_CARE, ServiceType.MIXED}
+
+
 def _add_qualification_constraint(
     prob: pulp.LpProblem,
     x: dict[tuple[str, str], pulp.LpVariable],
     inp: OptimizationInput,
 ) -> None:
-    """E: 資格制約 — 身体介護に無資格者を割り当てない"""
+    """E: 資格制約 — 身体介護・混合サービスに無資格者を割り当てない"""
     for h in inp.helpers:
         if not h.can_physical_care:
             for o in inp.orders:
-                if o.service_type == ServiceType.PHYSICAL_CARE:
+                if o.service_type in _PHYSICAL_CARE_TYPES:
                     prob += x[h.id, o.id] == 0, f"qual_{h.id}_{o.id}"
 
 

@@ -93,3 +93,49 @@ class TestQualificationConstraint:
         )
         result = solve(inp)
         assert result.status == "Infeasible"
+
+    def test_unqualified_not_assigned_to_mixed(self) -> None:
+        """無資格者は混合サービスに割り当てられない"""
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[
+                _make_helper("H1", can_physical=True),
+                _make_helper("H2", can_physical=False),
+            ],
+            orders=[_make_order("O1", "C1", "mixed")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        assigned = result.assignments[0].staff_ids
+        assert "H1" in assigned
+        assert "H2" not in assigned
+
+    def test_infeasible_only_unqualified_for_mixed(self) -> None:
+        """無資格者しかいないのに混合サービス → Infeasible"""
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[_make_helper("H1", can_physical=False)],
+            orders=[_make_order("O1", "C1", "mixed")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+        )
+        result = solve(inp)
+        assert result.status == "Infeasible"
+
+    def test_unqualified_can_do_prevention(self) -> None:
+        """無資格者は介護予防に割り当て可能"""
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[_make_helper("H1", can_physical=False)],
+            orders=[_make_order("O1", "C1", "prevention")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        assert "H1" in result.assignments[0].staff_ids

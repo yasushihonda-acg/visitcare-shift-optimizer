@@ -12,6 +12,12 @@ interface ServiceTypeSummaryCardProps {
 const SERVICE_TYPE_COLORS: Record<string, string> = {
   physical_care: 'bg-violet-500',
   daily_living: 'bg-teal-500',
+  mixed: 'bg-orange-500',
+  prevention: 'bg-purple-400',
+  private: 'bg-pink-500',
+  disability: 'bg-lime-500',
+  transport_support: 'bg-cyan-500',
+  severe_visiting: 'bg-red-500',
 };
 
 export function ServiceTypeSummaryCard({ items, totalMinutes }: ServiceTypeSummaryCardProps) {

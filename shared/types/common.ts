@@ -1,7 +1,15 @@
 import { Timestamp } from 'firebase-admin/firestore';
 
-/** サービス種別（Phase 1: 身体/生活のみ） */
-export type ServiceType = 'physical_care' | 'daily_living';
+/** サービス種別（8種） */
+export type ServiceType =
+  | 'physical_care'       // 身体介護
+  | 'daily_living'        // 生活援助
+  | 'mixed'               // 混合（身体+生活）
+  | 'prevention'          // 介護予防
+  | 'private'             // 自費サービス
+  | 'disability'          // 障がい福祉サービス
+  | 'transport_support'   // 移動支援
+  | 'severe_visiting';    // 重度訪問介護
 
 /** 曜日 */
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';

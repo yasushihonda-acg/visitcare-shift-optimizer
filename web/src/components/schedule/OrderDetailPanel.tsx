@@ -51,13 +51,23 @@ const NEXT_STATUSES: Record<OrderStatus, { value: OrderStatus; label: string }[]
 const SERVICE_LABELS: Record<string, string> = {
   physical_care: '身体介護',
   daily_living: '生活援助',
+  mixed: '混合（身体+生活）',
   prevention: '介護予防',
+  private: '自費サービス',
+  disability: '障がい福祉',
+  transport_support: '移動支援',
+  severe_visiting: '重度訪問介護',
 };
 
 const SERVICE_BADGE_STYLES: Record<string, string> = {
   physical_care: 'bg-[oklch(0.55_0.15_225)]/10 text-[oklch(0.45_0.15_225)] border-[oklch(0.55_0.15_225)]/30',
   daily_living: 'bg-[oklch(0.55_0.15_162)]/10 text-[oklch(0.45_0.15_162)] border-[oklch(0.55_0.15_162)]/30',
+  mixed: 'bg-[oklch(0.58_0.14_50)]/10 text-[oklch(0.48_0.14_50)] border-[oklch(0.58_0.14_50)]/30',
   prevention: 'bg-[oklch(0.60_0.12_298)]/10 text-[oklch(0.50_0.12_298)] border-[oklch(0.60_0.12_298)]/30',
+  private: 'bg-[oklch(0.60_0.12_350)]/10 text-[oklch(0.50_0.12_350)] border-[oklch(0.60_0.12_350)]/30',
+  disability: 'bg-[oklch(0.58_0.14_120)]/10 text-[oklch(0.48_0.14_120)] border-[oklch(0.58_0.14_120)]/30',
+  transport_support: 'bg-[oklch(0.60_0.12_200)]/10 text-[oklch(0.50_0.12_200)] border-[oklch(0.60_0.12_200)]/30',
+  severe_visiting: 'bg-[oklch(0.53_0.18_25)]/10 text-[oklch(0.43_0.18_25)] border-[oklch(0.53_0.18_25)]/30',
 };
 
 const STATUS_LABELS: Record<string, string> = {
