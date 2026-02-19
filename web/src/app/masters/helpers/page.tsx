@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Search } from 'lucide-react';
 import { useHelpers } from '@/hooks/useHelpers';
+import { useCustomers } from '@/hooks/useCustomers';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ const EMPLOYMENT_LABELS: Record<string, string> = {
 
 export default function HelpersPage() {
   const { helpers, loading } = useHelpers();
+  const { customers } = useCustomers();
   const { canEditHelpers } = useAuthRole();
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<Helper | undefined>(undefined);
@@ -174,6 +176,7 @@ export default function HelpersPage() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         helper={editTarget}
+        customers={customers}
       />
     </div>
   );

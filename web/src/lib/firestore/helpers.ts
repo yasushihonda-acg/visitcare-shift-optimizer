@@ -2,7 +2,7 @@ import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/fi
 import { getDb } from '@/lib/firebase';
 import type { Helper } from '@/types';
 
-type HelperInput = Omit<Helper, 'id' | 'created_at' | 'updated_at' | 'customer_training_status'>;
+type HelperInput = Omit<Helper, 'id' | 'created_at' | 'updated_at'>;
 
 /**
  * ヘルパーを新規作成する。
@@ -11,7 +11,7 @@ type HelperInput = Omit<Helper, 'id' | 'created_at' | 'updated_at' | 'customer_t
 export async function createHelper(data: HelperInput): Promise<string> {
   const docRef = await addDoc(collection(getDb(), 'helpers'), {
     ...data,
-    customer_training_status: {},
+    customer_training_status: data.customer_training_status ?? {},
     created_at: serverTimestamp(),
     updated_at: serverTimestamp(),
   });

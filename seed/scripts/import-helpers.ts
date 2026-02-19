@@ -27,9 +27,16 @@ interface AvailabilityRow {
   end_time: string;
 }
 
+interface TrainingStatusRow {
+  helper_id: string;
+  customer_id: string;
+  status: string;
+}
+
 export async function importHelpers(): Promise<number> {
   const helpers = parseCSV<HelperRow>(resolve(DATA_DIR, 'helpers.csv'));
   const availability = parseCSV<AvailabilityRow>(resolve(DATA_DIR, 'helper-availability.csv'));
+  const trainingRows = parseCSV<TrainingStatusRow>(resolve(DATA_DIR, 'helper-training-status.csv'));
 
   const now = Timestamp.now();
 
@@ -76,7 +83,11 @@ export async function importHelpers(): Promise<number> {
           min: parseInt(h.available_hours_min, 10),
           max: parseInt(h.available_hours_max, 10),
         },
-        customer_training_status: {},
+        customer_training_status: Object.fromEntries(
+          trainingRows
+            .filter((t) => t.helper_id === h.id)
+            .map((t) => [t.customer_id, t.status]),
+        ),
         employment_type: h.employment_type,
         created_at: now,
         updated_at: now,

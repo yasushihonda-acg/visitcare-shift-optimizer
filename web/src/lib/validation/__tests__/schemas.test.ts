@@ -306,6 +306,47 @@ describe('helperSchema', () => {
     };
     expect(helperSchema.safeParse(data).success).toBe(false);
   });
+
+  it('短縮名（name.short）付きでパースできる', () => {
+    const data = {
+      ...validHelper(),
+      name: { family: '佐藤', given: '花子', short: '佐花' },
+    };
+    expect(helperSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('customer_training_statusなしでパースできる', () => {
+    expect(helperSchema.safeParse(validHelper()).success).toBe(true);
+  });
+
+  it('customer_training_statusありでパースできる', () => {
+    const data = {
+      ...validHelper(),
+      customer_training_status: {
+        C001: 'training',
+        C002: 'independent',
+      },
+    };
+    expect(helperSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('customer_training_statusの空オブジェクトはOK', () => {
+    const data = {
+      ...validHelper(),
+      customer_training_status: {},
+    };
+    expect(helperSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('customer_training_statusの不正な値はエラー', () => {
+    const data = {
+      ...validHelper(),
+      customer_training_status: {
+        C001: 'invalid_status',
+      },
+    };
+    expect(helperSchema.safeParse(data).success).toBe(false);
+  });
 });
 
 // ================================================================
