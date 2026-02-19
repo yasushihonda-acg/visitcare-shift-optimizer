@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-19（PR #88 マージ済み・main push CI in_progress）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限）実装済み・マージ済み
+**最終更新**: 2026-02-19（PR #89 マージ済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -79,16 +79,20 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - Optimizer: `walking_distance_km` パラメータ追加（デフォルト2.0km）
   - API/Schema: `WalkingDistanceConstraint` モデル、routes.py に制約適用
   - Firestore loader: ヘルパーの `transport_mode` 読み込み対応
-  - テスト: 各種テスト追加・更新
-  - CI: main push in_progress（テストジョブ PR時は全 success）
 
-## 最新テスト結果サマリー（2026-02-19 PR #88 マージ後）
-- **Optimizer**: 223+件 pass（#88 追加分含む）
-- **Web (Next.js)**: 219+件 pass
+- **PR #89** ✅: サービス種別を8種類に拡張（Closes #80）
+  - 型定義: `shared/types/common.ts` + `web/src/types/index.ts` + `optimizer/models/common.py` に6種追加（mixed/prevention/private/disability/transport_support/severe_visiting）
+  - 資格制約: `constraints.py` で `_PHYSICAL_CARE_TYPES = {physical_care, mixed}` — mixedも `can_physical_care` 必須
+  - UI: WeeklyServicesEditor・GanttBar・GanttRow・UnassignedSection・OrderDetailPanel・ServiceTypeSummaryCard 全対応
+  - Seed CSV: 2件追加（C003/thursday/mixed, C007/friday/prevention）
+  - テスト: Python 234件 / Web 247件 / E2E 41件 全pass
+
+## 最新テスト結果サマリー（2026-02-19 PR #89 マージ後）
+- **Optimizer**: 234件 pass
+- **Web (Next.js)**: 247件 pass
 - **Firestore Rules**: 70/70 pass
-- **E2E Tests (Playwright)**: 43/43 pass
-- **Seed**: 12/12 pass
-- **CI/CD**: main push #88 デプロイ in_progress（テストジョブ4件全 success確認済み）
+- **E2E Tests (Playwright)**: 41/43 pass（2 skipped）
+- **CI/CD**: 全チェック SUCCESS
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -109,13 +113,12 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番Sheetsエクスポート前に必須）
-2. **オープンIssue対応**: #80（サービス種別8種拡張）、#82（利用者制約条件 女性限定・アレルギー等）
+2. **オープンIssue対応**: #82（利用者制約条件 女性限定・アレルギー等）
 3. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 2件
+- **オープンIssue**: 1件
   - #82: feat: 利用者の制約条件（女性限定・アレルギー等）を構造化フィールドで管理する [enhancement]
-  - #80: feat: サービス種別を現行Excel仕様の8種類に拡張する [enhancement]
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
