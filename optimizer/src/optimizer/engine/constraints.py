@@ -9,7 +9,11 @@ from optimizer.models import (
     ServiceType,
     StaffConstraintType,
     TrainingStatus,
+    TransportationType,
 )
+
+
+MAX_WALK_TRAVEL_MINUTES = 30
 
 
 def add_all_hard_constraints(
@@ -27,6 +31,7 @@ def add_all_hard_constraints(
     _add_travel_time_constraint(prob, x, inp, travel_lookup)
     _add_household_constraint(prob, x, inp)
     _add_training_constraint(prob, x, inp)
+    _add_walk_distance_constraint(prob, x, inp, travel_lookup)
 
 
 def _add_qualification_constraint(
@@ -233,3 +238,45 @@ def _add_training_constraint(
             training = h.customer_training_status.get(o.customer_id)
             if training == TrainingStatus.TRAINING:
                 prob += x[h.id, o.id] == 0, f"training_{h.id}_{o.id}"
+
+
+def _add_walk_distance_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+    travel_lookup: dict[tuple[str, str], float],
+) -> None:
+    """M: 徒歩移動距離制約 — 徒歩スタッフは移動時間が上限を超える訪問ペアに割当不可
+
+    移動手段が walk のスタッフに対し、同日の異なる利用者間の
+    移動時間が MAX_WALK_TRAVEL_MINUTES を超える場合、
+    両方のオーダーへの割り当てを禁止する。
+    """
+    walk_helpers = [h for h in inp.helpers if h.transportation == TransportationType.WALK]
+    if not walk_helpers:
+        return
+
+    # 日付でグループ化
+    orders_by_date: dict[str, list] = {}
+    for o in inp.orders:
+        orders_by_date.setdefault(o.date, []).append(o)
+
+    # 徒歩移動時間超過ペアを事前計算
+    walk_conflict_pairs: list[tuple[str, str, str]] = []
+    for date_orders in orders_by_date.values():
+        for i, o1 in enumerate(date_orders):
+            for o2 in date_orders[i + 1 :]:
+                if o1.customer_id == o2.customer_id:
+                    continue
+                tt_1to2 = travel_lookup.get((o1.customer_id, o2.customer_id), 0.0)
+                tt_2to1 = travel_lookup.get((o2.customer_id, o1.customer_id), 0.0)
+                if tt_1to2 > MAX_WALK_TRAVEL_MINUTES or tt_2to1 > MAX_WALK_TRAVEL_MINUTES:
+                    walk_conflict_pairs.append((o1.id, o2.id, f"{o1.id}_{o2.id}"))
+
+    # 徒歩スタッフにのみ制約追加
+    for h in walk_helpers:
+        for oid1, oid2, suffix in walk_conflict_pairs:
+            prob += (
+                x[h.id, oid1] + x[h.id, oid2] <= 1,
+                f"walk_dist_{h.id}_{suffix}",
+            )
