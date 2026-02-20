@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { customerSchema, helperSchema, unavailabilitySchema } from '../schemas';
+import { customerSchema, helperSchema, unavailabilitySchema, serviceTypeSchema } from '../schemas';
 
 // ---- テストヘルパー ----
 
@@ -569,5 +569,80 @@ describe('unavailabilitySchema', () => {
       ],
     };
     expect(unavailabilitySchema.safeParse(data).success).toBe(true);
+  });
+});
+
+// ================================================================
+// serviceTypeSchema
+// ================================================================
+function validServiceType() {
+  return {
+    code: 'physical_care',
+    label: '身体介護',
+    short_label: '身体',
+    requires_physical_care_cert: true,
+    sort_order: 1,
+  };
+}
+
+describe('serviceTypeSchema', () => {
+  it('正常値でパースできる', () => {
+    expect(serviceTypeSchema.safeParse(validServiceType()).success).toBe(true);
+  });
+
+  it('全8種のcodeでパースできる', () => {
+    const codes = [
+      'physical_care', 'daily_living', 'mixed', 'prevention',
+      'private', 'disability', 'transport_support', 'severe_visiting',
+    ];
+    for (const code of codes) {
+      const data = { ...validServiceType(), code };
+      expect(serviceTypeSchema.safeParse(data).success).toBe(true);
+    }
+  });
+
+  it('codeが空文字の場合エラー', () => {
+    const data = { ...validServiceType(), code: '' };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('codeに大文字が含まれる場合エラー', () => {
+    const data = { ...validServiceType(), code: 'Physical_Care' };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('codeにハイフンが含まれる場合エラー', () => {
+    const data = { ...validServiceType(), code: 'physical-care' };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('labelが空文字の場合エラー', () => {
+    const data = { ...validServiceType(), label: '' };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('short_labelが空文字の場合エラー', () => {
+    const data = { ...validServiceType(), short_label: '' };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('sort_orderが0の場合エラー（境界値）', () => {
+    const data = { ...validServiceType(), sort_order: 0 };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('sort_orderが1はOK（境界値）', () => {
+    const data = { ...validServiceType(), sort_order: 1 };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(true);
+  });
+
+  it('sort_orderが小数の場合エラー', () => {
+    const data = { ...validServiceType(), sort_order: 1.5 };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
+  });
+
+  it('requires_physical_care_certがfalseでもパースできる', () => {
+    const data = { ...validServiceType(), requires_physical_care_cert: false };
+    expect(serviceTypeSchema.safeParse(data).success).toBe(true);
   });
 });

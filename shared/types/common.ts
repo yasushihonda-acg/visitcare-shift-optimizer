@@ -11,6 +11,15 @@ export type ServiceType =
   | 'transport_support'   // 移動支援
   | 'severe_visiting';    // 重度訪問介護
 
+/** サービス種別マスタドキュメント */
+export interface ServiceTypeDoc {
+  code: string;                         // ドキュメントIDと同一
+  label: string;                        // "身体介護"
+  short_label: string;                  // "身体"
+  requires_physical_care_cert: boolean; // true → can_physical_care 必要
+  sort_order: number;                   // 表示順（1始まり）
+}
+
 /** 曜日 */
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 

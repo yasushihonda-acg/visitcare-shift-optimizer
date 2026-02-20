@@ -141,6 +141,17 @@ export interface StaffUnavailability {
   submitted_at: Date;
 }
 
+export interface ServiceTypeDoc {
+  id: string;   // = code
+  code: string;
+  label: string;
+  short_label: string;
+  requires_physical_care_cert: boolean;
+  sort_order: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export type OptimizationStatus = 'Optimal' | 'Feasible' | 'Infeasible' | 'Not Solved';
 
 export interface OptimizationRunSummary {

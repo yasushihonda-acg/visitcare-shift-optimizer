@@ -4,11 +4,47 @@
 
 | コレクション | ドキュメント数（Seed） | 説明 |
 |-------------|---------------------|------|
+| `service_types` | 8 | サービス種別マスタ |
 | `customers` | 50 | 利用者マスタ |
 | `helpers` | 20 | ヘルパー/スタッフマスタ |
 | `orders` | ~160/週 | 個別サービスオーダー |
 | `travel_times` | ~2,550 | 拠点間移動時間キャッシュ |
 | `staff_unavailability` | 随時 | スタッフ希望休 |
+
+---
+
+## service_types
+
+サービス種別マスタ。ドキュメントID = `code` フィールドと同一。
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| code | string | Yes | 種別コード（英小文字・アンダースコア）。ドキュメントIDと同一 |
+| label | string | Yes | 表示名（例: 身体介護） |
+| short_label | string | Yes | 短縮名（例: 身体）。ガントチャート・バッジ等で使用 |
+| requires_physical_care_cert | boolean | Yes | true の場合、割当ヘルパーは `can_physical_care=true` が必要 |
+| sort_order | number (int) | Yes | 表示順（1始まり） |
+| created_at | Timestamp | Yes | 作成日時 |
+| updated_at | Timestamp | Yes | 更新日時 |
+
+### 初期データ（8種）
+
+| code | label | short_label | requires_cert | sort_order |
+|------|-------|-------------|:-------------:|:----------:|
+| physical_care | 身体介護 | 身体 | ✓ | 1 |
+| daily_living | 生活援助 | 生活 | - | 2 |
+| mixed | 混合（身体+生活） | 混合 | ✓ | 3 |
+| prevention | 介護予防 | 予防 | - | 4 |
+| private | 自費サービス | 自費 | - | 5 |
+| disability | 障がい福祉サービス | 障がい | - | 6 |
+| transport_support | 移動支援 | 移動 | - | 7 |
+| severe_visiting | 重度訪問介護 | 重度 | ✓ | 8 |
+
+### セキュリティルール
+
+- read: 認証済みユーザー全員
+- create/update: admin のみ（デモモードは全員可）
+- delete: 禁止（常に false）
 
 ---
 
