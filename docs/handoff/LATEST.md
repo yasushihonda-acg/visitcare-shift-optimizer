@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-21（GCP Sheets エクスポート本番動作確認済み）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3）実装済み・マージ済み
+**最終更新**: 2026-02-21（PR #107: 性別・研修状態・推奨スタッフ制約チェックをD&Dバリデーションとガントバーに追加）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -58,7 +58,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-02-19 ～ 2026-02-20）
+## 直近の実装（2026-02-19 ～ 2026-02-21）
+
+- **PR #107** ✅: 性別・研修状態・推奨スタッフ制約チェックをD&Dバリデーションとガントバーに追加（#107）
+  - `checker.ts`: `Violation.type` に `gender` / `training` / `preferred_staff` を追加
+  - `checkConstraints`: 性別要件(error)・研修状態(error/warning)・推奨スタッフ外(warning) を検出
+  - `validateDrop`: 同3制約をD&Dドロップ時にリアルタイムチェック
+  - `GanttBar`: `violationMessages` prop を追加し tooltip に違反メッセージを表示
+  - `GanttRow`: `orderViolations` のメッセージを GanttBar に渡す
+  - テスト18件追加（`checker.test.ts` 9件、`validation.test.ts` 9件）
+
+
 
 - **PR #85** ✅: ヘルパー編集UIに `customer_training_status` と `name.short` を追加
   - `shared/types/helper.ts` + Python モデルにフィールド追加
@@ -159,12 +169,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-21 Phase 3 実装後）
-- **Optimizer**: 266件 pass（+15件: load_service_types 8件 + 動的資格制約 4件 + 動的ラベル 4件 - 数え方により前後）
-- **Web (Next.js)**: 281件 pass（Phase 3 はPython側変更のためWebテストに影響なし）
+## 最新テスト結果サマリー（2026-02-21 PR #107 実装後）
+- **Optimizer**: 266件 pass
+- **Web (Next.js)**: 299件 pass（+18件: checker 9件 + validation 9件）
 - **Firestore Rules**: 94件 pass
 - **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: PR #104 CI SUCCESS確認済み
+- **CI/CD**: PR #107 CI in_progress（2026-02-20 23:54 JST時点）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -218,7 +228,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 1. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103、Phase 2 は PR #104、Phase 3 は本PR でクローズ済み）
+- **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103、Phase 2 は PR #104、Phase 3 は PR #105 でクローズ済み）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
