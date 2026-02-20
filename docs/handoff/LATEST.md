@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-20（PR #93 マージ済み）
+**最終更新**: 2026-02-20（PR #95 マージ済み）
 **現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -112,12 +112,16 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `CustomerEditDialog.tsx`: 「連絡先・関連機関」セクション新設、外部連携IDにaozora_id追加
   - `HelperEditDialog.tsx`: 社員番号・電話番号追加、住所セクション（住所入力＋ジオコーディングボタン＋lat/lng）新設
 
-## 最新テスト結果サマリー（2026-02-20 PR #93 マージ後）
+- **PR #95** ✅: HelperEditDialog location NaN バリデーション修正（Closes #94）
+  - `HelperEditDialog.tsx`: `geocodeAddress()` で `lat`/`lng` が `NaN` になるケースの入力バリデーションを追加
+  - E2E CI failure（`masters-crud` テスト）を修正
+
+## 最新テスト結果サマリー（2026-02-20 PR #95 マージ後）
 - **Optimizer**: 238件 pass
 - **Web (Next.js)**: 247件 pass
 - **Firestore Rules**: 70/70 pass
-- **E2E Tests (Playwright)**: 全pass
-- **CI/CD**: 全チェック SUCCESS
+- **E2E Tests (Playwright)**: 41 passed, 2 skipped
+- **CI/CD**: 全チェック SUCCESS（PR #95 / main push #22211658002）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
