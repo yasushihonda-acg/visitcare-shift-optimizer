@@ -1,10 +1,12 @@
 """APIルーティング"""
 
 import logging
+import os
 import re
 from datetime import UTC, date, datetime
 
 import google.auth  # type: ignore[import-untyped]
+import google.auth.compute_engine  # type: ignore[import-untyped]
 from fastapi import APIRouter, Depends, HTTPException, Query
 from googleapiclient.discovery import build  # type: ignore[import-untyped]
 
@@ -12,6 +14,32 @@ _SHEETS_SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
+
+
+def _get_sheets_credentials() -> object:
+    """Sheets/Drive API用の認証情報を取得する。
+
+    ローカル開発: ADC（gcloud auth application-default login --scopes=... で設定済み）をそのまま使用。
+    Cloud Run: Compute Engine Credentials は cloud-platform スコープしか持てないため、
+    IAM Credentials API を経由した SA self-impersonation でSheets/Drive スコープのトークンを取得する。
+    """
+    creds, _ = google.auth.default()
+
+    if isinstance(creds, google.auth.compute_engine.Credentials):
+        from google.auth import impersonated_credentials  # type: ignore[import-untyped]
+
+        sa_email = os.getenv(
+            "SHEETS_SA_EMAIL",
+            "1045989697649-compute@developer.gserviceaccount.com",
+        )
+        creds = impersonated_credentials.Credentials(
+            source_credentials=creds,
+            target_principal=sa_email,
+            target_scopes=_SHEETS_SCOPES,
+        )
+
+    return creds
+
 
 from optimizer.api.auth import require_manager_or_above
 from optimizer.api.schemas import (
@@ -371,9 +399,8 @@ def export_report(
     customer_summary = aggregate_customer_summary(orders, customers)
 
     # Google Sheets APIクライアント構築
-    # Drive API は cloud-platform スコープ非対応のため、明示的にスコープを指定
     try:
-        credentials, _ = google.auth.default(scopes=_SHEETS_SCOPES)
+        credentials = _get_sheets_credentials()
         sheets_service = build("sheets", "v4", credentials=credentials)
         drive_service = build("drive", "v3", credentials=credentials)
     except Exception as e:
