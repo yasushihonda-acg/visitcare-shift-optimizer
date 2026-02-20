@@ -11,11 +11,13 @@ from optimizer.data.firestore_loader import (
     _ts_to_date_str,
     load_all_customers,
     load_all_helpers,
+    load_all_service_types,
     load_customers,
     load_helpers,
     load_monthly_orders,
     load_optimization_input,
     load_orders,
+    load_service_types,
     load_staff_constraints,
     load_staff_unavailabilities,
     load_travel_times,
@@ -26,6 +28,7 @@ from optimizer.models import (
     GeoLocation,
     ServiceSlot,
     ServiceType,
+    ServiceTypeConfig,
     StaffConstraintType,
 )
 
@@ -799,6 +802,117 @@ class TestLoadAllCustomers:
         assert len(customers) == 2
         assert customers[0]["id"] == "C001"
         assert customers[1]["id"] == "C002"
+
+
+# --- ServiceTypesローダーテスト ---
+
+
+class TestLoadServiceTypes:
+    def test_basic_loading(self) -> None:
+        """service_typesコレクションの基本取得"""
+        doc = _mock_doc(
+            "physical_care",
+            {
+                "code": "physical_care",
+                "label": "身体介護",
+                "short_label": "身体",
+                "requires_physical_care_cert": True,
+                "sort_order": 1,
+            },
+        )
+        db = _mock_db_with_collections({"service_types": [doc]})
+        configs = load_service_types(db)
+        assert len(configs) == 1
+        c = configs[0]
+        assert c.code == "physical_care"
+        assert c.label == "身体介護"
+        assert c.short_label == "身体"
+        assert c.requires_physical_care_cert is True
+        assert c.sort_order == 1
+
+    def test_empty_collection(self) -> None:
+        """空コレクションは空リストを返す"""
+        db = _mock_db_with_collections({"service_types": []})
+        assert load_service_types(db) == []
+
+    def test_null_doc_skipped(self) -> None:
+        """to_dictがNoneのドキュメントはスキップ"""
+        doc = MagicMock()
+        doc.id = "X"
+        doc.to_dict.return_value = None
+        db = _mock_db_with_collections({"service_types": [doc]})
+        assert load_service_types(db) == []
+
+    def test_multiple_configs(self) -> None:
+        """複数種別を取得"""
+        docs = [
+            _mock_doc(
+                "physical_care",
+                {
+                    "code": "physical_care",
+                    "label": "身体介護",
+                    "short_label": "身体",
+                    "requires_physical_care_cert": True,
+                    "sort_order": 1,
+                },
+            ),
+            _mock_doc(
+                "daily_living",
+                {
+                    "code": "daily_living",
+                    "label": "生活援助",
+                    "short_label": "生活",
+                    "requires_physical_care_cert": False,
+                    "sort_order": 2,
+                },
+            ),
+        ]
+        db = _mock_db_with_collections({"service_types": docs})
+        configs = load_service_types(db)
+        assert len(configs) == 2
+        codes = {c.code for c in configs}
+        assert codes == {"physical_care", "daily_living"}
+
+    def test_code_defaults_to_doc_id(self) -> None:
+        """codeフィールドがない場合はdoc.idを使用"""
+        doc = _mock_doc(
+            "transport_support",
+            {
+                "label": "移動支援",
+                "short_label": "移動",
+                "requires_physical_care_cert": False,
+                "sort_order": 7,
+            },
+        )
+        db = _mock_db_with_collections({"service_types": [doc]})
+        configs = load_service_types(db)
+        assert configs[0].code == "transport_support"
+
+
+class TestLoadAllServiceTypes:
+    def test_basic_loading(self) -> None:
+        """dict形式で取得"""
+        doc = _mock_doc(
+            "physical_care",
+            {
+                "code": "physical_care",
+                "label": "身体介護",
+                "short_label": "身体",
+                "requires_physical_care_cert": True,
+                "sort_order": 1,
+            },
+        )
+        db = _mock_db_with_collections({"service_types": [doc]})
+        configs = load_all_service_types(db)
+        assert len(configs) == 1
+        c = configs[0]
+        assert c["code"] == "physical_care"
+        assert c["label"] == "身体介護"
+        assert c["requires_physical_care_cert"] is True
+
+    def test_empty_collection(self) -> None:
+        db = _mock_db_with_collections({"service_types": []})
+        assert load_all_service_types(db) == []
 
 
 # --- household リンク統合テスト ---

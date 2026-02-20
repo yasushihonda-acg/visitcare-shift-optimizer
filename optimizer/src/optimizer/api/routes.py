@@ -32,6 +32,7 @@ from optimizer.data.firestore_loader import (
     get_firestore_client,
     load_all_customers,
     load_all_helpers,
+    load_all_service_types,
     load_monthly_orders,
     load_optimization_input,
 )
@@ -350,6 +351,7 @@ def export_report(
         orders = load_monthly_orders(db, req.year_month)
         helpers = load_all_helpers(db)
         customers = load_all_customers(db)
+        service_type_configs = load_all_service_types(db)
     except Exception as e:
         logger.error("Firestore読み込み失敗: %s", e, exc_info=True)
         raise HTTPException(
@@ -364,7 +366,7 @@ def export_report(
 
     # 集計
     status_summary = aggregate_status_summary(orders)
-    service_type_summary = aggregate_service_type_summary(orders)
+    service_type_summary = aggregate_service_type_summary(orders, service_type_configs=service_type_configs)
     staff_summary = aggregate_staff_summary(orders, helpers)
     customer_summary = aggregate_customer_summary(orders, customers)
 

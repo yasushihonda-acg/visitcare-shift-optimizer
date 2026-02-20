@@ -17,6 +17,7 @@ from optimizer.models import (
     OptimizationInput,
     Order,
     ServiceSlot,
+    ServiceTypeConfig,
     StaffConstraint,
     StaffConstraintType,
     StaffUnavailability,
@@ -423,6 +424,44 @@ def load_all_customers(db: firestore.Client) -> list[dict[str, object]]:
     return customers
 
 
+def load_service_types(db: firestore.Client) -> list[ServiceTypeConfig]:
+    """service_typesコレクション → ServiceTypeConfig リスト"""
+    configs: list[ServiceTypeConfig] = []
+    for doc in db.collection("service_types").stream():
+        d = doc.to_dict()
+        if d is None:
+            continue
+        configs.append(
+            ServiceTypeConfig(
+                code=d.get("code", doc.id),
+                label=d.get("label", ""),
+                short_label=d.get("short_label", ""),
+                requires_physical_care_cert=d.get("requires_physical_care_cert", False),
+                sort_order=d.get("sort_order", 0),
+            )
+        )
+    return configs
+
+
+def load_all_service_types(db: firestore.Client) -> list[dict[str, object]]:
+    """service_typesコレクション → dict リスト（月次レポート集計用）"""
+    result: list[dict[str, object]] = []
+    for doc in db.collection("service_types").stream():
+        d = doc.to_dict()
+        if d is None:
+            continue
+        result.append(
+            {
+                "code": d.get("code", doc.id),
+                "label": d.get("label", ""),
+                "short_label": d.get("short_label", ""),
+                "requires_physical_care_cert": d.get("requires_physical_care_cert", False),
+                "sort_order": d.get("sort_order", 0),
+            }
+        )
+    return result
+
+
 def load_optimization_input(
     db: firestore.Client,
     week_start: date,
@@ -439,6 +478,8 @@ def load_optimization_input(
     staff_unavailabilities = load_staff_unavailabilities(db, week_start)
     staff_constraints = load_staff_constraints(customers)
 
+    service_type_configs = load_service_types(db)
+
     return OptimizationInput(
         customers=customers,
         helpers=helpers,
@@ -446,4 +487,5 @@ def load_optimization_input(
         travel_times=travel_times,
         staff_unavailabilities=staff_unavailabilities,
         staff_constraints=staff_constraints,
+        service_type_configs=service_type_configs,
     )
