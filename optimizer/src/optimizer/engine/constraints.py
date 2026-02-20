@@ -251,13 +251,13 @@ def _add_training_constraint(
     x: dict[tuple[str, str], pulp.LpVariable],
     inp: OptimizationInput,
 ) -> None:
-    """L: 研修中スタッフ制約 — training状態は単独訪問不可（staff_count=1のオーダー）"""
+    """L: 研修中スタッフ制約 — not_visited/training状態は単独訪問不可（staff_count=1のオーダー）"""
     for h in inp.helpers:
         for o in inp.orders:
             if o.staff_count > 1:
                 continue  # 複数人体制なら研修中でもOK
             training = h.customer_training_status.get(o.customer_id)
-            if training == TrainingStatus.TRAINING:
+            if training in (TrainingStatus.NOT_VISITED, TrainingStatus.TRAINING):
                 prob += x[h.id, o.id] == 0, f"training_{h.id}_{o.id}"
 
 

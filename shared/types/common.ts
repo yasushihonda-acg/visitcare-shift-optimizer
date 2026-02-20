@@ -24,7 +24,7 @@ export type EmploymentType = 'full_time' | 'part_time';
 export type TransportationType = 'car' | 'bicycle' | 'walk';
 
 /** 研修状態 */
-export type TrainingStatus = 'training' | 'independent';
+export type TrainingStatus = 'not_visited' | 'training' | 'independent';
 
 /** 性別 */
 export type Gender = 'male' | 'female';

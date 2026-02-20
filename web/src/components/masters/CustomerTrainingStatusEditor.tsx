@@ -118,6 +118,7 @@ export function CustomerTrainingStatusEditor({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="not_visited">未経験</SelectItem>
                     <SelectItem value="training">同行研修中</SelectItem>
                     <SelectItem value="independent">独り立ち</SelectItem>
                   </SelectContent>
@@ -189,6 +190,7 @@ export function CustomerTrainingStatusEditor({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="not_visited">未経験</SelectItem>
                 <SelectItem value="training">同行研修中</SelectItem>
                 <SelectItem value="independent">独り立ち</SelectItem>
               </SelectContent>
