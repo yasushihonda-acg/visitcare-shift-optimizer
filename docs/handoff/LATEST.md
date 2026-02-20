@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-20（PR #101 マージ済み）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階）実装済み・マージ済み
+**最終更新**: 2026-02-21（PR #103 マージ済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -116,6 +116,23 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `HelperEditDialog.tsx`: `geocodeAddress()` で `lat`/`lng` が `NaN` になるケースの入力バリデーションを追加
   - E2E CI failure（`masters-crud` テスト）を修正
 
+- **PR #102** ✅: スケジュール週全体ビュー（ピボット表示）を追加（Closes #96）
+  - `ScheduleContext` に `viewMode`（`'day' | 'week'`）を追加（デフォルト `'day'`、既存E2E影響なし）
+  - `ViewModeToggle` コンポーネント（日/週ボタン切り替え）を新規作成
+  - `WeeklyGanttChart` でヘルパー×曜日のピボット表示を実装（ResizeObserver でレスポンシブ列幅）
+  - `SERVICE_COLORS` を `constants.ts` に移動し週ビューでも再利用
+  - テスト: `ViewModeToggle.test.tsx`（5件）+ `WeeklyGanttChart.test.tsx`（7件）追加、計12件新規
+
+- **PR #103** ✅: service_types Firestoreコレクション + CRUD UI を追加（Closes #98 Phase 1）
+  - `service_types` コレクション新設（ドキュメントID = code）、delete 禁止ルール
+  - 8種の初期 Seed データ（CSV + `import-service-types.ts`）
+  - `useServiceTypes` フック（onSnapshot + sort_order 順 sortedList）
+  - Firestore CRUD: `createServiceType`（setDoc）/ `updateServiceType`（updateDoc）
+  - Zod: `serviceTypeSchema`（code は英小文字・アンダースコアのみ）
+  - `/masters/service-types` ページ + `ServiceTypeEditDialog`（編集モードで code は read-only）
+  - Header.tsx ナビゲーションに「サービス種別マスタ」リンク追加
+  - テスト: 33件新規追加（CRUD 8件 + Zod 12件 + Firestore Rules 13件）
+
 - **PR #101** ✅: TrainingStatusを3段階（not_visited/training/independent）に拡張（Closes #97）
   - `shared/types/common.ts` + `web/src/types/index.ts`: TrainingStatus に `not_visited` を追加
   - `optimizer/models/common.py`: TrainingStatus enum に NOT_VISITED を追加
@@ -131,12 +148,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-20 PR #101 マージ後）
+## 最新テスト結果サマリー（2026-02-21 PR #103 マージ後）
 - **Optimizer**: 251件 pass
-- **Web (Next.js)**: 250件 pass
-- **Firestore Rules**: 70/70 pass
+- **Web (Next.js)**: 281件 pass
+- **Firestore Rules**: 94件 pass
 - **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: PR #101 CI SUCCESS確認済み（#22216635866、2026-02-20T08:17:31Z）
+- **CI/CD**: PR #103 CI SUCCESS確認済み（2026-02-20T15:27:45Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -157,11 +174,12 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番Sheetsエクスポート前に必須）
-2. **PR D（次回）**: `service_types` Firestoreコレクション化（動的マスタ参照、規模大）
-3. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+2. **service_types Phase 2**: フロントエンドの静的 `ServiceType` → Firestore 動的マスタ参照への移行（`useServiceTypes` フックへの切り替え）
+3. **service_types Phase 3**: Python Optimizer の動的化（`service_types` コレクション参照）
+4. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 0件（Issue #97 は PR #101 でクローズ済み）
+- **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103 でクローズ済み）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
