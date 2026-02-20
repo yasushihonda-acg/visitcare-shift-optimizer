@@ -4,6 +4,7 @@ import {
   DayOfWeek,
   EmploymentType,
   Gender,
+  GeoLocation,
   PersonName,
   TrainingStatus,
   TransportationType,
@@ -23,6 +24,10 @@ export interface Helper {
   employment_type: EmploymentType;
   gender: Gender;
   split_shift_allowed?: boolean;
+  employee_number?: string;
+  address?: string;
+  location?: GeoLocation;
+  phone_number?: string;
   created_at: Timestamp;
   updated_at: Timestamp;
 }

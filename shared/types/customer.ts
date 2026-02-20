@@ -24,6 +24,12 @@ export interface Customer {
   kaiso_id?: string;
   karakara_id?: string;
   cura_id?: string;
+  aozora_id?: string;
+  phone_number?: string;
+  home_care_office?: string;
+  consultation_support_office?: string;
+  care_manager_name?: string;
+  support_specialist_name?: string;
   notes?: string;
   created_at: Timestamp;
   updated_at: Timestamp;

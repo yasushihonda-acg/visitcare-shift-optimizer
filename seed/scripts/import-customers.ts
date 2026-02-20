@@ -16,6 +16,12 @@ interface CustomerRow {
   household_id: string;
   notes: string;
   gender_requirement: string;
+  aozora_id: string;
+  phone_number: string;
+  home_care_office: string;
+  consultation_support_office: string;
+  care_manager_name: string;
+  support_specialist_name: string;
 }
 
 interface ServiceRow {
@@ -104,6 +110,12 @@ export async function importCustomers(): Promise<number> {
         service_manager: c.service_manager,
         ...(c.notes ? { notes: c.notes } : {}),
         ...(c.gender_requirement ? { gender_requirement: c.gender_requirement } : {}),
+        ...(c.aozora_id ? { aozora_id: c.aozora_id } : {}),
+        ...(c.phone_number ? { phone_number: c.phone_number } : {}),
+        ...(c.home_care_office ? { home_care_office: c.home_care_office } : {}),
+        ...(c.consultation_support_office ? { consultation_support_office: c.consultation_support_office } : {}),
+        ...(c.care_manager_name ? { care_manager_name: c.care_manager_name } : {}),
+        ...(c.support_specialist_name ? { support_specialist_name: c.support_specialist_name } : {}),
         created_at: now,
         updated_at: now,
       },

@@ -101,6 +101,15 @@ def load_customers(db: firestore.Client) -> list[Customer]:
                 ],
                 service_manager=d.get("service_manager", ""),
                 gender_requirement=d.get("gender_requirement", "any"),
+                kaiso_id=d.get("kaiso_id") or None,
+                karakara_id=d.get("karakara_id") or None,
+                cura_id=d.get("cura_id") or None,
+                aozora_id=d.get("aozora_id") or None,
+                phone_number=d.get("phone_number") or None,
+                home_care_office=d.get("home_care_office") or None,
+                consultation_support_office=d.get("consultation_support_office") or None,
+                care_manager_name=d.get("care_manager_name") or None,
+                support_specialist_name=d.get("support_specialist_name") or None,
                 notes=d.get("notes") or None,
             )
         )
@@ -149,6 +158,10 @@ def load_helpers(db: firestore.Client) -> list[Helper]:
                 employment_type=d.get("employment_type", "full_time"),
                 gender=d.get("gender", "female"),
                 split_shift_allowed=d.get("split_shift_allowed", False),
+                employee_number=d.get("employee_number") or None,
+                address=d.get("address") or None,
+                location=GeoLocation(**d["location"]) if d.get("location") else None,
+                phone_number=d.get("phone_number") or None,
             )
         )
     return helpers

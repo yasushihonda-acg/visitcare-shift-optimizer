@@ -19,6 +19,9 @@ interface HelperRow {
   available_hours_max: string;
   employment_type: string;
   gender: string;
+  employee_number: string;
+  address: string;
+  phone_number: string;
 }
 
 interface AvailabilityRow {
@@ -91,6 +94,9 @@ export async function importHelpers(): Promise<number> {
         ),
         employment_type: h.employment_type,
         gender: h.gender,
+        ...(h.employee_number ? { employee_number: h.employee_number } : {}),
+        ...(h.address ? { address: h.address } : {}),
+        ...(h.phone_number ? { phone_number: h.phone_number } : {}),
         created_at: now,
         updated_at: now,
       },
