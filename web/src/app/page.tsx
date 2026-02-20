@@ -8,11 +8,13 @@ import { Header } from '@/components/layout/Header';
 import { WelcomeDialog } from '@/components/onboarding/WelcomeDialog';
 import { useWelcomeDialog } from '@/components/onboarding/useWelcomeDialog';
 import { DayTabs } from '@/components/schedule/DayTabs';
+import { ViewModeToggle } from '@/components/schedule/ViewModeToggle';
 import { StatsBar } from '@/components/schedule/StatsBar';
 import { OptimizeButton } from '@/components/schedule/OptimizeButton';
 import { ResetButton } from '@/components/schedule/ResetButton';
 import { BulkCompleteButton } from '@/components/schedule/BulkCompleteButton';
 import { GanttChart } from '@/components/gantt/GanttChart';
+import { WeeklyGanttChart } from '@/components/gantt/WeeklyGanttChart';
 import { OrderDetailPanel } from '@/components/schedule/OrderDetailPanel';
 import { useScheduleData } from '@/hooks/useScheduleData';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
@@ -21,11 +23,11 @@ import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { checkConstraints } from '@/lib/constraints/checker';
 import { SLOT_WIDTH_PX } from '@/components/gantt/constants';
 import { DAY_OF_WEEK_ORDER } from '@/types';
-import type { Order } from '@/types';
+import type { Order, DayOfWeek } from '@/types';
 
 function SchedulePage() {
   const { welcomeOpen, closeWelcome, reopenWelcome } = useWelcomeDialog();
-  const { weekStart, selectedDay } = useScheduleContext();
+  const { weekStart, selectedDay, setSelectedDay, viewMode, setViewMode } = useScheduleContext();
   const { customers, helpers, orderCounts, getDaySchedule, unavailability, loading } =
     useScheduleData(weekStart);
 
@@ -94,6 +96,32 @@ function SchedulePage() {
     slotWidth,
   });
 
+  const handleDayNavigation = useCallback(
+    (day: DayOfWeek) => {
+      setSelectedDay(day);
+      setViewMode('day');
+    },
+    [setSelectedDay, setViewMode],
+  );
+
+  const weeklySchedule = useMemo(() => {
+    const assigned = allOrders.filter((o) => o.assigned_staff_ids.length > 0);
+    const unassigned = allOrders.filter((o) => o.assigned_staff_ids.length === 0);
+    const helperOrderMap = new Map<string, Order[]>();
+    for (const order of assigned) {
+      for (const staffId of order.assigned_staff_ids) {
+        const existing = helperOrderMap.get(staffId) ?? [];
+        existing.push(order);
+        helperOrderMap.set(staffId, existing);
+      }
+    }
+    const helperRows = Array.from(helpers.values()).map((helper) => ({
+      helper,
+      orders: helperOrderMap.get(helper.id) ?? [],
+    }));
+    return { day: selectedDay, date: dayDate, helperRows, unassignedOrders: unassigned, totalOrders: allOrders.length };
+  }, [allOrders, helpers, selectedDay, dayDate]);
+
   const handleOrderClick = (order: Order) => {
     setSelectedOrder(order);
     setDetailOpen(true);
@@ -130,36 +158,54 @@ function SchedulePage() {
       <Header onShowWelcome={reopenWelcome} />
       <WelcomeDialog open={welcomeOpen} onClose={closeWelcome} />
       <div className="flex items-center justify-between border-b">
-        <DayTabs orderCounts={orderCounts} />
+        <div className="flex items-center">
+          <ViewModeToggle />
+          {viewMode === 'day' && <DayTabs orderCounts={orderCounts} />}
+        </div>
         <div className="flex items-center gap-2 px-4">
-          <BulkCompleteButton schedule={schedule} />
+          {viewMode === 'day' && <BulkCompleteButton schedule={schedule} />}
           <ResetButton />
           <OptimizeButton />
         </div>
       </div>
-      <StatsBar schedule={schedule} violations={violations} />
+      <StatsBar
+        schedule={viewMode === 'week' ? weeklySchedule : schedule}
+        violations={viewMode === 'week' ? (new Map() as typeof violations) : violations}
+      />
       <main className="flex-1 overflow-auto p-4">
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragMove={handleDragMove}
-          onDragEnd={handleDragEnd}
-          onDragCancel={handleDragCancel}
-        >
-          <GanttChart
-            schedule={schedule}
+        {viewMode === 'day' ? (
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <GanttChart
+              schedule={schedule}
+              customers={customers}
+              violations={violations}
+              onOrderClick={handleOrderClick}
+              dropZoneStatuses={dropZoneStatuses}
+              unavailability={unavailability}
+              activeOrder={activeOrder}
+              onSlotWidthChange={handleSlotWidthChange}
+              previewTimes={previewTimes}
+              dropMessage={dropMessage}
+            />
+          </DndContext>
+        ) : (
+          <WeeklyGanttChart
+            weekStart={weekStart}
+            getDaySchedule={getDaySchedule}
+            helpers={helpers}
             customers={customers}
-            violations={violations}
-            onOrderClick={handleOrderClick}
-            dropZoneStatuses={dropZoneStatuses}
             unavailability={unavailability}
-            activeOrder={activeOrder}
-            onSlotWidthChange={handleSlotWidthChange}
-            previewTimes={previewTimes}
-            dropMessage={dropMessage}
+            onDayClick={handleDayNavigation}
+            onOrderClick={handleOrderClick}
           />
-        </DndContext>
+        )}
       </main>
       <OrderDetailPanel
         order={selectedOrder}
