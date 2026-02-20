@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-20（PR #95 マージ済み）
+**最終更新**: 2026-02-20（PR #100 マージ済み）
 **現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -116,12 +116,19 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `HelperEditDialog.tsx`: `geocodeAddress()` で `lat`/`lng` が `NaN` になるケースの入力バリデーションを追加
   - E2E CI failure（`masters-crud` テスト）を修正
 
-## 最新テスト結果サマリー（2026-02-20 PR #95 マージ後）
-- **Optimizer**: 238件 pass
-- **Web (Next.js)**: 247件 pass
+- **PR #100** ✅: household制約のFirestoreリンク生成を共通化（Closes #99）
+  - `optimizer/data/link_household.py` を新規作成し、`csv_loader._link_household_orders()` を共通関数 `link_household_orders()` として抽出
+  - `firestore_loader.load_optimization_input()` でも共通関数を呼び出し、Firestoreに `linked_order_id` がない場合も動的リンクを生成するよう修正
+  - `csv_loader` は共通関数を呼ぶだけに変更（動作は同一）
+  - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
+  - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
+
+## 最新テスト結果サマリー（2026-02-20 PR #100 マージ後）
+- **Optimizer**: 250件 pass
+- **Web (Next.js)**: 249件 pass
 - **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: 全チェック SUCCESS（PR #95 / main push #22211658002）
+- **CI/CD**: PR #100 CI SUCCESS確認済み、main push #22214453433 実行中（2026-02-20T06:49:39Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
