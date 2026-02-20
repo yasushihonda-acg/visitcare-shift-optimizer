@@ -24,6 +24,7 @@ import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
 import type { Order, Customer, Helper, OrderStatus } from '@/types';
 import type { Violation } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 
 interface OrderDetailPanelProps {
   order: Order | null;
@@ -48,7 +49,8 @@ const NEXT_STATUSES: Record<OrderStatus, { value: OrderStatus; label: string }[]
   cancelled: [],
 };
 
-const SERVICE_LABELS: Record<string, string> = {
+/** @deprecated フォールバック用。useServiceTypes() の label を優先 */
+const SERVICE_LABELS_FALLBACK: Record<string, string> = {
   physical_care: '身体介護',
   daily_living: '生活援助',
   mixed: '混合（身体+生活）',
@@ -97,6 +99,7 @@ export function OrderDetailPanel({
   saving,
 }: OrderDetailPanelProps) {
   const [statusSaving, setStatusSaving] = useState(false);
+  const { serviceTypes } = useServiceTypes();
 
   if (!order) return null;
 
@@ -139,7 +142,7 @@ export function OrderDetailPanel({
               <span className="h-4 w-4" />
               <span className="text-muted-foreground">サービス種別</span>
               <Badge variant="outline" className={`ml-auto ${SERVICE_BADGE_STYLES[order.service_type] ?? ''}`}>
-                {SERVICE_LABELS[order.service_type]}
+                {serviceTypes.get(order.service_type)?.label ?? SERVICE_LABELS_FALLBACK[order.service_type]}
               </Badge>
             </div>
             <div className="flex items-center gap-2 text-sm">

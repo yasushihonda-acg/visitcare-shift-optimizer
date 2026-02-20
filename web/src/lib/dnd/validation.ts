@@ -1,4 +1,4 @@
-import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek } from '@/types';
+import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 import { isOverlapping } from '@/components/gantt/constants';
 import type { DropValidationResult } from './types';
 
@@ -14,6 +14,7 @@ interface ValidateDropInput {
   /** 時間軸移動時の新しい開始/終了時刻（省略時はorder元の時刻を使用） */
   newStartTime?: string;
   newEndTime?: string;
+  serviceTypes?: Map<string, ServiceTypeDoc>;
 }
 
 /**
@@ -21,7 +22,7 @@ interface ValidateDropInput {
  * error 制約 → 拒否、warning 制約 → 許可+警告
  */
 export function validateDrop(input: ValidateDropInput): DropValidationResult {
-  const { order, targetHelperId, helpers, customers, targetHelperOrders, unavailability, day, newStartTime, newEndTime } = input;
+  const { order, targetHelperId, helpers, customers, targetHelperOrders, unavailability, day, newStartTime, newEndTime, serviceTypes } = input;
 
   // 時間軸移動対応: 新時刻が指定されている場合はそちらを使用
   const startTime = newStartTime ?? order.start_time;
@@ -39,8 +40,10 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
     return { allowed: false, reason: `${helper.name.family} はNGスタッフです` };
   }
 
-  // 資格不適合（身体介護・混合は can_physical_care 必須）
-  if ((order.service_type === 'physical_care' || order.service_type === 'mixed') && !helper.can_physical_care) {
+  // 資格不適合（requires_physical_care_cert が true のサービス種別は can_physical_care 必須）
+  const stDoc = serviceTypes?.get(order.service_type);
+  const requiresCert = stDoc ? stDoc.requires_physical_care_cert : (order.service_type === 'physical_care' || order.service_type === 'mixed');
+  if (requiresCert && !helper.can_physical_care) {
     return { allowed: false, reason: `${helper.name.family} は身体介護の資格がありません` };
   }
 

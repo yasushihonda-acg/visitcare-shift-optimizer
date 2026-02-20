@@ -3,6 +3,16 @@ import { render, screen } from '@testing-library/react';
 import { OrderDetailPanel } from '../OrderDetailPanel';
 import type { Order } from '@/types';
 
+// useServiceTypes は Firebase 接続が必要なためモック
+vi.mock('@/hooks/useServiceTypes', () => ({
+  useServiceTypes: () => ({
+    serviceTypes: new Map(),
+    sortedList: [],
+    loading: false,
+    error: null,
+  }),
+}));
+
 // Radix Sheet uses portal — mock to render inline
 vi.mock('@/components/ui/sheet', () => ({
   Sheet: ({ children, open }: { children: React.ReactNode; open: boolean }) =>

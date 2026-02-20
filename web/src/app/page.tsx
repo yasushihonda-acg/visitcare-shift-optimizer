@@ -21,6 +21,7 @@ import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { useOrderEdit } from '@/hooks/useOrderEdit';
 import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { checkConstraints } from '@/lib/constraints/checker';
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { SLOT_WIDTH_PX } from '@/components/gantt/constants';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Order, DayOfWeek } from '@/types';
@@ -35,6 +36,7 @@ function SchedulePage() {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const { saving, handleStaffChange } = useOrderEdit();
+  const { serviceTypes } = useServiceTypes();
 
   const allOrders = useMemo(() => {
     const orders: Order[] = [];
@@ -64,8 +66,9 @@ function SchedulePage() {
         customers,
         unavailability,
         day: selectedDay,
+        serviceTypes,
       }),
-    [schedule, helpers, customers, unavailability, selectedDay]
+    [schedule, helpers, customers, unavailability, selectedDay, serviceTypes]
   );
 
   // DnD — distance: 5px でクリックとドラッグを区別
@@ -94,6 +97,7 @@ function SchedulePage() {
     unavailability,
     day: selectedDay,
     slotWidth,
+    serviceTypes,
   });
 
   const handleDayNavigation = useCallback(

@@ -1,4 +1,4 @@
-import type { Order, Helper, Customer, ServiceType } from '@/types';
+import type { Order, Helper, Customer, ServiceType, ServiceTypeDoc } from '@/types';
 
 // ── 型定義 ────────────────────────────────────────────────────
 
@@ -32,6 +32,7 @@ export interface ServiceTypeSummaryItem {
   totalMinutes: number;
 }
 
+/** @deprecated serviceTypes Map を使用してください */
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   physical_care: '身体介護',
   daily_living: '生活援助',
@@ -141,7 +142,7 @@ export function aggregateStatusSummary(orders: Order[]): StatusSummary {
 }
 
 /** サービス種別内訳集計（visitCount 降順）*/
-export function aggregateServiceTypeSummary(orders: Order[]): ServiceTypeSummaryItem[] {
+export function aggregateServiceTypeSummary(orders: Order[], serviceTypes?: Map<string, ServiceTypeDoc>): ServiceTypeSummaryItem[] {
   const map = new Map<ServiceType, { visitCount: number; totalMinutes: number }>();
 
   for (const order of orders) {
@@ -158,7 +159,7 @@ export function aggregateServiceTypeSummary(orders: Order[]): ServiceTypeSummary
   return Array.from(map.entries())
     .map(([serviceType, data]) => ({
       serviceType,
-      label: SERVICE_TYPE_LABELS[serviceType] ?? serviceType,
+      label: serviceTypes?.get(serviceType)?.label ?? SERVICE_TYPE_LABELS[serviceType] ?? serviceType,
       ...data,
     }))
     .sort((a, b) => b.visitCount - a.visitCount);

@@ -7,7 +7,7 @@ import { validateDrop } from '@/lib/dnd/validation';
 import { updateOrderAssignment, updateOrderAssignmentAndTime } from '@/lib/firestore/updateOrder';
 import { deltaToTimeShift, computeShiftedTimes } from '@/components/gantt/constants';
 import type { DragData, DropZoneStatus } from '@/lib/dnd/types';
-import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek } from '@/types';
+import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 import type { HelperScheduleRow } from './useScheduleData';
 
 interface UseDragAndDropInput {
@@ -18,10 +18,11 @@ interface UseDragAndDropInput {
   unavailability: StaffUnavailability[];
   day: DayOfWeek;
   slotWidth: number;
+  serviceTypes?: Map<string, ServiceTypeDoc>;
 }
 
 export function useDragAndDrop(input: UseDragAndDropInput) {
-  const { helperRows, unassignedOrders, helpers, customers, unavailability, day, slotWidth } = input;
+  const { helperRows, unassignedOrders, helpers, customers, unavailability, day, slotWidth, serviceTypes } = input;
   const [dropZoneStatuses, setDropZoneStatuses] = useState<Map<string, DropZoneStatus>>(new Map());
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [previewTimes, setPreviewTimes] = useState<{ startTime: string; endTime: string } | null>(null);
@@ -112,6 +113,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
         day,
         newStartTime: shifted?.newStartTime,
         newEndTime: shifted?.newEndTime,
+        serviceTypes,
       });
 
       const status: DropZoneStatus = !result.allowed
@@ -194,6 +196,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
         day,
         newStartTime: shifted?.newStartTime,
         newEndTime: shifted?.newEndTime,
+        serviceTypes,
       });
 
       if (!result.allowed) {

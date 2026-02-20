@@ -1,4 +1,4 @@
-import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek } from '@/types';
+import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 import { isOverlapping } from '@/components/gantt/constants';
 
 export type ViolationSeverity = 'error' | 'warning';
@@ -20,6 +20,7 @@ interface CheckInput {
   customers: Map<string, Customer>;
   unavailability: StaffUnavailability[];
   day: DayOfWeek;
+  serviceTypes?: Map<string, ServiceTypeDoc>;
 }
 
 export function checkConstraints(input: CheckInput): ViolationMap {
@@ -51,8 +52,10 @@ export function checkConstraints(input: CheckInput): ViolationMap {
         });
       }
 
-      // 資格不適合（身体介護・混合は can_physical_care 必須）
-      if ((order.service_type === 'physical_care' || order.service_type === 'mixed') && !helper.can_physical_care) {
+      // 資格不適合（requires_physical_care_cert が true のサービス種別は can_physical_care 必須）
+      const stDoc = input.serviceTypes?.get(order.service_type);
+      const requiresCert = stDoc ? stDoc.requires_physical_care_cert : (order.service_type === 'physical_care' || order.service_type === 'mixed');
+      if (requiresCert && !helper.can_physical_care) {
         addViolation({
           orderId: order.id,
           staffId,
