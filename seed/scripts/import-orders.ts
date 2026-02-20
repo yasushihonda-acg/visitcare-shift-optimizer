@@ -86,7 +86,7 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
   const docs: { id: string; data: Record<string, unknown> }[] = [];
 
   // 連続訪問のペアを追跡（household_idベース）
-  const householdOrders: Record<string, string[]> = {};
+  const householdOrders: Record<string, { id: string; start_time: string; end_time: string }[]> = {};
 
   // customers.csv から household_id を取得
   const customers = parseCSV<{ id: string; household_id: string }>(
@@ -129,27 +129,37 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
 
     docs.push(doc);
 
-    // household_id による連続訪問リンク追跡
+    // household_id による連続訪問リンク追跡（同日・同世帯でグループ化）
     const householdId = customerHousehold.get(s.customer_id);
     if (householdId) {
-      const key = `${householdId}-${s.day_of_week}-${s.start_time}`;
+      const key = `${householdId}-${s.day_of_week}`;
       if (!householdOrders[key]) {
         householdOrders[key] = [];
       }
-      householdOrders[key].push(orderId);
+      householdOrders[key].push({ id: orderId, start_time: s.start_time, end_time: s.end_time });
     }
   }
 
-  // 連続訪問のリンクを設定
-  for (const orderIds of Object.values(householdOrders)) {
-    if (orderIds.length >= 2) {
-      for (let i = 0; i < orderIds.length; i++) {
-        const doc = docs.find((d) => d.id === orderIds[i]);
-        if (doc) {
-          // 次のオーダーにリンク（最後は最初にリンク）
-          const nextIdx = (i + 1) % orderIds.length;
-          doc.data.linked_order_id = orderIds[nextIdx];
-        }
+  // 連続訪問のリンクを設定（開始時刻順にソートし、隙間30分以内の隣接ペアをリンク）
+  const GAP_MINUTES = 30;
+  const timeToMinutes = (t: string): number => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  for (const orders of Object.values(householdOrders)) {
+    if (orders.length < 2) continue;
+    const sorted = [...orders].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const o1 = sorted[i];
+      const o2 = sorted[i + 1];
+      const e1 = timeToMinutes(o1.end_time);
+      const s2 = timeToMinutes(o2.start_time);
+      if (s2 - e1 <= GAP_MINUTES) {
+        const doc1 = docs.find((d) => d.id === o1.id);
+        const doc2 = docs.find((d) => d.id === o2.id);
+        if (doc1) doc1.data.linked_order_id = o2.id;
+        if (doc2) doc2.data.linked_order_id = o1.id;
       }
     }
   }

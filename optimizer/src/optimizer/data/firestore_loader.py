@@ -1,10 +1,11 @@
 """Firestore → Pydanticモデル変換ローダー"""
 
 import os
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from google.cloud import firestore  # type: ignore[attr-defined]
 
+from optimizer.data.link_household import link_household_orders
 from optimizer.models import (
     AvailabilitySlot,
     Customer,
@@ -430,6 +431,8 @@ def load_optimization_input(
     customers = load_customers(db)
     helpers = load_helpers(db)
     orders = load_orders(db, week_start, customers)
+    # Firestoreに linked_order_id がない場合でも動的にリンクを生成する
+    link_household_orders(orders, customers)
     # オーダーに含まれる利用者IDのみでtravel_timesをフィルタリング
     order_customer_ids = {o.customer_id for o in orders}
     travel_times = load_travel_times(db, customer_ids=order_customer_ids)
