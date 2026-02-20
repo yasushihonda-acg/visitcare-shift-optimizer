@@ -109,6 +109,8 @@ export const helperSchema = z.object({
   split_shift_allowed: z.boolean().optional(),
   employee_number: z.string().optional(),
   address: z.string().optional(),
+  // location は HelperEditDialog でローカル state 管理のため form には登録しない。
+  // zodResolver は location: undefined を受け取り .optional() を通過する。
   location: geoLocationSchema.optional(),
   phone_number: z.string().optional(),
 });

@@ -487,6 +487,25 @@ describe('helperSchema', () => {
     const data = { ...validHelper(), split_shift_allowed: false };
     expect(helperSchema.safeParse(data).success).toBe(true);
   });
+
+  // ---- location ----
+  it('locationが有効な座標でパースできる', () => {
+    const data = { ...validHelper(), location: { lat: 31.59, lng: 130.55 } };
+    const result = helperSchema.safeParse(data);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.location).toEqual({ lat: 31.59, lng: 130.55 });
+    }
+  });
+
+  it('locationが省略されていてもパースできる', () => {
+    const { location: _loc, ...dataWithoutLocation } = { ...validHelper(), location: undefined };
+    const result = helperSchema.safeParse(dataWithoutLocation);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.location).toBeUndefined();
+    }
+  });
 });
 
 // ================================================================
