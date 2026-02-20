@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Order, Customer } from '@/types';
 import type { DragData, DropZoneStatus } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
   idle: '',
@@ -22,7 +23,8 @@ interface UnassignedSectionProps {
   dropZoneStatus?: DropZoneStatus;
 }
 
-const SERVICE_LABELS: Record<string, string> = {
+/** @deprecated フォールバック用。useServiceTypes() の short_label を優先 */
+const SERVICE_LABELS_FALLBACK: Record<string, string> = {
   physical_care: '身体',
   daily_living: '生活',
   mixed: '混合',
@@ -48,10 +50,12 @@ function UnassignedOrderItem({
   order,
   customers,
   onOrderClick,
+  serviceLabel,
 }: {
   order: Order;
   customers: Map<string, Customer>;
   onOrderClick?: (order: Order) => void;
+  serviceLabel: string;
 }) {
   const customer = customers.get(order.customer_id);
   const name = customer
@@ -84,7 +88,7 @@ function UnassignedOrderItem({
       {...listeners}
     >
       <Badge variant="outline" className={cn('text-[10px] border', badgeColor)}>
-        {SERVICE_LABELS[order.service_type] ?? order.service_type}
+        {serviceLabel}
       </Badge>
       <span className="font-medium">{name}</span>
       <span className="text-muted-foreground">
@@ -95,6 +99,7 @@ function UnassignedOrderItem({
 }
 
 export function UnassignedSection({ orders, customers, onOrderClick, dropZoneStatus = 'idle' }: UnassignedSectionProps) {
+  const { serviceTypes } = useServiceTypes();
   const { setNodeRef, isOver } = useDroppable({
     id: 'unassigned-section',
   });
@@ -124,6 +129,7 @@ export function UnassignedSection({ orders, customers, onOrderClick, dropZoneSta
             order={order}
             customers={customers}
             onOrderClick={onOrderClick}
+            serviceLabel={serviceTypes.get(order.service_type)?.short_label ?? SERVICE_LABELS_FALLBACK[order.service_type] ?? order.service_type}
           />
         ))}
         {orders.length === 0 && (

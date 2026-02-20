@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateDrop } from '../validation';
-import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek } from '@/types';
+import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 
 // --- テストヘルパー関数 ---
 
@@ -115,6 +115,33 @@ describe('validateDrop', () => {
       input.helpers.set('helper-b', makeHelper({ can_physical_care: false }));
 
       const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+    });
+
+    it('serviceTypes で requires_physical_care_cert=true → 資格なしで拒否', () => {
+      const input = baseInput();
+      input.order = makeOrder({ service_type: 'daily_living' });
+      input.helpers.set('helper-b', makeHelper({ can_physical_care: false }));
+      const serviceTypes = new Map<string, ServiceTypeDoc>([
+        ['daily_living', { id: 'daily_living', code: 'daily_living', label: '生活援助', short_label: '生活', requires_physical_care_cert: true, sort_order: 2, created_at: new Date(), updated_at: new Date() }],
+      ]);
+
+      const result = validateDrop({ ...input, serviceTypes });
+      expect(result.allowed).toBe(false);
+      if (!result.allowed) {
+        expect(result.reason).toContain('資格');
+      }
+    });
+
+    it('serviceTypes で requires_physical_care_cert=false → 資格不問で許可', () => {
+      const input = baseInput();
+      // physical_care はデフォルトでは資格必要だが、serviceTypes で上書き
+      input.helpers.set('helper-b', makeHelper({ can_physical_care: false }));
+      const serviceTypes = new Map<string, ServiceTypeDoc>([
+        ['physical_care', { id: 'physical_care', code: 'physical_care', label: '身体介護', short_label: '身体', requires_physical_care_cert: false, sort_order: 1, created_at: new Date(), updated_at: new Date() }],
+      ]);
+
+      const result = validateDrop({ ...input, serviceTypes });
       expect(result.allowed).toBe(true);
     });
 

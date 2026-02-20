@@ -18,6 +18,7 @@ import {
   type ServiceSlot,
 } from '@/types';
 import { detectOverlaps } from '@/lib/validation/timeOverlap';
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 
 interface WeeklyServicesEditorProps {
   value: Partial<Record<DayOfWeek, ServiceSlot[]>>;
@@ -35,6 +36,7 @@ export function WeeklyServicesEditor({
   value,
   onChange,
 }: WeeklyServicesEditorProps) {
+  const { sortedList: serviceTypeList } = useServiceTypes();
   const [expandedDays, setExpandedDays] = useState<Set<DayOfWeek>>(
     () => {
       const days = new Set<DayOfWeek>();
@@ -165,14 +167,11 @@ export function WeeklyServicesEditor({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="physical_care">身体介護</SelectItem>
-                            <SelectItem value="daily_living">生活援助</SelectItem>
-                            <SelectItem value="mixed">混合（身体+生活）</SelectItem>
-                            <SelectItem value="prevention">介護予防</SelectItem>
-                            <SelectItem value="private">自費サービス</SelectItem>
-                            <SelectItem value="disability">障がい福祉</SelectItem>
-                            <SelectItem value="transport_support">移動支援</SelectItem>
-                            <SelectItem value="severe_visiting">重度訪問介護</SelectItem>
+                            {serviceTypeList.map((st) => (
+                              <SelectItem key={st.code} value={st.code}>
+                                {st.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <div className="flex items-center gap-1">

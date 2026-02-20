@@ -7,7 +7,7 @@ import {
   aggregateStatusSummary,
   aggregateServiceTypeSummary,
 } from '../aggregation';
-import type { Order, Helper, Customer } from '@/types';
+import type { Order, Helper, Customer, ServiceTypeDoc } from '@/types';
 
 // ── テストデータファクトリ ──────────────────────────────────────
 
@@ -292,5 +292,21 @@ describe('aggregateServiceTypeSummary', () => {
     ];
     const result = aggregateServiceTypeSummary(orders);
     expect(result[0].serviceType).toBe('daily_living');
+  });
+
+  it('serviceTypes を渡すと動的ラベルが使われる', () => {
+    const serviceTypes = new Map<string, ServiceTypeDoc>([
+      ['physical_care', { id: 'physical_care', code: 'physical_care', label: 'カスタム身体', short_label: '身体', requires_physical_care_cert: true, sort_order: 1, created_at: new Date(), updated_at: new Date() }],
+    ]);
+    const orders = [makeOrder({ service_type: 'physical_care' })];
+    const result = aggregateServiceTypeSummary(orders, serviceTypes);
+    expect(result[0].label).toBe('カスタム身体');
+  });
+
+  it('serviceTypes に該当がない場合は静的フォールバック', () => {
+    const serviceTypes = new Map<string, ServiceTypeDoc>(); // 空
+    const orders = [makeOrder({ service_type: 'physical_care' })];
+    const result = aggregateServiceTypeSummary(orders, serviceTypes);
+    expect(result[0].label).toBe('身体介護'); // 静的フォールバック
   });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { checkConstraints } from '../checker';
-import type { Order, Helper, Customer, StaffUnavailability } from '@/types';
+import type { Order, Helper, Customer, StaffUnavailability, ServiceTypeDoc } from '@/types';
 
 function makeOrder(overrides: Partial<Order> = {}): Order {
   return {
@@ -148,6 +148,42 @@ describe('checkConstraints', () => {
     });
     const violations = result.get('O001') ?? [];
     expect(violations.some((v) => v.type === 'unavailability')).toBe(true);
+  });
+
+  it('serviceTypes の requires_physical_care_cert=true → 資格なしで違反', () => {
+    const helpers = new Map([['H001', makeHelper({ can_physical_care: false })]]);
+    const customers = new Map([['C001', makeCustomer()]]);
+    const serviceTypes = new Map<string, ServiceTypeDoc>([
+      ['daily_living', { id: 'daily_living', code: 'daily_living', label: '生活援助', short_label: '生活', requires_physical_care_cert: true, sort_order: 2, created_at: new Date(), updated_at: new Date() }],
+    ]);
+    const result = checkConstraints({
+      orders: [makeOrder({ service_type: 'daily_living' })],
+      helpers,
+      customers,
+      unavailability: [],
+      day: 'monday',
+      serviceTypes,
+    });
+    const violations = result.get('O001') ?? [];
+    expect(violations.some((v) => v.type === 'qualification')).toBe(true);
+  });
+
+  it('serviceTypes の requires_physical_care_cert=false → 資格不問', () => {
+    const helpers = new Map([['H001', makeHelper({ can_physical_care: false })]]);
+    const customers = new Map([['C001', makeCustomer()]]);
+    const serviceTypes = new Map<string, ServiceTypeDoc>([
+      ['physical_care', { id: 'physical_care', code: 'physical_care', label: '身体介護', short_label: '身体', requires_physical_care_cert: false, sort_order: 1, created_at: new Date(), updated_at: new Date() }],
+    ]);
+    const result = checkConstraints({
+      orders: [makeOrder({ service_type: 'physical_care' })],
+      helpers,
+      customers,
+      unavailability: [],
+      day: 'monday',
+      serviceTypes,
+    });
+    const violations = result.get('O001') ?? [];
+    expect(violations.some((v) => v.type === 'qualification')).toBe(false);
   });
 
   it('勤務時間外の警告', () => {

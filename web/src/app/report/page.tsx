@@ -13,6 +13,7 @@ import { useMonthlyOrders } from '@/hooks/useMonthlyOrders';
 import { useMonthlyReport } from '@/hooks/useMonthlyReport';
 import { useHelpers } from '@/hooks/useHelpers';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 
 export default function ReportPage() {
   const [month, setMonth] = useState<Date>(() => startOfMonth(new Date()));
@@ -20,11 +21,12 @@ export default function ReportPage() {
   const { orders, loading: ordersLoading } = useMonthlyOrders(month);
   const { helpers, loading: helpersLoading } = useHelpers();
   const { customers, loading: customersLoading } = useCustomers();
+  const { serviceTypes } = useServiceTypes();
 
   const loading = ordersLoading || helpersLoading || customersLoading;
 
   const { staffSummary, customerSummary, statusSummary, serviceTypeSummary } =
-    useMonthlyReport(orders, helpers, customers);
+    useMonthlyReport(orders, helpers, customers, serviceTypes);
 
   const totalMinutes = serviceTypeSummary.reduce((sum, item) => sum + item.totalMinutes, 0);
 

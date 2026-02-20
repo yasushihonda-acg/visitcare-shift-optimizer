@@ -11,7 +11,7 @@ import {
   type StatusSummary,
   type ServiceTypeSummaryItem,
 } from '@/lib/report/aggregation';
-import type { Order, Helper, Customer } from '@/types';
+import type { Order, Helper, Customer, ServiceTypeDoc } from '@/types';
 
 export interface MonthlyReportData {
   staffSummary: StaffSummaryRow[];
@@ -23,7 +23,8 @@ export interface MonthlyReportData {
 export function useMonthlyReport(
   orders: Order[],
   helpers: Map<string, Helper>,
-  customers: Map<string, Customer>
+  customers: Map<string, Customer>,
+  serviceTypes?: Map<string, ServiceTypeDoc>
 ): MonthlyReportData {
   const staffSummary = useMemo(
     () => aggregateStaffSummary(orders, helpers),
@@ -41,8 +42,8 @@ export function useMonthlyReport(
   );
 
   const serviceTypeSummary = useMemo(
-    () => aggregateServiceTypeSummary(orders),
-    [orders]
+    () => aggregateServiceTypeSummary(orders, serviceTypes),
+    [orders, serviceTypes]
   );
 
   return { staffSummary, customerSummary, statusSummary, serviceTypeSummary };
