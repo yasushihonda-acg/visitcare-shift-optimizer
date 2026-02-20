@@ -143,6 +143,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
               customer={customers.get(order.customer_id)}
               hasViolation={!!orderViolations?.length}
               violationType={hasError ? 'error' : hasWarning ? 'warning' : undefined}
+              violationMessages={orderViolations?.map((v) => v.message)}
               onClick={onOrderClick}
               sourceHelperId={row.helper.id}
             />

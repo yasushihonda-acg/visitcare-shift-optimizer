@@ -40,11 +40,25 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
     return { allowed: false, reason: `${helper.name.family} はNGスタッフです` };
   }
 
+  // 性別要件
+  if (customer?.gender_requirement && customer.gender_requirement !== 'any') {
+    if (helper.gender !== customer.gender_requirement) {
+      const genderLabel = customer.gender_requirement === 'female' ? '女性' : '男性';
+      return { allowed: false, reason: `性別要件を満たしていません（${genderLabel}専用）` };
+    }
+  }
+
   // 資格不適合（requires_physical_care_cert が true のサービス種別は can_physical_care 必須）
   const stDoc = serviceTypes?.get(order.service_type);
   const requiresCert = stDoc ? stDoc.requires_physical_care_cert : (order.service_type === 'physical_care' || order.service_type === 'mixed');
   if (requiresCert && !helper.can_physical_care) {
     return { allowed: false, reason: `${helper.name.family} は身体介護の資格がありません` };
+  }
+
+  // 研修状態: not_visited → 拒否
+  const trainingStatus = helper.customer_training_status[order.customer_id];
+  if (trainingStatus === 'not_visited') {
+    return { allowed: false, reason: `${helper.name.family} は未訪問のため単独訪問できません` };
   }
 
   // 時間重複
@@ -82,6 +96,16 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
     if (!withinAny) {
       warnings.push(`${helper.name.family} の勤務時間外です`);
     }
+  }
+
+  // 研修状態: training → 警告
+  if (trainingStatus === 'training') {
+    warnings.push(`${helper.name.family} は研修中（同行が必要です）`);
+  }
+
+  // 推奨スタッフ外 → 警告
+  if (customer && customer.preferred_staff_ids.length > 0 && !customer.preferred_staff_ids.includes(targetHelperId)) {
+    warnings.push(`${helper.name.family} は推奨スタッフ外です`);
   }
 
   return { allowed: true, warnings };

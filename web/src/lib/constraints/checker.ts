@@ -6,7 +6,8 @@ export type ViolationSeverity = 'error' | 'warning';
 export interface Violation {
   orderId: string;
   staffId?: string;
-  type: 'ng_staff' | 'qualification' | 'overlap' | 'unavailability' | 'outside_hours';
+  type: 'ng_staff' | 'qualification' | 'overlap' | 'unavailability' | 'outside_hours'
+      | 'gender' | 'training' | 'preferred_staff';
   severity: ViolationSeverity;
   message: string;
 }
@@ -49,6 +50,51 @@ export function checkConstraints(input: CheckInput): ViolationMap {
           type: 'ng_staff',
           severity: 'error',
           message: `NGスタッフ ${helper.name.family} が割当済み`,
+        });
+      }
+
+      // 性別要件
+      if (customer?.gender_requirement && customer.gender_requirement !== 'any') {
+        if (helper.gender !== customer.gender_requirement) {
+          const genderLabel = customer.gender_requirement === 'female' ? '女性' : '男性';
+          addViolation({
+            orderId: order.id,
+            staffId,
+            type: 'gender',
+            severity: 'error',
+            message: `性別要件不一致（${genderLabel}専用）`,
+          });
+        }
+      }
+
+      // 研修状態
+      const trainingStatus = helper.customer_training_status[order.customer_id];
+      if (trainingStatus === 'not_visited') {
+        addViolation({
+          orderId: order.id,
+          staffId,
+          type: 'training',
+          severity: 'error',
+          message: `${helper.name.family} は未訪問（研修未開始）`,
+        });
+      } else if (trainingStatus === 'training') {
+        addViolation({
+          orderId: order.id,
+          staffId,
+          type: 'training',
+          severity: 'warning',
+          message: `${helper.name.family} は研修中（同行必要）`,
+        });
+      }
+
+      // 推奨スタッフ外
+      if (customer && customer.preferred_staff_ids.length > 0 && !customer.preferred_staff_ids.includes(staffId)) {
+        addViolation({
+          orderId: order.id,
+          staffId,
+          type: 'preferred_staff',
+          severity: 'warning',
+          message: `${helper.name.family} は推奨スタッフ外`,
         });
       }
 
