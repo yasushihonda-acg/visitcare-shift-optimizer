@@ -75,8 +75,8 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - 利用者編集ダイアログに外部連携ID（介ソルID / カカラID / CURA ID）入力フィールド追加
   - ヘルパーに `split_shift_allowed` フラグ追加（UI + バックエンドモデル）
 
-- **PR #88** ✅: 徒歩移動スタッフへの訪問距離上限制約を追加（Closes #84）
-  - Optimizer: `walking_distance_km` パラメータ追加（デフォルト2.0km）
+- **PR #88** ✅: 徒歩移動スタッフへの訪問移動時間上限制約を追加（Closes #84）
+  - Optimizer: `MAX_WALK_TRAVEL_MINUTES = 30`（30分）を超えるペアへの割り当てを禁止
   - API/Schema: `WalkingDistanceConstraint` モデル、routes.py に制約適用
   - Firestore loader: ヘルパーの `transport_mode` 読み込み対応
 

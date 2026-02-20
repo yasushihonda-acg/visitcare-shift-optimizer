@@ -34,6 +34,7 @@ function makeHelper(overrides: Partial<Helper> = {}): Helper {
     available_hours: { min: 4, max: 8 },
     customer_training_status: {},
     employment_type: 'full_time',
+    gender: 'female',
     created_at: new Date(),
     updated_at: new Date(),
     ...overrides,
