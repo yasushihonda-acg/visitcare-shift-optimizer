@@ -51,6 +51,9 @@ export function HelperEditDialog({
   const isNew = !helper;
 
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [locationState, setLocationState] = useState<{ lat: number; lng: number } | undefined>(
+    helper?.location,
+  );
 
   const {
     register,
@@ -68,6 +71,7 @@ export function HelperEditDialog({
   useEffect(() => {
     if (open) {
       reset(getDefaults(helper));
+      setLocationState(helper?.location);
     }
   }, [open, helper, reset]);
 
@@ -83,8 +87,7 @@ export function HelperEditDialog({
     try {
       const result = await geocodeAddress(address);
       if (result) {
-        setValue('location.lat', result.lat, { shouldDirty: true });
-        setValue('location.lng', result.lng, { shouldDirty: true });
+        setLocationState({ lat: result.lat, lng: result.lng });
         toast.success('住所から座標を取得しました');
       } else {
         toast.error('住所が見つかりません');
@@ -92,7 +95,7 @@ export function HelperEditDialog({
     } finally {
       setIsGeocoding(false);
     }
-  }, [watch, setValue]);
+  }, [watch]);
 
   const toggleQualification = (qual: string) => {
     const current = qualifications ?? [];
@@ -106,6 +109,7 @@ export function HelperEditDialog({
   const onSubmit = async (data: HelperFormValues) => {
     const saveData = {
       ...data,
+      ...(locationState ? { location: locationState } : {}),
       customer_training_status: data.customer_training_status ?? {},
       split_shift_allowed: data.split_shift_allowed ?? false,
     };
@@ -286,28 +290,18 @@ export function HelperEditDialog({
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="location.lat">緯度（任意）</Label>
-                <Input
-                  id="location.lat"
-                  type="number"
-                  step="any"
-                  {...register('location.lat', { valueAsNumber: true })}
-                  placeholder="31.5916"
-                />
+            {locationState && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label>緯度</Label>
+                  <p className="text-sm text-muted-foreground">{locationState.lat.toFixed(6)}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label>経度</Label>
+                  <p className="text-sm text-muted-foreground">{locationState.lng.toFixed(6)}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="location.lng">経度（任意）</Label>
-                <Input
-                  id="location.lng"
-                  type="number"
-                  step="any"
-                  {...register('location.lng', { valueAsNumber: true })}
-                  placeholder="130.5571"
-                />
-              </div>
-            </div>
+            )}
           </div>
 
           <hr className="my-4" />
@@ -518,7 +512,6 @@ function getDefaults(helper?: Helper): HelperFormValues {
     split_shift_allowed: helper.split_shift_allowed ?? false,
     employee_number: helper.employee_number ?? '',
     address: helper.address ?? '',
-    location: helper.location,
     phone_number: helper.phone_number ?? '',
   };
 }

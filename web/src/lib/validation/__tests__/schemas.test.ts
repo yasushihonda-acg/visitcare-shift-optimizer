@@ -488,16 +488,7 @@ describe('helperSchema', () => {
     expect(helperSchema.safeParse(data).success).toBe(true);
   });
 
-  // ---- location（NaN前処理） ----
-  it('locationがNaN（未入力のvalueAsNumber）でも通過しundefinedになる', () => {
-    const data = { ...validHelper(), location: { lat: NaN, lng: NaN } };
-    const result = helperSchema.safeParse(data);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.location).toBeUndefined();
-    }
-  });
-
+  // ---- location ----
   it('locationが有効な座標でパースできる', () => {
     const data = { ...validHelper(), location: { lat: 31.59, lng: 130.55 } };
     const result = helperSchema.safeParse(data);
