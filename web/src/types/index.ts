@@ -100,7 +100,7 @@ export interface Helper {
   available_hours: { min: number; max: number };
   customer_training_status: Record<string, TrainingStatus>;
   employment_type: EmploymentType;
-  gender?: Gender;
+  gender: Gender;
   split_shift_allowed?: boolean;
   created_at: Date;
   updated_at: Date;

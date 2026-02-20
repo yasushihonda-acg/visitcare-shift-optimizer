@@ -41,6 +41,7 @@ function makeHelper(id: string, family: string, given: string): Helper {
     available_hours: { min: 20, max: 40 },
     customer_training_status: {},
     employment_type: 'full_time',
+    gender: 'female',
     created_at: new Date(),
     updated_at: new Date(),
   };
