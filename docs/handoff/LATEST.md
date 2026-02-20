@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-21（PR #104 + Phase 3 実装済み）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3）実装済み・マージ済み
+**最終更新**: 2026-02-21（GCP Sheets エクスポート本番動作確認済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -182,10 +182,40 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --week 2026-02-0
 cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --week 2026-02-16
 ```
 
+## GCP Sheets エクスポート（本番環境設定まとめ）
+
+本番 Cloud Run で Google Sheets エクスポートを有効にするために以下の設定を実施済み:
+
+### 採用アプローチ: Authorized User ADC を Secret Manager に保存
+
+**背景**: Service Account（Compute Engine Default SA）は Google Drive ストレージを持っていないため、SA として直接スプレッドシートを作成できない。
+
+**解決策**:
+1. ローカルの ADC（`~/.config/gcloud/application_default_credentials.json`、`yasushi.honda@aozora-cg.com`、Sheets/Drive スコープ付き）を Secret Manager に保存
+2. Cloud Run がそれを `/etc/secrets/adc` にマウント
+3. `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/adc` 環境変数で ADC として使用
+
+**GCP 設定（実施済み）**:
+- Secret Manager API 有効化: `secretmanager.googleapis.com`
+- シークレット: `google-adc-credentials`（version 1）
+- Cloud Run SA に `roles/secretmanager.secretAccessor` 付与
+- Cloud Run サービス: `/etc/secrets/adc=google-adc-credentials:latest` ボリュームマウント
+- Cloud Run 環境変数: `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/adc`
+
+**注意事項**:
+- スプレッドシートは `yasushi.honda@aozora-cg.com` の個人 Drive に作成される
+- ADC の refresh token が失効した場合、再ログインして Secret Manager を更新が必要:
+  ```bash
+  gcloud auth application-default login \
+    --scopes="openid,https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive"
+  gcloud secrets versions add google-adc-credentials \
+    --data-file="$HOME/.config/gcloud/application_default_credentials.json" \
+    --project=visitcare-shift-optimizer
+  ```
+
 ## 次のアクション（優先度順）
 
-1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番Sheetsエクスポート前に必須）
-2. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+1. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103、Phase 2 は PR #104、Phase 3 は本PR でクローズ済み）
