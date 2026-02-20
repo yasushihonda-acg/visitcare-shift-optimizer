@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, X } from 'lucide-react';
-import { timeToColumn } from './constants';
+import { timeToColumn, SERVICE_COLORS } from './constants';
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
 import type { DragData } from '@/lib/dnd/types';
@@ -19,41 +19,6 @@ interface GanttBarProps {
   /** ドラッグ元のヘルパーID（null = 未割当） */
   sourceHelperId: string | null;
 }
-
-const SERVICE_COLORS: Record<string, { bar: string; hover: string }> = {
-  physical_care: {
-    bar: 'bg-gradient-to-r from-[oklch(0.55_0.15_225)] to-[oklch(0.60_0.12_205)] text-white',
-    hover: 'hover:from-[oklch(0.50_0.16_225)] hover:to-[oklch(0.55_0.13_205)]',
-  },
-  daily_living: {
-    bar: 'bg-gradient-to-r from-[oklch(0.55_0.15_162)] to-[oklch(0.60_0.12_147)] text-white',
-    hover: 'hover:from-[oklch(0.50_0.16_162)] hover:to-[oklch(0.55_0.13_147)]',
-  },
-  mixed: {
-    bar: 'bg-gradient-to-r from-[oklch(0.58_0.14_50)] to-[oklch(0.63_0.11_35)] text-white',
-    hover: 'hover:from-[oklch(0.53_0.15_50)] hover:to-[oklch(0.58_0.12_35)]',
-  },
-  prevention: {
-    bar: 'bg-gradient-to-r from-[oklch(0.60_0.12_298)] to-[oklch(0.65_0.10_278)] text-white',
-    hover: 'hover:from-[oklch(0.55_0.13_298)] hover:to-[oklch(0.60_0.11_278)]',
-  },
-  private: {
-    bar: 'bg-gradient-to-r from-[oklch(0.60_0.12_350)] to-[oklch(0.65_0.10_330)] text-white',
-    hover: 'hover:from-[oklch(0.55_0.13_350)] hover:to-[oklch(0.60_0.11_330)]',
-  },
-  disability: {
-    bar: 'bg-gradient-to-r from-[oklch(0.58_0.14_120)] to-[oklch(0.63_0.11_105)] text-white',
-    hover: 'hover:from-[oklch(0.53_0.15_120)] hover:to-[oklch(0.58_0.12_105)]',
-  },
-  transport_support: {
-    bar: 'bg-gradient-to-r from-[oklch(0.60_0.12_200)] to-[oklch(0.65_0.10_185)] text-white',
-    hover: 'hover:from-[oklch(0.55_0.13_200)] hover:to-[oklch(0.60_0.11_185)]',
-  },
-  severe_visiting: {
-    bar: 'bg-gradient-to-r from-[oklch(0.53_0.18_25)] to-[oklch(0.58_0.15_10)] text-white',
-    hover: 'hover:from-[oklch(0.48_0.19_25)] hover:to-[oklch(0.53_0.16_10)]',
-  },
-};
 
 export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, onClick, sourceHelperId }: GanttBarProps) {
   const slotWidth = useSlotWidth();
