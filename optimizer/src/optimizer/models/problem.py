@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel
 
+from .common import ServiceTypeConfig
 from .constraint import StaffConstraint
 from .customer import Customer
 from .helper import Helper
@@ -19,6 +20,7 @@ class OptimizationInput(BaseModel):
     travel_times: list[TravelTime]
     staff_unavailabilities: list[StaffUnavailability]
     staff_constraints: list[StaffConstraint]
+    service_type_configs: list[ServiceTypeConfig] = []  # Firestoreマスタ（後方互換のためデフォルト空）
 
 
 class Assignment(BaseModel):

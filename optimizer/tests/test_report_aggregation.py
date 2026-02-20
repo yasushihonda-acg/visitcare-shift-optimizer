@@ -177,6 +177,36 @@ class TestAggregateServiceTypeSummary:
         result = aggregate_service_type_summary([])
         assert result == []
 
+    def test_dynamic_label_from_service_type_configs(self) -> None:
+        """service_type_configsから動的ラベルを取得"""
+        orders = [_order(service_type="physical_care")]
+        configs = [{"code": "physical_care", "label": "カスタム身体介護"}]
+        result = aggregate_service_type_summary(orders, service_type_configs=configs)
+        assert len(result) == 1
+        assert result[0].label == "カスタム身体介護"
+
+    def test_static_fallback_when_no_configs(self) -> None:
+        """service_type_configsなしの場合は静的フォールバック"""
+        orders = [_order(service_type="physical_care")]
+        result = aggregate_service_type_summary(orders)
+        assert result[0].label == "身体介護"
+
+    def test_dynamic_label_overrides_static(self) -> None:
+        """マスタラベルが静的ラベルを上書きする"""
+        orders = [_order(service_type="daily_living")]
+        configs = [{"code": "daily_living", "label": "生活サポート（改）"}]
+        result = aggregate_service_type_summary(orders, service_type_configs=configs)
+        assert result[0].label == "生活サポート（改）"
+
+    def test_static_fallback_for_unconfigured_type(self) -> None:
+        """マスタに存在しない種別は静的ラベルまたはコードにフォールバック"""
+        orders = [_order(service_type="physical_care")]
+        # daily_livingのみ設定、physical_careは未設定
+        configs = [{"code": "daily_living", "label": "生活援助"}]
+        result = aggregate_service_type_summary(orders, service_type_configs=configs)
+        # physical_care は未設定なので静的ラベル（SERVICE_TYPE_LABELS）を使う
+        assert result[0].label == "身体介護"
+
 
 # ===========================================================================
 # StaffSummary テスト（4件）

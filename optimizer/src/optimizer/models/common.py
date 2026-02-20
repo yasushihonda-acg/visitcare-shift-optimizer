@@ -97,3 +97,13 @@ class IrregularPattern(BaseModel):
 
 
 StaffConstraintTypeLiteral = Literal["ng", "preferred"]
+
+
+class ServiceTypeConfig(BaseModel):
+    """Firestore service_types コレクションのドキュメント"""
+
+    code: str
+    label: str
+    short_label: str
+    requires_physical_care_cert: bool
+    sort_order: int

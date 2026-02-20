@@ -64,8 +64,24 @@ def aggregate_status_summary(orders: list[dict[str, object]]) -> StatusSummary:
 
 def aggregate_service_type_summary(
     orders: list[dict[str, object]],
+    service_type_configs: list[dict[str, object]] | None = None,
 ) -> list[ServiceTypeSummaryItem]:
-    """サービス種別内訳を集計する（visitCount降順）"""
+    """サービス種別内訳を集計する（visitCount降順）
+
+    Args:
+        orders: オーダーのdict リスト
+        service_type_configs: Firestoreのservice_typesマスタ（動的ラベル解決用）。
+                              指定時はマスタ優先、なければSERVICE_TYPE_LABELSにフォールバック。
+    """
+    # 動的ラベルマップを構築（静的フォールバックをコピーしてマスタで上書き）
+    label_map: dict[str, str] = dict(SERVICE_TYPE_LABELS)
+    if service_type_configs:
+        for cfg in service_type_configs:
+            code = str(cfg.get("code", ""))
+            label = str(cfg.get("label", ""))
+            if code:
+                label_map[code] = label
+
     agg: dict[str, dict[str, int]] = defaultdict(lambda: {"visit_count": 0, "total_minutes": 0})
 
     for order in orders:
@@ -81,7 +97,7 @@ def aggregate_service_type_summary(
         result.append(
             ServiceTypeSummaryItem(
                 service_type=stype,
-                label=SERVICE_TYPE_LABELS.get(stype, stype),
+                label=label_map.get(stype, stype),
                 visit_count=data["visit_count"],
                 total_minutes=data["total_minutes"],
             )

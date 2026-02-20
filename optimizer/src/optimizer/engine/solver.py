@@ -58,11 +58,18 @@ def _compute_feasible_pairs(inp: OptimizationInput) -> set[tuple[str, str]]:
         if sc.constraint_type == StaffConstraintType.NG:
             ng_pairs.add((sc.customer_id, sc.staff_id))
 
+    # 資格が必要なservice_typeのセットを構築（動的 or 静的フォールバック）
+    _static_cert_required: set[str] = {"physical_care", "mixed"}
+    if inp.service_type_configs:
+        _cert_required = {c.code for c in inp.service_type_configs if c.requires_physical_care_cert}
+    else:
+        _cert_required = _static_cert_required
+
     feasible: set[tuple[str, str]] = set()
     for h in inp.helpers:
         for o in inp.orders:
-            # 資格チェック: 無資格者は身体介護・混合不可
-            if not h.can_physical_care and o.service_type in ("physical_care", "mixed"):
+            # 資格チェック: 無資格者は資格必要な種別に割当不可
+            if not h.can_physical_care and o.service_type.value in _cert_required:
                 continue
             # NGスタッフチェック
             if (o.customer_id, h.id) in ng_pairs:

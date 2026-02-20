@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-21（PR #103 マージ済み）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1）実装済み・マージ済み
+**最終更新**: 2026-02-21（PR #104 + Phase 3 実装済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -123,6 +123,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `SERVICE_COLORS` を `constants.ts` に移動し週ビューでも再利用
   - テスト: `ViewModeToggle.test.tsx`（5件）+ `WeeklyGanttChart.test.tsx`（7件）追加、計12件新規
 
+- **Phase 3** ✅: Python Optimizer の service_types 動的化（Closes #98 Phase 3）
+  - `models/common.py`: `ServiceTypeConfig` Pydantic モデル新設（code/label/short_label/requires_physical_care_cert/sort_order）
+  - `models/problem.py`: `OptimizationInput` に `service_type_configs: list[ServiceTypeConfig] = []` 追加（後方互換: デフォルト空）
+  - `data/firestore_loader.py`: `load_service_types()` + `load_all_service_types()` 追加、`load_optimization_input()` を更新
+  - `engine/constraints.py`: `_requires_physical_care_cert()` ヘルパー追加（Firestoreマスタ優先、静的フォールバック）
+  - `engine/solver.py`: `_compute_feasible_pairs()` で `service_type_configs` を動的参照（`o.service_type in ("physical_care", "mixed")` のハードコードを削除）
+  - `report/aggregation.py`: `aggregate_service_type_summary()` に `service_type_configs` 引数追加（ラベル動的解決）
+  - `api/routes.py`: 月次レポートエンドポイントで `load_all_service_types()` を呼び出し、集計に渡す
+  - テスト15件新規追加: `TestLoadServiceTypes`（5件）+ `TestLoadAllServiceTypes`（2件）+ `TestDynamicQualificationConstraint`（4件）+ 動的ラベルテスト（4件）
+  - 全266件 pass
+
 - **PR #103** ✅: service_types Firestoreコレクション + CRUD UI を追加（Closes #98 Phase 1）
   - `service_types` コレクション新設（ドキュメントID = code）、delete 禁止ルール
   - 8種の初期 Seed データ（CSV + `import-service-types.ts`）
@@ -148,12 +159,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-21 PR #103 マージ後）
-- **Optimizer**: 251件 pass
-- **Web (Next.js)**: 281件 pass
+## 最新テスト結果サマリー（2026-02-21 Phase 3 実装後）
+- **Optimizer**: 266件 pass（+15件: load_service_types 8件 + 動的資格制約 4件 + 動的ラベル 4件 - 数え方により前後）
+- **Web (Next.js)**: 281件 pass（Phase 3 はPython側変更のためWebテストに影響なし）
 - **Firestore Rules**: 94件 pass
 - **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: PR #103 CI SUCCESS確認済み（2026-02-20T15:27:45Z）
+- **CI/CD**: PR #104 CI SUCCESS確認済み
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -174,12 +185,10 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番Sheetsエクスポート前に必須）
-2. **service_types Phase 2**: フロントエンドの静的 `ServiceType` → Firestore 動的マスタ参照への移行（`useServiceTypes` フックへの切り替え）
-3. **service_types Phase 3**: Python Optimizer の動的化（`service_types` コレクション参照）
-4. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+2. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103 でクローズ済み）
+- **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103、Phase 2 は PR #104、Phase 3 は本PR でクローズ済み）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
