@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-20（PR #90 マージ済み）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約）実装済み・マージ済み
+**最終更新**: 2026-02-20（PR #93 マージ済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -97,7 +97,22 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `optimizer/models/customer.py` に外部連携ID（`kaiso_id` / `karakara_id` / `cura_id`）を追加（PR #83 で UI/TS 追加時の Python 側反映漏れ）
   - `docs/schema/firestore-schema.md` の `ServiceSlot.service_type` / `orders.service_type` を PR #89 の8種に更新（ドキュメント未更新漏れ）
 
-## 最新テスト結果サマリー（2026-02-20 PR #90 マージ後）
+- **PR #91** ✅: PRD/SOWに新マスタフィールド・スコープ外・将来フェーズを反映
+  - `PRD.md`: 利用者マスタ6フィールド・スタッフマスタ4フィールド・研修状態3段階・可視化機能・スコープ外セクション追記
+  - `SOW.md`: サービス種別8種・拡張フィールド・スコープ外（突合処理）・将来フェーズを反映
+
+- **PR #92** ✅: Helper.genderをrequiredに統一・LATEST.mdの徒歩記述を実態に修正
+  - `shared/types/helper.ts` + `web/src/types/index.ts`: `gender?: Gender` → `gender: Gender`（Zodスキーマ・Pythonモデルは元々required）
+  - `docs/handoff/LATEST.md`: PR#88の「徒歩距離2.0km」→「徒歩移動時間30分（`MAX_WALK_TRAVEL_MINUTES = 30`）」
+
+- **PR #93** ✅: Customer/Helperマスタに新フィールドを追加（14ファイル、+331行）
+  - **Customer（6フィールド）**: `aozora_id`, `phone_number`, `home_care_office`, `consultation_support_office`, `care_manager_name`, `support_specialist_name`（全てoptional）
+  - **Helper（4フィールド）**: `employee_number`, `address`, `location`（GeoLocation?）, `phone_number`（全てoptional）
+  - 追加レイヤー: TypeScript共有型・フロントエンド型・Zodスキーマ・Pythonモデル・Firestoreローダー・UI編集ダイアログ（住所ジオコーディング含む）・Seedデータ/スクリプト・スキーマドキュメント
+  - `CustomerEditDialog.tsx`: 「連絡先・関連機関」セクション新設、外部連携IDにaozora_id追加
+  - `HelperEditDialog.tsx`: 社員番号・電話番号追加、住所セクション（住所入力＋ジオコーディングボタン＋lat/lng）新設
+
+## 最新テスト結果サマリー（2026-02-20 PR #93 マージ後）
 - **Optimizer**: 238件 pass
 - **Web (Next.js)**: 247件 pass
 - **Firestore Rules**: 70/70 pass
@@ -123,7 +138,9 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番Sheetsエクスポート前に必須）
-2. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+2. **PR C（次回）**: `customer_training_status` の3段階拡張（`not_visited | training | independent`）— 計画書参照
+3. **PR D（次回）**: `service_types` Firestoreコレクション化（動的マスタ参照、規模大）
+4. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件
