@@ -15,12 +15,13 @@ interface GanttBarProps {
   customer?: Customer;
   hasViolation?: boolean;
   violationType?: 'error' | 'warning';
+  violationMessages?: string[];
   onClick?: (order: Order) => void;
   /** ドラッグ元のヘルパーID（null = 未割当） */
   sourceHelperId: string | null;
 }
 
-export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, onClick, sourceHelperId }: GanttBarProps) {
+export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId }: GanttBarProps) {
   const slotWidth = useSlotWidth();
   const startCol = timeToColumn(order.start_time);
   const endCol = timeToColumn(order.end_time);
@@ -68,7 +69,11 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       )}
       style={style}
       onClick={() => !isDragging && onClick?.(order)}
-      title={`${customerName} ${order.start_time}-${order.end_time}`}
+      title={
+        violationMessages && violationMessages.length > 0
+          ? `${customerName} ${order.start_time}-${order.end_time}\n---\n${violationMessages.join('\n')}`
+          : `${customerName} ${order.start_time}-${order.end_time}`
+      }
       {...attributes}
       {...listeners}
     >

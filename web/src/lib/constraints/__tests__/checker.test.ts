@@ -201,4 +201,136 @@ describe('checkConstraints', () => {
     const violations = result.get('O001') ?? [];
     expect(violations.some((v) => v.type === 'outside_hours' && v.severity === 'warning')).toBe(true);
   });
+
+  describe('性別要件', () => {
+    it('gender_requirement=female + 男性スタッフ → error violation', () => {
+      const helpers = new Map([['H001', makeHelper({ gender: 'male' })]]);
+      const customers = new Map([['C001', makeCustomer({ gender_requirement: 'female' })]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'gender' && v.severity === 'error')).toBe(true);
+    });
+
+    it('gender_requirement=any → violation なし', () => {
+      const helpers = new Map([['H001', makeHelper({ gender: 'male' })]]);
+      const customers = new Map([['C001', makeCustomer({ gender_requirement: 'any' })]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'gender')).toBe(false);
+    });
+
+    it('gender_requirement 未設定 → violation なし', () => {
+      const helpers = new Map([['H001', makeHelper({ gender: 'male' })]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'gender')).toBe(false);
+    });
+  });
+
+  describe('研修状態', () => {
+    it('not_visited → error violation', () => {
+      const helpers = new Map([['H001', makeHelper({ customer_training_status: { C001: 'not_visited' } })]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'training' && v.severity === 'error')).toBe(true);
+    });
+
+    it('training → warning violation', () => {
+      const helpers = new Map([['H001', makeHelper({ customer_training_status: { C001: 'training' } })]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'training' && v.severity === 'warning')).toBe(true);
+    });
+
+    it('independent → violation なし', () => {
+      const helpers = new Map([['H001', makeHelper({ customer_training_status: { C001: 'independent' } })]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'training')).toBe(false);
+    });
+  });
+
+  describe('推奨スタッフ外', () => {
+    it('preferred_staff_ids 外 → warning violation', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer({ preferred_staff_ids: ['H002', 'H003'] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'preferred_staff' && v.severity === 'warning')).toBe(true);
+    });
+
+    it('preferred_staff_ids 内 → violation なし', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer({ preferred_staff_ids: ['H001', 'H002'] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'preferred_staff')).toBe(false);
+    });
+
+    it('preferred_staff_ids 空 → violation なし', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer({ preferred_staff_ids: [] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'preferred_staff')).toBe(false);
+    });
+  });
 });

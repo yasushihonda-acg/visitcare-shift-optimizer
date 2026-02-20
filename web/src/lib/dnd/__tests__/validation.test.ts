@@ -230,6 +230,113 @@ describe('validateDrop', () => {
     });
   });
 
+  describe('性別要件', () => {
+    it('gender_requirement=female + 男性ヘルパー → 拒否', () => {
+      const input = baseInput();
+      input.customers.set('cust-1', makeCustomer({ gender_requirement: 'female' }));
+      input.helpers.set('helper-b', makeHelper({ gender: 'male' }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(false);
+      if (!result.allowed) {
+        expect(result.reason).toContain('性別');
+      }
+    });
+
+    it('gender_requirement=female + 女性ヘルパー → 許可', () => {
+      const input = baseInput();
+      input.customers.set('cust-1', makeCustomer({ gender_requirement: 'female' }));
+      input.helpers.set('helper-b', makeHelper({ gender: 'female' }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+    });
+
+    it('gender_requirement 未設定 → 許可', () => {
+      const input = baseInput();
+      input.helpers.set('helper-b', makeHelper({ gender: 'male' }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+    });
+  });
+
+  describe('研修状態', () => {
+    it('not_visited → 拒否', () => {
+      const input = baseInput();
+      input.helpers.set('helper-b', makeHelper({
+        customer_training_status: { 'cust-1': 'not_visited' },
+      }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(false);
+      if (!result.allowed) {
+        expect(result.reason).toContain('未訪問');
+      }
+    });
+
+    it('training → 許可 + 警告', () => {
+      const input = baseInput();
+      input.helpers.set('helper-b', makeHelper({
+        customer_training_status: { 'cust-1': 'training' },
+      }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('研修中'))).toBe(true);
+      }
+    });
+
+    it('independent → 許可 + 警告なし', () => {
+      const input = baseInput();
+      input.helpers.set('helper-b', makeHelper({
+        customer_training_status: { 'cust-1': 'independent' },
+      }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('研修'))).toBe(false);
+      }
+    });
+  });
+
+  describe('推奨スタッフ', () => {
+    it('preferred_staff_ids 外 → 許可 + 警告', () => {
+      const input = baseInput();
+      input.customers.set('cust-1', makeCustomer({ preferred_staff_ids: ['helper-a', 'helper-c'] }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('推奨スタッフ外'))).toBe(true);
+      }
+    });
+
+    it('preferred_staff_ids 内 → 許可 + 警告なし', () => {
+      const input = baseInput();
+      input.customers.set('cust-1', makeCustomer({ preferred_staff_ids: ['helper-b', 'helper-c'] }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('推奨スタッフ外'))).toBe(false);
+      }
+    });
+
+    it('preferred_staff_ids 空 → 許可 + 警告なし', () => {
+      const input = baseInput();
+      input.customers.set('cust-1', makeCustomer({ preferred_staff_ids: [] }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('推奨スタッフ外'))).toBe(false);
+      }
+    });
+  });
+
   describe('ヘルパー不在', () => {
     it('存在しないヘルパー → 拒否', () => {
       const input = baseInput();
