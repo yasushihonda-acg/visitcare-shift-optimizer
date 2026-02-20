@@ -82,3 +82,24 @@ class TestTrainingConstraint:
         result = solve(inp)
         assert result.status == "Optimal"
         assert "H1" in result.assignments[0].staff_ids
+
+    def test_not_visited_helper_not_alone(self) -> None:
+        """未経験（not_visited）のヘルパーも単独割当不可"""
+        inp = OptimizationInput(
+            customers=[_c("C1")],
+            helpers=[
+                _h("H1", {"C1": TrainingStatus.NOT_VISITED}),
+                _h("H2"),  # 独立状態
+            ],
+            orders=[Order(
+                id="O1", customer_id="C1", date="2025-01-06",
+                day_of_week=DayOfWeek.MONDAY, start_time="09:00", end_time="10:00",
+                service_type="physical_care", staff_count=1,
+            )],
+            travel_times=[], staff_unavailabilities=[], staff_constraints=[],
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        # H1はC1で未経験なので単独割当不可 → H2が担当
+        assert "H1" not in result.assignments[0].staff_ids
+        assert "H2" in result.assignments[0].staff_ids

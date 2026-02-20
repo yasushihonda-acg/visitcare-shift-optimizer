@@ -39,6 +39,7 @@ class EmploymentType(str, Enum):
 
 
 class TrainingStatus(str, Enum):
+    NOT_VISITED = "not_visited"
     TRAINING = "training"
     INDEPENDENT = "independent"
 

@@ -86,7 +86,7 @@ export type CustomerFormValues = z.infer<typeof customerSchema>;
 // ---- Helper ----
 const trainingStatusSchema = z.record(
   z.string(),
-  z.enum(['training', 'independent']),
+  z.enum(['not_visited', 'training', 'independent']),
 );
 
 export const helperSchema = z.object({

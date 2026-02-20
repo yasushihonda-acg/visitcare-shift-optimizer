@@ -462,6 +462,16 @@ describe('helperSchema', () => {
     expect(helperSchema.safeParse(data).success).toBe(true);
   });
 
+  it('customer_training_statusのnot_visitedはOK', () => {
+    const data = {
+      ...validHelper(),
+      customer_training_status: {
+        C001: 'not_visited',
+      },
+    };
+    expect(helperSchema.safeParse(data).success).toBe(true);
+  });
+
   it('customer_training_statusの不正な値はエラー', () => {
     const data = {
       ...validHelper(),
