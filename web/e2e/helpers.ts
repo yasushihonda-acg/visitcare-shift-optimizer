@@ -142,8 +142,9 @@ export async function dragOrderHorizontally(page: Page, source: Locator, offsetX
 /**
  * sonnerトーストの表示を待機する。
  * sonnerは[data-sonner-toast]属性のli要素でトーストを表示する。
+ * CI環境でのダイアログ描画遅延（PR #93でHelperEditDialog住所セクション追加後）を考慮し15秒に設定。
  */
 export async function waitForToast(page: Page, text: string | RegExp) {
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: text });
-  await expect(toast.first()).toBeVisible({ timeout: 10_000 });
+  await expect(toast.first()).toBeVisible({ timeout: 15_000 });
 }

@@ -109,7 +109,19 @@ export const helperSchema = z.object({
   split_shift_allowed: z.boolean().optional(),
   employee_number: z.string().optional(),
   address: z.string().optional(),
-  location: geoLocationSchema.optional(),
+  // valueAsNumber: true によりフォーム未入力時 NaN が渡るため、
+  // 有限数値でない場合は undefined に変換して optional() を通過させる
+  location: z.preprocess(
+    (val) => {
+      if (val === null || val === undefined) return undefined;
+      if (typeof val === 'object') {
+        const loc = val as Record<string, unknown>;
+        if (!Number.isFinite(loc['lat']) || !Number.isFinite(loc['lng'])) return undefined;
+      }
+      return val;
+    },
+    geoLocationSchema.optional(),
+  ),
   phone_number: z.string().optional(),
 });
 
