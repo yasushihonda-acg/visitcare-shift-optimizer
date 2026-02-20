@@ -54,6 +54,13 @@ async function setupTestData() {
       end_time: '2026-02-16T10:00:00+09:00',
       updated_at: new Date(),
     });
+    await setDoc(doc(db, 'service_types', 'physical_care'), {
+      code: 'physical_care',
+      label: '身体介護',
+      short_label: '身体',
+      requires_physical_care_cert: true,
+      sort_order: 1,
+    });
     await setDoc(doc(db, 'travel_times', 'tt-1'), {
       from: 'customer-1',
       to: 'customer-2',
@@ -99,6 +106,11 @@ describe('未認証ユーザー', () => {
     const unauthed = testEnv.unauthenticatedContext();
     await assertFails(getDoc(doc(unauthed.firestore(), 'staff_unavailability', 'su-1')));
   });
+
+  it('service_types を読み取れない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(getDoc(doc(unauthed.firestore(), 'service_types', 'physical_care')));
+  });
 });
 
 // ============================================================
@@ -132,6 +144,11 @@ describe('認証済みユーザー - 読み取り', () => {
   it('staff_unavailability を読み取れる', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     await assertSucceeds(getDoc(doc(authed.firestore(), 'staff_unavailability', 'su-1')));
+  });
+
+  it('service_types を読み取れる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(getDoc(doc(authed.firestore(), 'service_types', 'physical_care')));
   });
 });
 
@@ -956,5 +973,149 @@ describe('optimization_runs', () => {
   it('FEから削除できない', async () => {
     const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
     await assertFails(deleteDoc(doc(admin.firestore(), 'optimization_runs', 'run-1')));
+  });
+});
+
+// ============================================================
+// service_types: isValidServiceType バリデーション + RBAC
+// ============================================================
+/** isValidServiceType を満たす有効なデータ */
+const validServiceTypeData = {
+  code: 'physical_care',
+  label: '身体介護',
+  short_label: '身体',
+  requires_physical_care_cert: true,
+  sort_order: 1,
+  created_at: serverTimestamp(),
+  updated_at: serverTimestamp(),
+};
+
+describe('未認証ユーザー - service_types', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'service_types', 'physical_care'), validServiceTypeData);
+    });
+  });
+
+  it('service_types を読み取れない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(getDoc(doc(unauthed.firestore(), 'service_types', 'physical_care')));
+  });
+
+  it('service_types に書き込めない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(
+      setDoc(doc(unauthed.firestore(), 'service_types', 'new_type'), validServiceTypeData)
+    );
+  });
+});
+
+describe('認証済みユーザー - service_types 読み取り', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'service_types', 'physical_care'), validServiceTypeData);
+    });
+  });
+
+  it('認証済みユーザーは読み取れる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(getDoc(doc(authed.firestore(), 'service_types', 'physical_care')));
+  });
+
+  it('helper ロールでも読み取れる', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertSucceeds(getDoc(doc(helper.firestore(), 'service_types', 'physical_care')));
+  });
+});
+
+describe('認証済みユーザー（デモモード）- service_types create', () => {
+  it('有効なデータで新規作成できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'service_types', 'new_type'), {
+        ...validServiceTypeData,
+        code: 'new_type',
+      })
+    );
+  });
+
+  it('code が文字列でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'service_types', 'bad-type'), {
+        ...validServiceTypeData,
+        code: 123,
+      })
+    );
+  });
+
+  it('requires_physical_care_cert が真偽値でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'service_types', 'bad-type'), {
+        ...validServiceTypeData,
+        requires_physical_care_cert: 'yes',
+      })
+    );
+  });
+
+  it('sort_order が整数でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'service_types', 'bad-type'), {
+        ...validServiceTypeData,
+        sort_order: 1.5,
+      })
+    );
+  });
+
+  it('必須フィールドが欠けている場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { label: _, ...noLabel } = validServiceTypeData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'service_types', 'bad-type'), noLabel)
+    );
+  });
+});
+
+describe('admin ロール - service_types create/update', () => {
+  it('admin は有効なデータで新規作成できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'service_types', 'admin_type'), {
+        ...validServiceTypeData,
+        code: 'admin_type',
+      })
+    );
+  });
+});
+
+describe('helper ロール - service_types write', () => {
+  it('helper ロールは service_types に書き込めない', async () => {
+    const helper = testEnv.authenticatedContext('helper-uid', { role: 'helper', helper_id: 'helper-1' });
+    await assertFails(
+      setDoc(doc(helper.firestore(), 'service_types', 'new_type'), validServiceTypeData)
+    );
+  });
+});
+
+describe('認証済みユーザー - service_types delete', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'service_types', 'physical_care'), validServiceTypeData);
+    });
+  });
+
+  it('admin でも service_types を削除できない', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertFails(deleteDoc(doc(admin.firestore(), 'service_types', 'physical_care')));
+  });
+
+  it('デモモードでも service_types を削除できない', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(deleteDoc(doc(authed.firestore(), 'service_types', 'physical_care')));
   });
 });

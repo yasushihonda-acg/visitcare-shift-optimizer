@@ -133,3 +133,17 @@ export const unavailabilitySchema = z.object({
 });
 
 export type UnavailabilityFormValues = z.infer<typeof unavailabilitySchema>;
+
+// ---- ServiceType ----
+export const serviceTypeSchema = z.object({
+  code: z
+    .string()
+    .min(1, 'コードは必須です')
+    .regex(/^[a-z_]+$/, '英小文字とアンダースコアのみ使用できます'),
+  label: z.string().min(1, '表示名は必須です'),
+  short_label: z.string().min(1, '短縮名は必須です'),
+  requires_physical_care_cert: z.boolean(),
+  sort_order: z.number().int().min(1, '表示順は1以上です'),
+});
+
+export type ServiceTypeFormValues = z.infer<typeof serviceTypeSchema>;

@@ -101,6 +101,16 @@ service cloud.firestore {
         && data.unavailable_slots is list;
     }
 
+    function isValidServiceType() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['code', 'label', 'short_label', 'requires_physical_care_cert', 'sort_order'])
+        && data.code is string
+        && data.label is string
+        && data.short_label is string
+        && data.requires_physical_care_cert is bool
+        && data.sort_order is int;
+    }
+
     // ── コレクションルール ──────────────────────────
 
     // 利用者マスタ: admin + service_manager が編集可
@@ -142,6 +152,15 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (hasNoRole() || isManagerOrAbove());
       allow write: if false;
+    }
+
+    // サービス種別マスタ: admin のみ編集可、delete 禁止
+    match /service_types/{typeId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated()
+        && (hasNoRole() || isAdmin())
+        && isValidServiceType();
+      allow delete: if false;
     }
 
     // オーダー: admin + service_manager が割当編集可

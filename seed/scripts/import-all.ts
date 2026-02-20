@@ -5,11 +5,13 @@ import { importHelpers } from './import-helpers.js';
 import { importOrders } from './import-orders.js';
 import { generateTravelTimes } from './generate-travel-times.js';
 import { importStaffUnavailability } from './import-staff-unavailability.js';
+import { importServiceTypes } from './import-service-types.js';
 
 const BATCH_LIMIT = 500;
 const ASSIGN_RATIO = 0.8;
 
 const COLLECTIONS = [
+  'service_types',
   'customers',
   'helpers',
   'orders',
@@ -109,8 +111,11 @@ async function main() {
   }
   console.log('');
 
-  // 3. インポート（順序制御: customers/helpers → orders → travel_times → unavailability）
+  // 3. インポート（順序制御: service_types → customers/helpers → orders → travel_times → unavailability）
   console.log('📥 Importing data...');
+
+  const serviceTypeCount = await importServiceTypes();
+  console.log(`   service_types: ${serviceTypeCount}`);
 
   const customerCount = await importCustomers();
   console.log(`   customers: ${customerCount}`);
@@ -131,7 +136,7 @@ async function main() {
   console.log(`   staff_unavailability: ${unavailCount}`);
 
   console.log('\n✅ Import complete!');
-  console.log(`   Total: ${customerCount + helperCount + orderCount + travelTimeCount + unavailCount} documents`);
+  console.log(`   Total: ${serviceTypeCount + customerCount + helperCount + orderCount + travelTimeCount + unavailCount} documents`);
 
   process.exit(0);
 }
