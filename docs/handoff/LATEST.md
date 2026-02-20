@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-20（PR #100 マージ済み）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド）実装済み・マージ済み
+**最終更新**: 2026-02-20（PR #101 マージ済み）
+**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -116,6 +116,14 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `HelperEditDialog.tsx`: `geocodeAddress()` で `lat`/`lng` が `NaN` になるケースの入力バリデーションを追加
   - E2E CI failure（`masters-crud` テスト）を修正
 
+- **PR #101** ✅: TrainingStatusを3段階（not_visited/training/independent）に拡張（Closes #97）
+  - `shared/types/common.ts` + `web/src/types/index.ts`: TrainingStatus に `not_visited` を追加
+  - `optimizer/models/common.py`: TrainingStatus enum に NOT_VISITED を追加
+  - `optimizer/engine/constraints.py`: not_visited も training と同様に単独割当禁止に適用
+  - `web/src/lib/validation/schemas.ts`: Zod enum に `not_visited` を追加
+  - `CustomerTrainingStatusEditor.tsx`: SelectItem に「未経験」を追加（UI: 3択）
+  - テスト: Optimizer 251件 pass / Web 250件 pass
+
 - **PR #100** ✅: household制約のFirestoreリンク生成を共通化（Closes #99）
   - `optimizer/data/link_household.py` を新規作成し、`csv_loader._link_household_orders()` を共通関数 `link_household_orders()` として抽出
   - `firestore_loader.load_optimization_input()` でも共通関数を呼び出し、Firestoreに `linked_order_id` がない場合も動的リンクを生成するよう修正
@@ -123,12 +131,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-20 PR #100 マージ後）
-- **Optimizer**: 250件 pass
-- **Web (Next.js)**: 249件 pass
+## 最新テスト結果サマリー（2026-02-20 PR #101 マージ後）
+- **Optimizer**: 251件 pass
+- **Web (Next.js)**: 250件 pass
 - **Firestore Rules**: 70/70 pass
 - **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: PR #100 CI SUCCESS確認済み、main push #22214453433 実行中（2026-02-20T06:49:39Z）
+- **CI/CD**: PR #101 CI SUCCESS確認済み（#22216635866、2026-02-20T08:17:31Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -149,12 +157,11 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **【GCPインフラ】Cloud Run SA 権限付与**: `sheets.googleapis.com`, `drive.googleapis.com` API有効化 + SA に Sheets/Drive 編集権限付与（本番Sheetsエクスポート前に必須）
-2. **PR C（次回）**: `customer_training_status` の3段階拡張（`not_visited | training | independent`）— 計画書参照
-3. **PR D（次回）**: `service_types` Firestoreコレクション化（動的マスタ参照、規模大）
-4. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+2. **PR D（次回）**: `service_types` Firestoreコレクション化（動的マスタ参照、規模大）
+3. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 0件
+- **オープンIssue**: 0件（Issue #97 は PR #101 でクローズ済み）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
