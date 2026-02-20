@@ -20,6 +20,7 @@ from optimizer.data.firestore_loader import (
     load_staff_unavailabilities,
     load_travel_times,
 )
+from optimizer.data.link_household import link_household_orders
 from optimizer.models import (
     Customer,
     DayOfWeek,
@@ -799,3 +800,128 @@ class TestLoadAllCustomers:
         assert len(customers) == 2
         assert customers[0]["id"] == "C001"
         assert customers[1]["id"] == "C002"
+
+
+# --- household リンク統合テスト ---
+
+
+class TestHouseholdLinkInFirestoreLoader:
+    """load_optimization_input が household リンクを動的生成することを確認"""
+
+    def _make_customer_doc(
+        self, cid: str, household_id: str | None = None
+    ) -> MagicMock:
+        data: dict = {
+            "name": {"family": "山田", "given": "太郎"},
+            "address": "test",
+            "location": {"lat": 31.5, "lng": 130.5},
+            "ng_staff_ids": [],
+            "preferred_staff_ids": [],
+            "weekly_services": {},
+            "service_manager": "",
+        }
+        if household_id:
+            data["household_id"] = household_id
+        return _mock_doc(cid, data)
+
+    def _make_order_doc(
+        self,
+        oid: str,
+        cid: str,
+        start: str,
+        end: str,
+        linked_order_id: str | None = None,
+    ) -> MagicMock:
+        data: dict = {
+            "customer_id": cid,
+            "date": datetime(2026, 2, 9),
+            "week_start_date": datetime(2026, 2, 9),
+            "start_time": start,
+            "end_time": end,
+            "service_type": "physical_care",
+            "status": "pending",
+        }
+        if linked_order_id:
+            data["linked_order_id"] = linked_order_id
+        return _mock_doc(oid, data)
+
+    def test_household_link_generated_dynamically(self) -> None:
+        """Firestoreにlinked_order_idがなくても動的リンクが生成される"""
+        customer_docs = [
+            self._make_customer_doc("C001", household_id="HH01"),
+            self._make_customer_doc("C002", household_id="HH01"),
+        ]
+        helper_doc = _mock_doc(
+            "H001",
+            {
+                "name": {"family": "鈴木", "given": "花子"},
+                "qualifications": [],
+                "can_physical_care": True,
+                "transportation": "car",
+                "weekly_availability": {},
+                "preferred_hours": {"min": 20, "max": 30},
+                "available_hours": {"min": 15, "max": 35},
+                "customer_training_status": {},
+                "employment_type": "full_time",
+            },
+        )
+        order_docs = [
+            # Firestoreにlinked_order_idなし（動的生成でリンクされるべき）
+            self._make_order_doc("ORD0001", "C001", "09:00", "10:00"),
+            self._make_order_doc("ORD0002", "C002", "10:00", "11:00"),
+        ]
+        db = _mock_db_with_collections(
+            {
+                "customers": customer_docs,
+                "helpers": [helper_doc],
+                "orders": order_docs,
+                "travel_times": [],
+                "staff_unavailability": [],
+            }
+        )
+
+        inp = load_optimization_input(db, date(2026, 2, 9))
+
+        orders_by_id = {o.id: o for o in inp.orders}
+        assert orders_by_id["ORD0001"].linked_order_id == "ORD0002"
+        assert orders_by_id["ORD0002"].linked_order_id == "ORD0001"
+
+    def test_no_link_when_gap_exceeds_30min(self) -> None:
+        """隙間が30分超のオーダーはリンクされない"""
+        customer_docs = [
+            self._make_customer_doc("C001", household_id="HH01"),
+            self._make_customer_doc("C002", household_id="HH01"),
+        ]
+        helper_doc = _mock_doc(
+            "H001",
+            {
+                "name": {"family": "鈴木", "given": "花子"},
+                "qualifications": [],
+                "can_physical_care": True,
+                "transportation": "car",
+                "weekly_availability": {},
+                "preferred_hours": {"min": 20, "max": 30},
+                "available_hours": {"min": 15, "max": 35},
+                "customer_training_status": {},
+                "employment_type": "full_time",
+            },
+        )
+        order_docs = [
+            self._make_order_doc("ORD0001", "C001", "09:00", "10:00"),
+            self._make_order_doc("ORD0002", "C002", "10:31", "11:31"),  # gap > 30分
+        ]
+        db = _mock_db_with_collections(
+            {
+                "customers": customer_docs,
+                "helpers": [helper_doc],
+                "orders": order_docs,
+                "travel_times": [],
+                "staff_unavailability": [],
+            }
+        )
+
+        inp = load_optimization_input(db, date(2026, 2, 9))
+
+        orders_by_id = {o.id: o for o in inp.orders}
+        assert orders_by_id["ORD0001"].linked_order_id is None
+        assert orders_by_id["ORD0002"].linked_order_id is None
