@@ -73,6 +73,12 @@ export const customerSchema = z.object({
   kaiso_id: z.string().optional(),
   karakara_id: z.string().optional(),
   cura_id: z.string().optional(),
+  aozora_id: z.string().optional(),
+  phone_number: z.string().optional(),
+  home_care_office: z.string().optional(),
+  consultation_support_office: z.string().optional(),
+  care_manager_name: z.string().optional(),
+  support_specialist_name: z.string().optional(),
 });
 
 export type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -101,6 +107,10 @@ export const helperSchema = z.object({
   employment_type: z.enum(['full_time', 'part_time']),
   customer_training_status: trainingStatusSchema.optional(),
   split_shift_allowed: z.boolean().optional(),
+  employee_number: z.string().optional(),
+  address: z.string().optional(),
+  location: geoLocationSchema.optional(),
+  phone_number: z.string().optional(),
 });
 
 export type HelperFormValues = z.infer<typeof helperSchema>;

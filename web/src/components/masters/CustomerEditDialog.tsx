@@ -259,10 +259,71 @@ export function CustomerEditDialog({
             <Input id="notes" {...register('notes')} placeholder="特記事項" />
           </div>
 
+          {/* 連絡先・関連機関 */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">連絡先・関連機関（任意）</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="phone_number" className="text-xs text-muted-foreground">電話番号</Label>
+                <Input
+                  id="phone_number"
+                  {...register('phone_number')}
+                  placeholder="099-xxx-xxxx"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="home_care_office" className="text-xs text-muted-foreground">担当居宅</Label>
+                <Input
+                  id="home_care_office"
+                  {...register('home_care_office')}
+                  placeholder="○○居宅介護支援"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="care_manager_name" className="text-xs text-muted-foreground">担当ケアマネ</Label>
+                <Input
+                  id="care_manager_name"
+                  {...register('care_manager_name')}
+                  placeholder="氏名"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="consultation_support_office" className="text-xs text-muted-foreground">相談支援事業所</Label>
+                <Input
+                  id="consultation_support_office"
+                  {...register('consultation_support_office')}
+                  placeholder="○○相談支援センター"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label htmlFor="support_specialist_name" className="text-xs text-muted-foreground">相談支援専門員</Label>
+                <Input
+                  id="support_specialist_name"
+                  {...register('support_specialist_name')}
+                  placeholder="氏名"
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* 外部連携ID */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">外部連携ID（任意）</Label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="aozora_id" className="text-xs text-muted-foreground">あおぞらID</Label>
+                <Input
+                  id="aozora_id"
+                  {...register('aozora_id')}
+                  placeholder="AZ-001"
+                  className="h-8 text-sm"
+                />
+              </div>
               <div className="space-y-1">
                 <Label htmlFor="kaiso_id" className="text-xs text-muted-foreground">介ソルID</Label>
                 <Input
@@ -404,6 +465,12 @@ function getDefaults(customer?: Customer): CustomerFormValues {
       kaiso_id: '',
       karakara_id: '',
       cura_id: '',
+      aozora_id: '',
+      phone_number: '',
+      home_care_office: '',
+      consultation_support_office: '',
+      care_manager_name: '',
+      support_specialist_name: '',
     };
   }
   return {
@@ -421,5 +488,11 @@ function getDefaults(customer?: Customer): CustomerFormValues {
     kaiso_id: customer.kaiso_id ?? '',
     karakara_id: customer.karakara_id ?? '',
     cura_id: customer.cura_id ?? '',
+    aozora_id: customer.aozora_id ?? '',
+    phone_number: customer.phone_number ?? '',
+    home_care_office: customer.home_care_office ?? '',
+    consultation_support_office: customer.consultation_support_office ?? '',
+    care_manager_name: customer.care_manager_name ?? '',
+    support_specialist_name: customer.support_specialist_name ?? '',
   };
 }

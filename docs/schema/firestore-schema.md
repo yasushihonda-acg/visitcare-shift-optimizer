@@ -29,6 +29,12 @@
 | kaiso_id | string | No | 介ソルID |
 | karakara_id | string | No | カカラID |
 | cura_id | string | No | CURA ID |
+| aozora_id | string | No | あおぞらID |
+| phone_number | string | No | 電話番号 |
+| home_care_office | string | No | 担当居宅 |
+| consultation_support_office | string | No | 相談支援事業所 |
+| care_manager_name | string | No | 担当ケアマネ |
+| support_specialist_name | string | No | 相談支援専門員 |
 | notes | string | No | 備考 |
 | created_at | Timestamp | Yes | 作成日時 |
 | updated_at | Timestamp | Yes | 更新日時 |
@@ -59,6 +65,10 @@
 | employment_type | `'full_time' \| 'part_time'` | Yes | 雇用形態 |
 | gender | `'male' \| 'female'` | Yes | 性別 |
 | split_shift_allowed | boolean | No | 分断勤務可（午前・午後の非連続勤務） |
+| employee_number | string | No | 社員番号 |
+| address | string | No | 住所（テキスト） |
+| location | `{ lat: number, lng: number }` | No | 座標（ジオコーディング） |
+| phone_number | string | No | 電話番号 |
 | created_at | Timestamp | Yes | 作成日時 |
 | updated_at | Timestamp | Yes | 更新日時 |
 

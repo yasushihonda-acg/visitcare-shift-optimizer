@@ -21,4 +21,10 @@ class Customer(BaseModel):
     kaiso_id: str | None = None
     karakara_id: str | None = None
     cura_id: str | None = None
+    aozora_id: str | None = None
+    phone_number: str | None = None
+    home_care_office: str | None = None
+    consultation_support_office: str | None = None
+    care_manager_name: str | None = None
+    support_specialist_name: str | None = None
     notes: str | None = None

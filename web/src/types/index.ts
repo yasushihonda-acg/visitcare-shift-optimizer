@@ -84,6 +84,12 @@ export interface Customer {
   kaiso_id?: string;
   karakara_id?: string;
   cura_id?: string;
+  aozora_id?: string;
+  phone_number?: string;
+  home_care_office?: string;
+  consultation_support_office?: string;
+  care_manager_name?: string;
+  support_specialist_name?: string;
   notes?: string;
   created_at: Date;
   updated_at: Date;
@@ -102,6 +108,10 @@ export interface Helper {
   employment_type: EmploymentType;
   gender: Gender;
   split_shift_allowed?: boolean;
+  employee_number?: string;
+  address?: string;
+  location?: GeoLocation;
+  phone_number?: string;
   created_at: Date;
   updated_at: Date;
 }

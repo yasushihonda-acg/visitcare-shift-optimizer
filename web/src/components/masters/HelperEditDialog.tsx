@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -26,6 +26,7 @@ import { WeeklyAvailabilityEditor } from './WeeklyAvailabilityEditor';
 import { CustomerTrainingStatusEditor } from './CustomerTrainingStatusEditor';
 import { helperSchema, type HelperFormValues } from '@/lib/validation/schemas';
 import { createHelper, updateHelper } from '@/lib/firestore/helpers';
+import { geocodeAddress } from '@/lib/geocoding';
 import type { Helper, Customer } from '@/types';
 
 interface HelperEditDialogProps {
@@ -49,6 +50,8 @@ export function HelperEditDialog({
 }: HelperEditDialogProps) {
   const isNew = !helper;
 
+  const [isGeocoding, setIsGeocoding] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -69,6 +72,27 @@ export function HelperEditDialog({
   }, [open, helper, reset]);
 
   const qualifications = watch('qualifications');
+
+  const handleGeocodeAddress = useCallback(async () => {
+    const address = watch('address');
+    if (!address?.trim()) {
+      toast.error('住所を入力してください');
+      return;
+    }
+    setIsGeocoding(true);
+    try {
+      const result = await geocodeAddress(address);
+      if (result) {
+        setValue('location.lat', result.lat, { shouldDirty: true });
+        setValue('location.lng', result.lng, { shouldDirty: true });
+        toast.success('住所から座標を取得しました');
+      } else {
+        toast.error('住所が見つかりません');
+      }
+    } finally {
+      setIsGeocoding(false);
+    }
+  }, [watch, setValue]);
 
   const toggleQualification = (qual: string) => {
     const current = qualifications ?? [];
@@ -153,6 +177,26 @@ export function HelperEditDialog({
               </p>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="employee_number">社員番号（任意）</Label>
+                <Input
+                  id="employee_number"
+                  {...register('employee_number')}
+                  placeholder="EMP-001"
+                  className="max-w-[200px]"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phone_number">電話番号（任意）</Label>
+                <Input
+                  id="phone_number"
+                  {...register('phone_number')}
+                  placeholder="099-xxx-xxxx"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>資格</Label>
               <div className="flex flex-wrap gap-4">
@@ -214,6 +258,56 @@ export function HelperEditDialog({
                 </label>
               )}
             />
+          </div>
+
+          <hr className="my-4" />
+
+          {/* 住所セクション */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">住所・所在地（任意）</h3>
+            <div className="space-y-1">
+              <Label htmlFor="address">住所</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="address"
+                  {...register('address')}
+                  placeholder="鹿児島市..."
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGeocodeAddress}
+                  disabled={isGeocoding}
+                  className="shrink-0"
+                >
+                  {isGeocoding ? '検索中...' : '住所から検索'}
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="location.lat">緯度（任意）</Label>
+                <Input
+                  id="location.lat"
+                  type="number"
+                  step="any"
+                  {...register('location.lat', { valueAsNumber: true })}
+                  placeholder="31.5916"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="location.lng">経度（任意）</Label>
+                <Input
+                  id="location.lng"
+                  type="number"
+                  step="any"
+                  {...register('location.lng', { valueAsNumber: true })}
+                  placeholder="130.5571"
+                />
+              </div>
+            </div>
           </div>
 
           <hr className="my-4" />
@@ -405,6 +499,9 @@ function getDefaults(helper?: Helper): HelperFormValues {
       employment_type: 'part_time',
       customer_training_status: {},
       split_shift_allowed: false,
+      employee_number: '',
+      address: '',
+      phone_number: '',
     };
   }
   return {
@@ -419,5 +516,9 @@ function getDefaults(helper?: Helper): HelperFormValues {
     employment_type: helper.employment_type,
     customer_training_status: helper.customer_training_status ?? {},
     split_shift_allowed: helper.split_shift_allowed ?? false,
+    employee_number: helper.employee_number ?? '',
+    address: helper.address ?? '',
+    location: helper.location,
+    phone_number: helper.phone_number ?? '',
   };
 }
