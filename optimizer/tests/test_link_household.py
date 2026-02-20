@@ -1,7 +1,7 @@
 """link_household モジュールのユニットテスト"""
 
 from optimizer.data.link_household import link_household_orders
-from optimizer.models import Customer, DayOfWeek, GeoLocation, Order, ServiceSlot
+from optimizer.models import Customer, DayOfWeek, GeoLocation, Order
 
 
 def _make_customer(cid: str, household_id: str | None = None) -> Customer:

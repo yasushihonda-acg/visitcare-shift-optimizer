@@ -142,10 +142,10 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
 
   // 連続訪問のリンクを設定（開始時刻順にソートし、隙間30分以内の隣接ペアをリンク）
   const GAP_MINUTES = 30;
-  function timeToMinutes(t: string): number {
+  const timeToMinutes = (t: string): number => {
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
-  }
+  };
 
   for (const orders of Object.values(householdOrders)) {
     if (orders.length < 2) continue;

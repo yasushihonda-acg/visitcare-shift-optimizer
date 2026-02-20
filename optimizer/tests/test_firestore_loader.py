@@ -20,7 +20,6 @@ from optimizer.data.firestore_loader import (
     load_staff_unavailabilities,
     load_travel_times,
 )
-from optimizer.data.link_household import link_household_orders
 from optimizer.models import (
     Customer,
     DayOfWeek,
