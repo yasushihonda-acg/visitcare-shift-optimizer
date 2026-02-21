@@ -78,57 +78,15 @@ class TestRecipients:
 # ---------------------------------------------------------------------------
 
 class TestSender:
-    @patch("optimizer.notification.sender.os.getenv")
-    @patch("optimizer.notification.sender.SendGridAPIClient")
-    def test_send_email_success(
-        self, mock_client_cls: MagicMock, mock_getenv: MagicMock
-    ) -> None:
-        """正常送信: 送信数を返す"""
-        mock_getenv.return_value = "SG.test-api-key"
-        mock_client = MagicMock()
-        mock_client.send.return_value = MagicMock(status_code=202)
-        mock_client_cls.return_value = mock_client
-
+    def test_send_email_returns_zero(self) -> None:
+        """未実装のため常に 0 を返す（graceful degradation）
+        TODO: Gmail API（DWD）実装後にテストを更新する
+        """
         from optimizer.notification.sender import send_email
 
         count = send_email(
             to_emails=["a@example.com", "b@example.com"],
             subject="テスト件名",
-            html_content="<p>テスト</p>",
-        )
-        assert count == 2
-
-    @patch("optimizer.notification.sender.os.getenv")
-    @patch("optimizer.notification.sender.SendGridAPIClient")
-    def test_send_email_partial_failure(
-        self, mock_client_cls: MagicMock, mock_getenv: MagicMock
-    ) -> None:
-        """1件エラーでも他は送信される（部分成功）"""
-        mock_getenv.return_value = "SG.test-api-key"
-        mock_client = MagicMock()
-        # 1件目は失敗、2件目は成功
-        mock_client.send.side_effect = [Exception("送信失敗"), MagicMock(status_code=202)]
-        mock_client_cls.return_value = mock_client
-
-        from optimizer.notification.sender import send_email
-
-        count = send_email(
-            to_emails=["fail@example.com", "ok@example.com"],
-            subject="テスト件名",
-            html_content="<p>テスト</p>",
-        )
-        assert count == 1
-
-    @patch("optimizer.notification.sender.os.getenv")
-    def test_send_email_no_api_key_returns_zero(self, mock_getenv: MagicMock) -> None:
-        """API Key 未設定時は 0 を返す（graceful degradation）"""
-        mock_getenv.return_value = None
-
-        from optimizer.notification.sender import send_email
-
-        count = send_email(
-            to_emails=["a@example.com"],
-            subject="テスト",
             html_content="<p>テスト</p>",
         )
         assert count == 0
@@ -137,10 +95,6 @@ class TestSender:
 # ---------------------------------------------------------------------------
 # TestNotifyEndpoints
 # ---------------------------------------------------------------------------
-
-def _mock_list_manager_emails(emails: list[str] | None = None) -> MagicMock:
-    return MagicMock(return_value=emails if emails is not None else ["mgr@example.com"])
-
 
 class TestNotifyEndpoints:
     @patch("optimizer.api.routes.send_email")

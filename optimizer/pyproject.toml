@@ -12,7 +12,6 @@ dependencies = [
     "google-cloud-firestore>=2.19",
     "firebase-admin>=6.6",
     "google-api-python-client>=2.0",
-    "sendgrid>=6.11",
 ]
 
 [project.optional-dependencies]
