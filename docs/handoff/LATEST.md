@@ -239,7 +239,9 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 3. **E2Eテスト拡充**: メール通知ボタンのE2Eテスト追加
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103、Phase 2 は PR #104、Phase 3 は PR #105 でクローズ済み）
+- **オープンIssue**: 1件
+  - #109 `feat: Gmail API（DWD）でメール送信を実装する` [enhancement, P2]
+- **クローズ済み**: Issue #96（PR #102）、Issue #98 Phase 1（PR #103）、Phase 2（PR #104）、Phase 3（PR #105）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
