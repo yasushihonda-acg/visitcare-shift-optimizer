@@ -1,7 +1,7 @@
 # visitcare-shift-optimizer
 
 ## プロジェクト概要
-訪問介護シフト最適化システム（Phase 1: AI Logic Demo）
+訪問介護シフト最適化システム（Phase 5b完了: メール通知スタブまで実装済み）
 GCP Project ID: `visitcare-shift-optimizer`
 
 ## 技術スタック
@@ -17,7 +17,9 @@ visitcare-shift-optimizer/
 ├── docs/                    # 要件定義、ADR、分析ドキュメント
 │   ├── requirements/        # SOW, PRD, 現行業務分析
 │   ├── adr/                 # Architecture Decision Records
-│   └── schema/              # Firestoreスキーマ定義、ER図
+│   ├── schema/              # Firestoreスキーマ定義、ER図
+│   ├── guides/              # 操作マニュアル、トラブルシューティング
+│   └── handoff/             # セッション引継ぎメモ（LATEST.md + archive/）
 ├── shared/                  # 共有TypeScript型定義
 │   └── types/               # Customer, Helper, Order, TravelTime, StaffUnavailability
 ├── seed/                    # Seedデータ（CSV）+ インポートスクリプト
@@ -40,6 +42,7 @@ visitcare-shift-optimizer/
 
 | コレクション | 件数（Seed） | 説明 |
 |-------------|-------------|------|
+| service_types | 8 | サービス種別マスタ |
 | customers | 50 | 利用者マスタ |
 | helpers | 20 | スタッフマスタ |
 | orders | ~160/週 | サービスオーダー |

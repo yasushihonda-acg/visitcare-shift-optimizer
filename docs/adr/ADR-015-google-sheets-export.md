@@ -43,6 +43,11 @@
 - Cloud RunのService Accountに Google Sheets API / Google Drive API のアクセス権を付与
 - フロントエンドの認証フローは変更なし
 
+> **実装後の変更（PR #106）**: Cloud Run の Compute Engine デフォルト SA は Google Drive ストレージを持たないため、
+> SA ADC ではなく **Authorized User ADC（OAuth2 refresh token）を Secret Manager に保存する方式** を採用した。
+> Secret name: `sheets-authorized-user-credentials`（Cloud Run 環境変数 `SHEETS_CREDENTIALS_SECRET` で参照）。
+> SA self-impersonation（`google-auth` の `impersonate_service_account`）も検討したが、Authorized User ADC の方がシンプルなため採用。
+
 ### スプレッドシート管理
 
 - 月ごとに新規スプレッドシートを作成

@@ -11,7 +11,7 @@ GCP Project ID: visitcare-shift-optimizer
 ## 2. スコープ (Scope)
 
 ### 2.1 開発対象機能
-- **数理最適化エンジン**: Python-MIP + CBCソルバーを用いた自動シフト生成ロジック
+- **数理最適化エンジン**: PuLP 3.3.0 + CBCソルバーを用いた自動シフト生成ロジック（ADR-006）
 - **データ基盤**: Firebase (Firestore) 上での利用者・スタッフ・オーダーデータの構造化
 - **Webアプリケーション (Demo UI)**: シフト生成、ガントチャート表示、手動修正、リアルタイムバリデーション
 
@@ -28,9 +28,12 @@ GCP Project ID: visitcare-shift-optimizer
 - 既存システム（介ソル、カラカラ）とのAPIによる自動連携（CSV想定まで）
   - 外部連携ID（介ソルID・カカラID・CURA ID・あおぞらID）の保持のみ対応
   - 実際のデータ突合処理は将来フェーズ
-- 本番運用レベルの認証・権限管理（簡易認証のみ）
-- 支援類型マスタのFirestoreコレクション化（現状はenum管理）
-  - 将来フェーズで `service_types` コレクション + マスタ管理UI を追加予定
+- 介護報酬請求（レセプト）データの生成・計算（将来フェーズ）
+- 既存システム（介ソル、カラカラ）とのAPI自動連携（外部連携IDの保持のみ対応済み）
+
+> **以下は当初スコープ外だったが実装完了済み:**
+> - RBAC 3役体系（admin / service_manager / helper）＋ Firestoreセキュリティルール（ADR-012, ADR-014）
+> - `service_types` Firestoreコレクション + マスタ管理UI（PR #103-#105）
 
 ## 3. 成果物 (Deliverables)
 1. **デモアプリケーション**: GCP/Firebase上で動作するWebシステム一式
