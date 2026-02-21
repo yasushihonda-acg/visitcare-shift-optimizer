@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-21（PR #107: 性別・研修状態・推奨スタッフ制約チェックをD&Dバリデーションとガントバーに追加）
-**現在のフェーズ**: Phase 0-5a 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張）実装済み・マージ済み
+**最終更新**: 2026-02-21（PR #108: Phase 5b メール通知（サ責向け）— SendGrid Free Tier）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -59,6 +59,16 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-02-19 ～ 2026-02-21）
+
+- **PR #108** ✅: Phase 5b メール通知（サ責向け）— SendGrid Free Tier
+  - シフト確定・シフト変更・希望休催促の3種のメール通知をサ責向けに実装
+  - SendGrid Free Tier (100通/日) 使用。API Key 未設定時は graceful degradation
+  - `optimizer/notification/`: `recipients.py`（サ責メール収集）/ `sender.py`（SendGrid送信）/ `templates.py`（HTMLテンプレート）
+  - `routes.py`: `POST /notify/shift-confirmed|shift-changed|unavailability-reminder`
+  - `NotifyConfirmDialog.tsx`: 最適化成功後に表示する確定通知ダイアログ
+  - `NotifyChangesButton.tsx`: 差分ありオーダーの変更通知ボタン
+  - 希望休ページ: 未提出ヘルパーへの催促メールボタン追加
+  - テスト11件新規追加（`test_notification.py`）
 
 - **PR #107** ✅: 性別・研修状態・推奨スタッフ制約チェックをD&Dバリデーションとガントバーに追加（#107）
   - `checker.ts`: `Violation.type` に `gender` / `training` / `preferred_staff` を追加
@@ -169,12 +179,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-21 PR #107 実装後）
-- **Optimizer**: 266件 pass
-- **Web (Next.js)**: 299件 pass（+18件: checker 9件 + validation 9件）
+## 最新テスト結果サマリー（2026-02-21 PR #108 実装後）
+- **Optimizer**: 277件 pass（+11件: test_notification.py）
+- **Web (Next.js)**: 299件 pass
 - **Firestore Rules**: 94件 pass
 - **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: PR #107 CI in_progress（2026-02-20 23:54 JST時点）
+- **CI/CD**: PR #108 CI success（2026-02-21 10:42 JST、7m22s）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -225,7 +235,9 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **次フェーズ方針決定**: Phase 5b（メール通知）・6（モバイル）等を検討
+1. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
+2. **SendGrid本番設定**: `SENDGRID_API_KEY` を Cloud Run 環境変数に設定（現在 graceful degradation 状態）
+3. **E2Eテスト拡充**: メール通知ボタンのE2Eテスト追加
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件（Issue #96 は PR #102、Issue #98 Phase 1 は PR #103、Phase 2 は PR #104、Phase 3 は PR #105 でクローズ済み）
