@@ -60,15 +60,14 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-02-19 ～ 2026-02-21）
 
-- **PR #108** ✅: Phase 5b メール通知（サ責向け）— SendGrid Free Tier
+- **PR #108** ✅: Phase 5b メール通知（サ責向け）— エンドポイント実装済み・送信未実装
   - シフト確定・シフト変更・希望休催促の3種のメール通知をサ責向けに実装
-  - SendGrid Free Tier (100通/日) 使用。API Key 未設定時は graceful degradation
-  - `optimizer/notification/`: `recipients.py`（サ責メール収集）/ `sender.py`（SendGrid送信）/ `templates.py`（HTMLテンプレート）
+  - `optimizer/notification/`: `recipients.py`（サ責メール収集）/ `sender.py`（**スタブ・常に0返却**）/ `templates.py`（HTMLテンプレート）
+  - `sender.py` は Gmail API（DWD）実装予定。現在は `emails_sent: 0` を返す（graceful degradation）
   - `routes.py`: `POST /notify/shift-confirmed|shift-changed|unavailability-reminder`
   - `NotifyConfirmDialog.tsx`: 最適化成功後に表示する確定通知ダイアログ
   - `NotifyChangesButton.tsx`: 差分ありオーダーの変更通知ボタン
   - 希望休ページ: 未提出ヘルパーへの催促メールボタン追加
-  - テスト11件新規追加（`test_notification.py`）
 
 - **PR #107** ✅: 性別・研修状態・推奨スタッフ制約チェックをD&Dバリデーションとガントバーに追加（#107）
   - `checker.ts`: `Violation.type` に `gender` / `training` / `preferred_staff` を追加
@@ -236,7 +235,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
-2. **SendGrid本番設定**: `SENDGRID_API_KEY` を Cloud Run 環境変数に設定（現在 graceful degradation 状態）
+2. **メール送信実装**: Gmail API（DWD）で `sender.py` を実装（ADR-016作成→実装→Cloud Run SA に DWD 設定）
 3. **E2Eテスト拡充**: メール通知ボタンのE2Eテスト追加
 
 ## GitHub Issuesサマリー
