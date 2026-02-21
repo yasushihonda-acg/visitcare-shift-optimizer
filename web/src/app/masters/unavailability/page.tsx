@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Search, ChevronLeft, ChevronRight, Mail, Loader2 } from 'lucide-react';
 import { format, addDays, addWeeks, subWeeks, startOfWeek, differenceInCalendarDays } from 'date-fns';
 import { useHelpers } from '@/hooks/useHelpers';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { useStaffUnavailability } from '@/hooks/useStaffUnavailability';
+import { toast } from 'sonner';
+import { notifyUnavailabilityReminder, OptimizeApiError } from '@/lib/api/optimizer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -33,6 +35,7 @@ export default function UnavailabilityPage() {
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<StaffUnavailability | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [reminderSending, setReminderSending] = useState(false);
 
   const loading = helpersLoading || unavailLoading;
 
@@ -48,6 +51,38 @@ export default function UnavailabilityPage() {
       );
     });
   }, [unavailability, helpers, search]);
+
+  // 希望休を未提出のヘルパー（unavailability に staff_id が存在しないヘルパー）
+  const submittedStaffIds = useMemo(
+    () => new Set(unavailability.map((u) => u.staff_id)),
+    [unavailability],
+  );
+  const helpersNotSubmitted = useMemo(
+    () =>
+      Array.from(helpers.values())
+        .filter((h) => !submittedStaffIds.has(h.id))
+        .map((h) => ({ id: h.id, name: `${h.name.family} ${h.name.given}` })),
+    [helpers, submittedStaffIds],
+  );
+
+  const handleSendReminder = async () => {
+    setReminderSending(true);
+    try {
+      const result = await notifyUnavailabilityReminder({
+        target_week_start: format(weekStart, 'yyyy-MM-dd'),
+        helpers_not_submitted: helpersNotSubmitted,
+      });
+      toast.success(`催促メール送信完了: ${result.emails_sent}名に送信しました`);
+    } catch (err) {
+      if (err instanceof OptimizeApiError) {
+        toast.error(`送信エラー: ${err.message}`);
+      } else {
+        toast.error('催促メールの送信に失敗しました');
+      }
+    } finally {
+      setReminderSending(false);
+    }
+  };
 
   const openNew = () => {
     setEditTarget(undefined);
@@ -86,12 +121,33 @@ export default function UnavailabilityPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">希望休管理</h2>
-        {(canEditUnavailability || isHelper) && (
-          <Button onClick={openNew} size="sm">
-            <Plus className="mr-1 h-4 w-4" />
-            新規追加
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canEditUnavailability && helpersNotSubmitted.length > 0 && (
+            <Button
+              onClick={handleSendReminder}
+              size="sm"
+              variant="outline"
+              disabled={reminderSending}
+              title={`${helpersNotSubmitted.length}名に催促メールを送信`}
+            >
+              {reminderSending ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="mr-1 h-4 w-4" />
+              )}
+              催促メール
+              <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground">
+                {helpersNotSubmitted.length}
+              </span>
+            </Button>
+          )}
+          {(canEditUnavailability || isHelper) && (
+            <Button onClick={openNew} size="sm">
+              <Plus className="mr-1 h-4 w-4" />
+              新規追加
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 週ナビゲーション */}

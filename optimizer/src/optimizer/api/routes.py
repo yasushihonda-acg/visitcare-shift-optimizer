@@ -47,6 +47,7 @@ from optimizer.api.schemas import (
     ErrorResponse,
     ExportReportRequest,
     ExportReportResponse,
+    NotificationResponse,
     OptimizationParametersResponse,
     OptimizationRunDetailResponse,
     OptimizationRunListResponse,
@@ -55,6 +56,9 @@ from optimizer.api.schemas import (
     OptimizeResponse,
     ResetAssignmentsRequest,
     ResetAssignmentsResponse,
+    ShiftChangedNotifyRequest,
+    ShiftConfirmedNotifyRequest,
+    UnavailabilityReminderRequest,
 )
 from optimizer.data.firestore_loader import (
     get_firestore_client,
@@ -64,9 +68,20 @@ from optimizer.data.firestore_loader import (
     load_monthly_orders,
     load_optimization_input,
 )
-from optimizer.data.firestore_writer import reset_assignments, save_optimization_run, write_assignments
+from optimizer.data.firestore_writer import (
+    reset_assignments,
+    save_optimization_run,
+    write_assignments,
+)
 from optimizer.engine.solver import SoftWeights, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
+from optimizer.notification.recipients import list_manager_emails
+from optimizer.notification.sender import send_email
+from optimizer.notification.templates import (
+    render_shift_changed,
+    render_shift_confirmed,
+    render_unavailability_reminder,
+)
 from optimizer.report.aggregation import (
     aggregate_customer_summary,
     aggregate_service_type_summary,
@@ -444,3 +459,73 @@ def export_report(
         sheets_created=4,
         shared_with=req.user_email,
     )
+
+
+# ---------------------------------------------------------------------------
+# 通知エンドポイント
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/notify/shift-confirmed",
+    response_model=NotificationResponse,
+    responses={500: {"model": ErrorResponse}},
+)
+def notify_shift_confirmed(
+    req: ShiftConfirmedNotifyRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> NotificationResponse:
+    """シフト確定メールをサ責全員に送信する"""
+    recipients = list_manager_emails()
+    subject, html = render_shift_confirmed(
+        week_start_date=req.week_start_date,
+        assigned_count=req.assigned_count,
+        total_orders=req.total_orders,
+        message=req.message,
+    )
+    sent = send_email(recipients, subject, html)
+    logger.info("シフト確定通知送信: sent=%d, recipients=%s", sent, recipients)
+    return NotificationResponse(emails_sent=sent, recipients=recipients)
+
+
+@router.post(
+    "/notify/shift-changed",
+    response_model=NotificationResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def notify_shift_changed(
+    req: ShiftChangedNotifyRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> NotificationResponse:
+    """シフト変更メールをサ責全員に送信する"""
+    recipients = list_manager_emails()
+    subject, html = render_shift_changed(
+        week_start_date=req.week_start_date,
+        changes=[c.model_dump() for c in req.changes],
+    )
+    sent = send_email(recipients, subject, html)
+    logger.info("シフト変更通知送信: sent=%d, changes=%d件", sent, len(req.changes))
+    return NotificationResponse(emails_sent=sent, recipients=recipients)
+
+
+@router.post(
+    "/notify/unavailability-reminder",
+    response_model=NotificationResponse,
+    responses={500: {"model": ErrorResponse}},
+)
+def notify_unavailability_reminder(
+    req: UnavailabilityReminderRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> NotificationResponse:
+    """希望休催促メールをサ責全員に送信する"""
+    recipients = list_manager_emails()
+    subject, html = render_unavailability_reminder(
+        target_week_start=req.target_week_start,
+        helpers_not_submitted=req.helpers_not_submitted,
+    )
+    sent = send_email(recipients, subject, html)
+    logger.info(
+        "希望休催促通知送信: sent=%d, helpers=%d名",
+        sent,
+        len(req.helpers_not_submitted),
+    )
+    return NotificationResponse(emails_sent=sent, recipients=recipients)
