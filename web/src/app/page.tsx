@@ -16,6 +16,7 @@ import { ResetButton } from '@/components/schedule/ResetButton';
 import { BulkCompleteButton } from '@/components/schedule/BulkCompleteButton';
 import { GanttChart } from '@/components/gantt/GanttChart';
 import { WeeklyGanttChart } from '@/components/gantt/WeeklyGanttChart';
+import { CustomerGanttChart } from '@/components/gantt/CustomerGanttChart';
 import { OrderDetailPanel } from '@/components/schedule/OrderDetailPanel';
 import { useScheduleData } from '@/hooks/useScheduleData';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
@@ -29,7 +30,7 @@ import type { Order, DayOfWeek } from '@/types';
 
 function SchedulePage() {
   const { welcomeOpen, closeWelcome, reopenWelcome } = useWelcomeDialog();
-  const { weekStart, selectedDay, setSelectedDay, viewMode, setViewMode } = useScheduleContext();
+  const { weekStart, selectedDay, setSelectedDay, viewMode, setViewMode, ganttAxis } = useScheduleContext();
   const { customers, helpers, orderCounts, getDaySchedule, unavailability, loading } =
     useScheduleData(weekStart);
 
@@ -182,30 +183,40 @@ function SchedulePage() {
       <StatsBar
         schedule={viewMode === 'week' ? weeklySchedule : schedule}
         violations={viewMode === 'week' ? (new Map() as typeof violations) : violations}
+        diffMap={diffMap}
       />
       <main className="flex-1 overflow-auto p-4">
         {viewMode === 'day' ? (
-          <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragMove={handleDragMove}
-            onDragEnd={handleDragEnd}
-            onDragCancel={handleDragCancel}
-          >
-            <GanttChart
+          ganttAxis === 'customer' ? (
+            <CustomerGanttChart
               schedule={schedule}
               customers={customers}
-              violations={violations}
+              helpers={helpers}
               onOrderClick={handleOrderClick}
-              dropZoneStatuses={dropZoneStatuses}
-              unavailability={unavailability}
-              activeOrder={activeOrder}
-              onSlotWidthChange={handleSlotWidthChange}
-              previewTimes={previewTimes}
-              dropMessage={dropMessage}
             />
-          </DndContext>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragMove={handleDragMove}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
+              <GanttChart
+                schedule={schedule}
+                customers={customers}
+                violations={violations}
+                onOrderClick={handleOrderClick}
+                dropZoneStatuses={dropZoneStatuses}
+                unavailability={unavailability}
+                activeOrder={activeOrder}
+                onSlotWidthChange={handleSlotWidthChange}
+                previewTimes={previewTimes}
+                dropMessage={dropMessage}
+              />
+            </DndContext>
+          )
         ) : (
           <WeeklyGanttChart
             weekStart={weekStart}

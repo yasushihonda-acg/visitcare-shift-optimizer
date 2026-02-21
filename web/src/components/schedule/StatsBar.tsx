@@ -1,16 +1,18 @@
 'use client';
 
-import { ClipboardList, CheckCircle2, AlertCircle, Users, CircleCheck } from 'lucide-react';
+import { ClipboardList, CheckCircle2, AlertCircle, Users, CircleCheck, GitCompare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 import type { ViolationMap } from '@/lib/constraints/checker';
+import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
 
 interface StatsBarProps {
   schedule: DaySchedule;
   violations: ViolationMap;
+  diffMap?: Map<string, AssignmentDiff>;
 }
 
-export function StatsBar({ schedule, violations }: StatsBarProps) {
+export function StatsBar({ schedule, violations, diffMap }: StatsBarProps) {
   const allOrders = schedule.helperRows.flatMap((r) => r.orders).concat(schedule.unassignedOrders);
   const assignedCount = schedule.helperRows.reduce(
     (sum, row) => sum + row.orders.length, 0
@@ -32,8 +34,10 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
     ? Math.round((completedCount / completionDenominator) * 100)
     : 0;
 
+  const diffCount = diffMap?.size ?? 0;
+
   return (
-    <div className="grid grid-cols-5 gap-3 px-4 py-3">
+    <div className="grid grid-cols-6 gap-3 px-4 py-3">
       {/* オーダー数 */}
       <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-brand-sm">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent">
@@ -123,6 +127,23 @@ export function StatsBar({ schedule, violations }: StatsBarProps) {
               </Badge>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* 最適化差分 */}
+      <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-brand-sm">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${diffCount > 0 ? 'bg-violet-500/10' : 'bg-muted'}`}>
+          <GitCompare className={`h-4.5 w-4.5 ${diffCount > 0 ? 'text-violet-600' : 'text-muted-foreground'}`} />
+        </div>
+        <div>
+          <p className="text-[11px] text-muted-foreground leading-none">最適化差分</p>
+          <p className={`text-lg font-bold leading-tight ${diffCount > 0 ? 'text-violet-600' : 'text-muted-foreground'}`}>
+            {diffCount === 0 ? (
+              <span className="text-sm font-normal">変更なし</span>
+            ) : (
+              <>{diffCount}<span className="text-xs font-normal text-muted-foreground ml-0.5">件変更</span></>
+            )}
+          </p>
         </div>
       </div>
     </div>

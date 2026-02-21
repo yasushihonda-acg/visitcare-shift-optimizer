@@ -1,17 +1,24 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ViewModeToggle } from '../ViewModeToggle';
 
 const mockSetViewMode = vi.fn();
+const mockSetGanttAxis = vi.fn();
 
 vi.mock('@/contexts/ScheduleContext', () => ({
   useScheduleContext: () => ({
     viewMode: 'day',
     setViewMode: mockSetViewMode,
+    ganttAxis: 'staff',
+    setGanttAxis: mockSetGanttAxis,
   }),
 }));
 
 describe('ViewModeToggle', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('日と週のボタンが表示される', () => {
     render(<ViewModeToggle />);
     expect(screen.getByTestId('view-mode-day')).toBeInTheDocument();
@@ -39,5 +46,23 @@ describe('ViewModeToggle', () => {
   it('data-testid="view-mode-toggle"が存在する', () => {
     render(<ViewModeToggle />);
     expect(screen.getByTestId('view-mode-toggle')).toBeInTheDocument();
+  });
+
+  it('viewMode=dayのとき軸切替ボタンが表示される', () => {
+    render(<ViewModeToggle />);
+    expect(screen.getByTestId('gantt-axis-staff')).toBeInTheDocument();
+    expect(screen.getByTestId('gantt-axis-customer')).toBeInTheDocument();
+  });
+
+  it('ganttAxis=staffのときスタッフ軸ボタンがアクティブ', () => {
+    render(<ViewModeToggle />);
+    expect(screen.getByTestId('gantt-axis-staff')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('gantt-axis-customer')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('利用者軸ボタンクリックでsetGanttAxis("customer")が呼ばれる', () => {
+    render(<ViewModeToggle />);
+    fireEvent.click(screen.getByTestId('gantt-axis-customer'));
+    expect(mockSetGanttAxis).toHaveBeenCalledWith('customer');
   });
 });
