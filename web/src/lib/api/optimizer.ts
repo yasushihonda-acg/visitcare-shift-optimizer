@@ -219,3 +219,80 @@ export async function exportReport(request: ExportReportRequest): Promise<Export
 
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// 通知 API
+// ---------------------------------------------------------------------------
+
+export interface NotificationResponse {
+  emails_sent: number;
+  recipients: string[];
+}
+
+export interface ShiftChangeDetail {
+  order_id: string;
+  customer_name: string;
+  date: string;
+  time_range: string;
+  old_staff: string;
+  new_staff: string;
+}
+
+export async function notifyShiftConfirmed(params: {
+  week_start_date: string;
+  assigned_count: number;
+  total_orders: number;
+  message?: string;
+}): Promise<NotificationResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/notify/shift-confirmed`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}
+
+export async function notifyShiftChanged(params: {
+  week_start_date: string;
+  changes: ShiftChangeDetail[];
+}): Promise<NotificationResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/notify/shift-changed`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}
+
+export async function notifyUnavailabilityReminder(params: {
+  target_week_start: string;
+  helpers_not_submitted: Array<{ id: string; name: string }>;
+}): Promise<NotificationResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/notify/unavailability-reminder`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}

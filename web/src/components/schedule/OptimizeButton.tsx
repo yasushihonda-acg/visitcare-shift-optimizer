@@ -21,12 +21,15 @@ import {
   DEFAULT_WEIGHTS,
   type ConstraintWeights,
 } from './ConstraintWeightsForm';
+import { NotifyConfirmDialog } from './NotifyConfirmDialog';
 
 export function OptimizeButton() {
   const { weekStart } = useScheduleContext();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [weights, setWeights] = useState<ConstraintWeights>({ ...DEFAULT_WEIGHTS });
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [lastResult, setLastResult] = useState<{ assignedCount: number; totalOrders: number } | null>(null);
 
   const handleOptimize = async () => {
     setLoading(true);
@@ -40,6 +43,8 @@ export function OptimizeButton() {
         `最適化完了: ${result.assigned_count}/${result.total_orders}件割当 (${result.solve_time_seconds.toFixed(1)}秒)`
       );
       setOpen(false);
+      setLastResult({ assignedCount: result.assigned_count, totalOrders: result.total_orders });
+      setNotifyOpen(true);
     } catch (err) {
       if (err instanceof OptimizeApiError) {
         const messages: Record<number, string> = {
@@ -56,6 +61,7 @@ export function OptimizeButton() {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
@@ -94,5 +100,15 @@ export function OptimizeButton() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {lastResult && (
+      <NotifyConfirmDialog
+        open={notifyOpen}
+        onClose={() => setNotifyOpen(false)}
+        weekStartDate={format(weekStart, 'yyyy-MM-dd')}
+        assignedCount={lastResult.assignedCount}
+        totalOrders={lastResult.totalOrders}
+      />
+    )}
+    </>
   );
 }

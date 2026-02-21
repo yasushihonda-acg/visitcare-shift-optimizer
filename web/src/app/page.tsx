@@ -11,6 +11,7 @@ import { DayTabs } from '@/components/schedule/DayTabs';
 import { ViewModeToggle } from '@/components/schedule/ViewModeToggle';
 import { StatsBar } from '@/components/schedule/StatsBar';
 import { OptimizeButton } from '@/components/schedule/OptimizeButton';
+import { NotifyChangesButton } from '@/components/schedule/NotifyChangesButton';
 import { ResetButton } from '@/components/schedule/ResetButton';
 import { BulkCompleteButton } from '@/components/schedule/BulkCompleteButton';
 import { GanttChart } from '@/components/gantt/GanttChart';
@@ -168,6 +169,12 @@ function SchedulePage() {
         </div>
         <div className="flex items-center gap-2 px-4">
           {viewMode === 'day' && <BulkCompleteButton schedule={schedule} />}
+          <NotifyChangesButton
+            diffMap={diffMap}
+            helpers={helpers}
+            customers={customers}
+            orders={allOrders}
+          />
           <ResetButton />
           <OptimizeButton />
         </div>
