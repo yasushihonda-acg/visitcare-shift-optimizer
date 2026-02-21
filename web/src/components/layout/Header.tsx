@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut, HelpCircle, BarChart2, Tag } from 'lucide-react';
+import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut, HelpCircle, BarChart2, Tag, CalendarCheck } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -96,6 +96,12 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
                 <Link href="/masters/service-types">
                   <Tag className="mr-2 h-4 w-4" />
                   サービス種別マスタ
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/masters/weekly-schedule">
+                  <CalendarCheck className="mr-2 h-4 w-4" />
+                  基本予定一覧
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
