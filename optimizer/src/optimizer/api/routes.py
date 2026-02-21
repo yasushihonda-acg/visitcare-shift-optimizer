@@ -60,13 +60,6 @@ from optimizer.api.schemas import (
     ShiftConfirmedNotifyRequest,
     UnavailabilityReminderRequest,
 )
-from optimizer.notification.recipients import list_manager_emails
-from optimizer.notification.sender import send_email
-from optimizer.notification.templates import (
-    render_shift_changed,
-    render_shift_confirmed,
-    render_unavailability_reminder,
-)
 from optimizer.data.firestore_loader import (
     get_firestore_client,
     load_all_customers,
@@ -75,9 +68,20 @@ from optimizer.data.firestore_loader import (
     load_monthly_orders,
     load_optimization_input,
 )
-from optimizer.data.firestore_writer import reset_assignments, save_optimization_run, write_assignments
+from optimizer.data.firestore_writer import (
+    reset_assignments,
+    save_optimization_run,
+    write_assignments,
+)
 from optimizer.engine.solver import SoftWeights, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
+from optimizer.notification.recipients import list_manager_emails
+from optimizer.notification.sender import send_email
+from optimizer.notification.templates import (
+    render_shift_changed,
+    render_shift_confirmed,
+    render_unavailability_reminder,
+)
 from optimizer.report.aggregation import (
     aggregate_customer_summary,
     aggregate_service_type_summary,
