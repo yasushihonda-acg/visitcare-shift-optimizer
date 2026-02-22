@@ -31,7 +31,7 @@ import type { Order, DayOfWeek } from '@/types';
 function SchedulePage() {
   const { welcomeOpen, closeWelcome, reopenWelcome } = useWelcomeDialog();
   const { weekStart, selectedDay, setSelectedDay, viewMode, setViewMode, ganttAxis } = useScheduleContext();
-  const { customers, helpers, orderCounts, getDaySchedule, unavailability, loading } =
+  const { customers, helpers, orderCounts, getDaySchedule, unavailability, loading, travelTimeLookup } =
     useScheduleData(weekStart);
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -69,8 +69,9 @@ function SchedulePage() {
         unavailability,
         day: selectedDay,
         serviceTypes,
+        travelTimeLookup,
       }),
-    [schedule, helpers, customers, unavailability, selectedDay, serviceTypes]
+    [schedule, helpers, customers, unavailability, selectedDay, serviceTypes, travelTimeLookup]
   );
 
   // DnD — distance: 5px でクリックとドラッグを区別
@@ -100,6 +101,7 @@ function SchedulePage() {
     day: selectedDay,
     slotWidth,
     serviceTypes,
+    travelTimeLookup,
   });
 
   const handleDayNavigation = useCallback(

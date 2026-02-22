@@ -395,6 +395,73 @@ describe('validateDrop', () => {
     });
   });
 
+  describe('移動時間チェック', () => {
+    it('移動時間不足 → 許可 + 警告', () => {
+      const input = baseInput();
+      // 新オーダー: 利用者cust-2, 09:10-10:00（ギャップ10分）
+      input.order = makeOrder({ customer_id: 'cust-2', start_time: '09:10', end_time: '10:00', assigned_staff_ids: [] });
+      // ターゲットヘルパーの既存オーダー: 利用者cust-1, 08:00-09:00
+      input.targetHelperOrders = [
+        makeOrder({ id: 'prev', customer_id: 'cust-1', start_time: '08:00', end_time: '09:00' }),
+      ];
+      // cust-1→cust-2の移動時間: 20分（ギャップ10分 < 20分）
+      const travelTimeLookup = new Map([['cust-1_cust-2', 20]]);
+
+      const result = validateDrop({ ...input, travelTimeLookup });
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('移動時間'))).toBe(true);
+      }
+    });
+
+    it('移動時間十分 → 許可 + 移動時間警告なし', () => {
+      const input = baseInput();
+      // ギャップ30分 >= 移動時間20分
+      input.order = makeOrder({ customer_id: 'cust-2', start_time: '09:30', end_time: '10:00', assigned_staff_ids: [] });
+      input.targetHelperOrders = [
+        makeOrder({ id: 'prev', customer_id: 'cust-1', start_time: '08:00', end_time: '09:00' }),
+      ];
+      const travelTimeLookup = new Map([['cust-1_cust-2', 20]]);
+
+      const result = validateDrop({ ...input, travelTimeLookup });
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('移動時間'))).toBe(false);
+      }
+    });
+
+    it('同一利用者 → チェックスキップ（警告なし）', () => {
+      const input = baseInput();
+      // 前後が同じ利用者 → 移動不要
+      input.order = makeOrder({ customer_id: 'cust-1', start_time: '09:10', end_time: '10:00', assigned_staff_ids: [] });
+      input.targetHelperOrders = [
+        makeOrder({ id: 'prev', customer_id: 'cust-1', start_time: '08:00', end_time: '09:00' }),
+      ];
+      const travelTimeLookup = new Map([['cust-1_cust-1', 0]]);
+
+      const result = validateDrop({ ...input, travelTimeLookup });
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('移動時間'))).toBe(false);
+      }
+    });
+
+    it('travelTimeLookup 未提供 → チェックスキップ（警告なし）', () => {
+      const input = baseInput();
+      input.order = makeOrder({ customer_id: 'cust-2', start_time: '09:10', end_time: '10:00', assigned_staff_ids: [] });
+      input.targetHelperOrders = [
+        makeOrder({ id: 'prev', customer_id: 'cust-1', start_time: '08:00', end_time: '09:00' }),
+      ];
+      // travelTimeLookup を渡さない
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('移動時間'))).toBe(false);
+      }
+    });
+  });
+
   describe('ヘルパー不在', () => {
     it('存在しないヘルパー → 拒否', () => {
       const input = baseInput();
