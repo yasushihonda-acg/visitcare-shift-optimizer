@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-21（PR #108: Phase 5b メール通知（サ責向け）— SendGrid Free Tier）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知）実装済み・マージ済み
+**最終更新**: 2026-02-22（PR #110: スケジュール UI 改善（利用者軸ビュー・StatsBar差分カード・基本予定一覧・通知テスト））
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -58,7 +58,15 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-02-19 ～ 2026-02-21）
+## 直近の実装（2026-02-19 ～ 2026-02-22）
+
+- **PR #110** ✅: スケジュール UI 改善（利用者軸ビュー・StatsBar差分カード・基本予定一覧・通知テスト）
+  - `StatsBar`: `diffMap` を受け取り、最適化後の変更件数を violet で表示
+  - 利用者軸ビュー: 日表示で「スタッフ軸 / 利用者軸」切替ボタンを追加。`CustomerGanttChart` を表示（利用者行 × 時刻軸）
+  - `/masters/weekly-schedule` ページ新規作成: 利用者の `weekly_services` を曜日別テーブルで一覧表示
+  - Header ナビ: 設定ドロップダウンに「基本予定一覧」リンク追加
+  - `NotifyConfirmDialog` / `NotifyChangesButton` のコンポーネントテスト追加（各5件）
+  - テスト: 318件グリーン確認
 
 - **PR #108** ✅: Phase 5b メール通知（サ責向け）— エンドポイント実装済み・送信未実装
   - シフト確定・シフト変更・希望休催促の3種のメール通知をサ責向けに実装
@@ -178,12 +186,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-21 PR #108 実装後）
-- **Optimizer**: 277件 pass（+11件: test_notification.py）
-- **Web (Next.js)**: 299件 pass
+## 最新テスト結果サマリー（2026-02-21 PR #110 実装後）
+- **Optimizer**: 277件 pass
+- **Web (Next.js)**: 318件 pass（+19件: PR #110 通知テスト・ViewModeToggle更新等）
 - **Firestore Rules**: 94件 pass
 - **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: PR #108 CI success（2026-02-21 10:42 JST、7m22s）
+- **CI/CD**: PR #110 CI success（2026-02-21 09:32 JST、6m51s）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -234,9 +242,9 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
-2. **メール送信実装**: Gmail API（DWD）で `sender.py` を実装（ADR-016作成→実装→Cloud Run SA に DWD 設定）
-3. **E2Eテスト拡充**: メール通知ボタンのE2Eテスト追加
+1. **メール送信実装**: Gmail API（DWD）で `sender.py` を実装（ADR-016作成→実装→Cloud Run SA に DWD 設定）— Issue #109
+2. **E2Eテスト拡充**: メール通知ボタン・利用者軸ビュー・基本予定一覧のE2Eテスト追加
+3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 1件
