@@ -1,5 +1,6 @@
 """通知モジュールのテスト"""
 
+import os
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -78,18 +79,56 @@ class TestRecipients:
 # ---------------------------------------------------------------------------
 
 class TestSender:
-    def test_send_email_returns_zero(self) -> None:
-        """未実装のため常に 0 を返す（graceful degradation）
-        TODO: Gmail API（DWD）実装後にテストを更新する
-        """
+    @patch.dict(os.environ, {"NOTIFICATION_SENDER_EMAIL": ""})
+    def test_no_sender_email_returns_zero(self) -> None:
+        """NOTIFICATION_SENDER_EMAIL 未設定の場合 0 を返す（graceful degradation）"""
         from optimizer.notification.sender import send_email
 
-        count = send_email(
-            to_emails=["a@example.com", "b@example.com"],
-            subject="テスト件名",
-            html_content="<p>テスト</p>",
-        )
-        assert count == 0
+        assert send_email(["a@example.com"], "テスト件名", "<p>テスト</p>") == 0
+
+    def test_empty_recipients_returns_zero(self) -> None:
+        """宛先リストが空の場合 0 を返す（Gmail サービスを呼び出さない）"""
+        from optimizer.notification.sender import send_email
+
+        assert send_email([], "テスト件名", "<p>テスト</p>") == 0
+
+    @patch("optimizer.notification.sender._build_gmail_service")
+    def test_service_unavailable_returns_zero(self, mock_build: MagicMock) -> None:
+        """Gmail サービス構築失敗時（None 返却）は 0 を返す"""
+        mock_build.return_value = None
+
+        from optimizer.notification.sender import send_email
+
+        assert send_email(["a@example.com"], "テスト件名", "<p>テスト</p>") == 0
+
+    @patch("optimizer.notification.sender._build_gmail_service")
+    @patch.dict(os.environ, {"NOTIFICATION_SENDER_EMAIL": "noreply@example.com"})
+    def test_send_email_success(self, mock_build: MagicMock) -> None:
+        """全宛先に送信成功した場合、送信数を返す"""
+        mock_service = MagicMock()
+        mock_service.users().messages().send().execute.return_value = {"id": "msg-1"}
+        mock_build.return_value = mock_service
+
+        from optimizer.notification.sender import send_email
+
+        count = send_email(["a@example.com", "b@example.com"], "テスト件名", "<p>テスト</p>")
+        assert count == 2
+
+    @patch("optimizer.notification.sender._build_gmail_service")
+    @patch.dict(os.environ, {"NOTIFICATION_SENDER_EMAIL": "noreply@example.com"})
+    def test_send_email_partial_failure(self, mock_build: MagicMock) -> None:
+        """1件失敗しても他の送信は続行する（部分成功）"""
+        mock_service = MagicMock()
+        mock_service.users().messages().send().execute.side_effect = [
+            Exception("送信失敗"),
+            {"id": "msg-2"},
+        ]
+        mock_build.return_value = mock_service
+
+        from optimizer.notification.sender import send_email
+
+        count = send_email(["fail@example.com", "ok@example.com"], "テスト件名", "<p>テスト</p>")
+        assert count == 1
 
 
 # ---------------------------------------------------------------------------
