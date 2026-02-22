@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-22（PR #110: スケジュール UI 改善（利用者軸ビュー・StatsBar差分カード・基本予定一覧・通知テスト））
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧）実装済み・マージ済み
+**最終更新**: 2026-02-22（PR #115: travel_times移動時間D&Dバリデーション統合）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -59,6 +59,31 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-02-19 ～ 2026-02-22）
+
+- **PR #115** ✅: travel_times移動時間D&Dバリデーション統合（Issue #113）
+  - `web/src/lib/travelTime.ts` 新規: `parseTravelTimeDocId` / `buildTravelTimeLookup` / `getTravelMinutes`（双方向検索）
+  - `web/src/hooks/useTravelTimes.ts` 新規: Firestore `travel_times` 一括取得フック
+  - `validateDrop()` に移動時間不足 warning チェックを追加（直前/直後オーダーとのギャップ < travel_time_minutes）
+  - `checkConstraints()` に `travel_time` 違反タイプ（warning）を追加
+  - テスト: 16件 + 4件 + 3件 = 23件追加、合計372件 GREEN
+  - CI: テスト全 job success、Deploy進行中（2026-02-22T03:29:19Z）
+
+- **PR #114** ✅: staff_count複数割当D&Dバリデーション対応（Issue #112）
+  - `Order` 型に `staff_count?: number` 追加（shared/types・web/src/types）
+  - `getStaffCount()` / `computeNewStaffIds()` 純粋関数実装
+  - `validateDrop()` に同一ヘルパー二重割当防止（error）・満員警告（warning）追加
+  - `checkConstraints()` に `staff_count_under`（warning）/ `staff_count_over`（error）違反タイプ追加
+  - `GanttBar` に `staffCount > 1` 時の「M/N」バッジ追加
+  - テスト: 31件追加、合計349件 GREEN（Web）
+
+- **PR #111** ✅: Gmail API（DWD）でメール送信を実装する（Issue #109）
+  - `sender.py` のスタブを Gmail API + Domain-Wide Delegation（SA self-impersonation）で実装
+  - `_get_sheets_credentials()` と同じ認証パターンを流用（ADR-015準拠）
+  - `NOTIFICATION_SENDER_EMAIL` 未設定・Cloud Run 以外の環境では `emails_sent: 0`（graceful degradation）
+  - 部分成功対応（個別送信失敗が他宛先に影響しない）
+  - ADR-016 作成（Gmail API + DWD 採用理由・認証フロー・インフラ設定手順）
+  - テスト: 5件更新（TestSender: no_sender/empty/service_unavailable/success/partial_failure）、合計279件 GREEN（Optimizer）
+  - 注意: Cloud Run 本番動作には Google Workspace 管理コンソールでの DWD 設定が必要（手動・未完）
 
 - **PR #110** ✅: スケジュール UI 改善（利用者軸ビュー・StatsBar差分カード・基本予定一覧・通知テスト）
   - `StatsBar`: `diffMap` を受け取り、最適化後の変更件数を violet で表示
@@ -186,12 +211,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-21 PR #110 実装後）
-- **Optimizer**: 277件 pass
-- **Web (Next.js)**: 318件 pass（+19件: PR #110 通知テスト・ViewModeToggle更新等）
+## 最新テスト結果サマリー（2026-02-22 PR #115 実装後）
+- **Optimizer**: 279件 pass（PR #111 TestSender 5件更新）
+- **Web (Next.js)**: 372件 pass（PR #114: +31件、PR #115: +23件）
 - **Firestore Rules**: 94件 pass
-- **E2E Tests (Playwright)**: 41 passed, 2 skipped
-- **CI/CD**: PR #110 CI success（2026-02-21 09:32 JST、6m51s）
+- **E2E Tests (Playwright)**: 41 passed, 2 skipped（PR #114/115 CI 全 job success）
+- **CI/CD**: PR #115 CI テスト全 job success、Deploy進行中（2026-02-22T03:29:19Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -242,14 +267,14 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **メール送信実装**: Gmail API（DWD）で `sender.py` を実装（ADR-016作成→実装→Cloud Run SA に DWD 設定）— Issue #109
-2. **E2Eテスト拡充**: メール通知ボタン・利用者軸ビュー・基本予定一覧のE2Eテスト追加
+1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + Cloud Run 環境変数 `NOTIFICATION_SENDER_EMAIL` 設定（手動作業、コード外）
+2. **E2Eテスト拡充**: メール通知ボタン・利用者軸ビュー・基本予定一覧・移動時間D&D警告のE2Eテスト追加
 3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 1件
-  - #109 `feat: Gmail API（DWD）でメール送信を実装する` [enhancement, P2]
-- **クローズ済み**: Issue #96（PR #102）、Issue #98 Phase 1（PR #103）、Phase 2（PR #104）、Phase 3（PR #105）
+- **オープンIssue**: 0件（全クローズ）
+- **クローズ済み（直近）**: Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）
+- **クローズ済み（既往）**: Issue #96（PR #102）、Issue #98 Phase 1（PR #103）、Phase 2（PR #104）、Phase 3（PR #105）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
