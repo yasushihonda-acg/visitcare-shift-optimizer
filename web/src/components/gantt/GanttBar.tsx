@@ -19,9 +19,11 @@ interface GanttBarProps {
   onClick?: (order: Order) => void;
   /** ドラッグ元のヘルパーID（null = 未割当） */
   sourceHelperId: string | null;
+  /** 必要スタッフ人数（バッジ表示用） */
+  staffCount?: number;
 }
 
-export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId }: GanttBarProps) {
+export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId, staffCount }: GanttBarProps) {
   const slotWidth = useSlotWidth();
   const startCol = timeToColumn(order.start_time);
   const endCol = timeToColumn(order.end_time);
@@ -81,6 +83,11 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
         {order.status === 'completed' && <Check className="h-3 w-3 shrink-0" />}
         {order.status === 'cancelled' && <X className="h-3 w-3 shrink-0" />}
         {customerName}
+        {staffCount != null && staffCount > 1 && (
+          <span className="shrink-0 ml-0.5 px-1 py-0.5 rounded text-[10px] font-bold leading-none bg-white/30 text-current">
+            {order.assigned_staff_ids.length}/{staffCount}
+          </span>
+        )}
       </span>
     </button>
   );

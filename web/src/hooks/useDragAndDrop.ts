@@ -9,6 +9,8 @@ import { deltaToTimeShift, computeShiftedTimes } from '@/components/gantt/consta
 import type { DragData, DropZoneStatus } from '@/lib/dnd/types';
 import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 import type { HelperScheduleRow } from './useScheduleData';
+import { getStaffCount } from '@/lib/dnd/staffCount';
+import { computeNewStaffIds } from '@/lib/dnd/computeStaffIds';
 
 interface UseDragAndDropInput {
   helperRows: HelperScheduleRow[];
@@ -172,11 +174,23 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
       if (isSameHelper && !hasTimeShift) return;
       if (dragData.sourceHelperId === null && targetId === 'unassigned-section') return;
 
-      // 未割当セクションへのドロップ → 割当解除（時間変更なし）
+      // 未割当セクションへのドロップ → 割当解除
       if (targetId === 'unassigned-section') {
+        const customer = customers.get(order.customer_id);
+        const staffCount = getStaffCount(order, customer, day);
+        // staff_count > 1 かつ 2人以上割当中 → sourceHelperIdのみ除去（他スタッフは維持）
+        const newIds =
+          staffCount > 1 && order.assigned_staff_ids.length > 1 && dragData.sourceHelperId
+            ? order.assigned_staff_ids.filter((id) => id !== dragData.sourceHelperId)
+            : [];
+
         try {
-          await updateOrderAssignment(order.id, []);
-          toast.success('割当を解除しました');
+          await updateOrderAssignment(order.id, newIds);
+          if (newIds.length > 0) {
+            toast.success('割当を解除しました（他スタッフの割当は維持）');
+          } else {
+            toast.success('割当を解除しました');
+          }
         } catch (err) {
           console.error('Failed to unassign order:', err);
           toast.error('割当解除に失敗しました');
@@ -205,9 +219,11 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
       }
 
       try {
+        const customer = customers.get(order.customer_id);
+        const staffCount = getStaffCount(order, customer, day);
         const newStaffIds = isSameHelper
           ? order.assigned_staff_ids
-          : [targetId];
+          : computeNewStaffIds(order.assigned_staff_ids, targetId, dragData.sourceHelperId, staffCount);
 
         if (shifted) {
           // 時間変更あり

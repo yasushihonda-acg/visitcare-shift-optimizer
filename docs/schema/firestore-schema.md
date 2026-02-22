@@ -121,6 +121,7 @@
 | end_time | string (HH:MM) | Yes | 終了時刻 |
 | service_type | `'physical_care' \| 'daily_living' \| 'mixed' \| 'prevention' \| 'private' \| 'disability' \| 'transport_support' \| 'severe_visiting'` | Yes | サービス種別 |
 | assigned_staff_ids | string[] | Yes | 割当スタッフID |
+| staff_count | number | No | 必要スタッフ数（省略時は1。ServiceSlot.staff_count からも導出可能） |
 | status | `'pending' \| 'assigned' \| 'completed' \| 'cancelled'` | Yes | ステータス |
 | linked_order_id | string | No | 連続訪問リンク先オーダーID |
 | manually_edited | boolean | Yes | 手動編集フラグ |

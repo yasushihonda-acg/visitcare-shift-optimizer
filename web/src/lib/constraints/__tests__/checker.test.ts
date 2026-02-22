@@ -290,6 +290,72 @@ describe('checkConstraints', () => {
     });
   });
 
+  describe('staff_count 違反', () => {
+    it('staff_count=2, 1人割当 → warning（staff_count_under）', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder({ assigned_staff_ids: ['H001'], staff_count: 2 })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'staff_count_under' && v.severity === 'warning')).toBe(true);
+    });
+
+    it('staff_count=2, 2人割当 → 違反なし', () => {
+      const helpers = new Map([
+        ['H001', makeHelper({ id: 'H001' })],
+        ['H002', makeHelper({ id: 'H002' })],
+      ]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder({ assigned_staff_ids: ['H001', 'H002'], staff_count: 2 })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'staff_count_under')).toBe(false);
+      expect(violations.some((v) => v.type === 'staff_count_over')).toBe(false);
+    });
+
+    it('staff_count=1, 2人割当 → error（staff_count_over）', () => {
+      const helpers = new Map([
+        ['H001', makeHelper({ id: 'H001' })],
+        ['H002', makeHelper({ id: 'H002' })],
+      ]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder({ assigned_staff_ids: ['H001', 'H002'], staff_count: 1 })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'staff_count_over' && v.severity === 'error')).toBe(true);
+    });
+
+    it('staff_count 未指定（デフォルト1）, 1人割当 → 違反なし', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'staff_count_under')).toBe(false);
+      expect(violations.some((v) => v.type === 'staff_count_over')).toBe(false);
+    });
+  });
+
   describe('推奨スタッフ外', () => {
     it('preferred_staff_ids 外 → warning violation', () => {
       const helpers = new Map([['H001', makeHelper()]]);

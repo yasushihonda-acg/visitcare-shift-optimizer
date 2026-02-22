@@ -337,6 +337,64 @@ describe('validateDrop', () => {
     });
   });
 
+  describe('staff_count 複数割当', () => {
+    it('同一ヘルパー二重割当 → 拒否', () => {
+      const input = baseInput();
+      // targetHelperId='helper-b' が既にassigned_staff_idsに含まれている
+      input.order = makeOrder({ assigned_staff_ids: ['helper-b'] });
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(false);
+      if (!result.allowed) {
+        expect(result.reason).toContain('割当済み');
+      }
+    });
+
+    it('staff_count=2, 1人割当済み → 許可（追加可能）', () => {
+      const input = baseInput();
+      input.order = makeOrder({ assigned_staff_ids: ['helper-a'], staff_count: 2 });
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+    });
+
+    it('staff_count=2, 2人割当済み → 許可 + 満員警告', () => {
+      const input = baseInput();
+      input.order = makeOrder({ assigned_staff_ids: ['helper-a', 'helper-c'], staff_count: 2 });
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('必要人数'))).toBe(true);
+      }
+    });
+
+    it('staff_count>1 + not_visited → warning（error ではない）', () => {
+      const input = baseInput();
+      input.order = makeOrder({ assigned_staff_ids: ['helper-a'], staff_count: 2 });
+      input.helpers.set('helper-b', makeHelper({
+        customer_training_status: { 'cust-1': 'not_visited' },
+      }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+      if (result.allowed) {
+        expect(result.warnings.some((w) => w.includes('未訪問'))).toBe(true);
+      }
+    });
+
+    it('staff_count=1 + not_visited → error（従来通り）', () => {
+      const input = baseInput();
+      input.order = makeOrder({ staff_count: 1 });
+      input.helpers.set('helper-b', makeHelper({
+        customer_training_status: { 'cust-1': 'not_visited' },
+      }));
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(false);
+    });
+  });
+
   describe('ヘルパー不在', () => {
     it('存在しないヘルパー → 拒否', () => {
       const input = baseInput();
