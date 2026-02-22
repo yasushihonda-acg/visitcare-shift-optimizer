@@ -134,7 +134,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
           : null;
       setDropMessage(message);
     },
-    [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth]
+    [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth, serviceTypes, travelTimeLookup]
   );
 
   const handleDragOver = useCallback(
@@ -258,7 +258,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
         toast.error('更新に失敗しました');
       }
     },
-    [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth]
+    [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth, serviceTypes, travelTimeLookup]
   );
 
   const handleDragCancel = useCallback(() => {
