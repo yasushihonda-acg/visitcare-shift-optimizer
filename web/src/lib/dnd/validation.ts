@@ -2,6 +2,12 @@ import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek, ServiceTy
 import { isOverlapping } from '@/components/gantt/constants';
 import type { DropValidationResult } from './types';
 import { getStaffCount } from './staffCount';
+import { getTravelMinutes } from '@/lib/travelTime';
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
 
 interface ValidateDropInput {
   order: Order;
@@ -16,6 +22,7 @@ interface ValidateDropInput {
   newStartTime?: string;
   newEndTime?: string;
   serviceTypes?: Map<string, ServiceTypeDoc>;
+  travelTimeLookup?: Map<string, number>;
 }
 
 /**
@@ -23,7 +30,7 @@ interface ValidateDropInput {
  * error 制約 → 拒否、warning 制約 → 許可+警告
  */
 export function validateDrop(input: ValidateDropInput): DropValidationResult {
-  const { order, targetHelperId, helpers, customers, targetHelperOrders, unavailability, day, newStartTime, newEndTime, serviceTypes } = input;
+  const { order, targetHelperId, helpers, customers, targetHelperOrders, unavailability, day, newStartTime, newEndTime, serviceTypes, travelTimeLookup } = input;
 
   // 時間軸移動対応: 新時刻が指定されている場合はそちらを使用
   const startTime = newStartTime ?? order.start_time;
@@ -123,6 +130,35 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
   // 推奨スタッフ外 → 警告
   if (customer && customer.preferred_staff_ids.length > 0 && !customer.preferred_staff_ids.includes(targetHelperId)) {
     warnings.push(`${helper.name.family} は推奨スタッフ外です`);
+  }
+
+  // 移動時間チェック: travelTimeLookup が提供されている場合のみ実行
+  if (travelTimeLookup) {
+    const startMin = timeToMinutes(startTime);
+    const endMin = timeToMinutes(endTime);
+    const others = targetHelperOrders.filter((o) => o.id !== order.id);
+    const sorted = [...others].sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    // 直前オーダー（endTime <= startTime の中で最も遅いもの）
+    const prevOrder = [...sorted].filter((o) => o.end_time <= startTime).at(-1);
+    // 直後オーダー（startTime >= endTime の中で最も早いもの）
+    const nextOrder = sorted.find((o) => o.start_time >= endTime);
+
+    if (prevOrder && prevOrder.customer_id !== order.customer_id) {
+      const gapMin = startMin - timeToMinutes(prevOrder.end_time);
+      const travelMin = getTravelMinutes(travelTimeLookup, prevOrder.customer_id, order.customer_id);
+      if (travelMin !== null && gapMin < travelMin) {
+        warnings.push(`前のオーダーからの移動時間が不足しています（必要: ${travelMin}分、余裕: ${gapMin}分）`);
+      }
+    }
+
+    if (nextOrder && nextOrder.customer_id !== order.customer_id) {
+      const gapMin = timeToMinutes(nextOrder.start_time) - endMin;
+      const travelMin = getTravelMinutes(travelTimeLookup, order.customer_id, nextOrder.customer_id);
+      if (travelMin !== null && gapMin < travelMin) {
+        warnings.push(`次のオーダーへの移動時間が不足しています（必要: ${travelMin}分、余裕: ${gapMin}分）`);
+      }
+    }
   }
 
   return { allowed: true, warnings };

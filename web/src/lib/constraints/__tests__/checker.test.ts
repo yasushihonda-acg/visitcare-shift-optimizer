@@ -356,6 +356,73 @@ describe('checkConstraints', () => {
     });
   });
 
+  describe('移動時間違反', () => {
+    it('移動時間不足 → travel_time warning（隣接オーダー双方）', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([
+        ['C001', makeCustomer()],
+        ['C002', makeCustomer({ id: 'C002' })],
+      ]);
+      // H001が08:00-09:00(C001) → 09:10-10:00(C002)（ギャップ10分）
+      const o1 = makeOrder({ id: 'O001', customer_id: 'C001', start_time: '08:00', end_time: '09:00' });
+      const o2 = makeOrder({ id: 'O002', customer_id: 'C002', start_time: '09:10', end_time: '10:00' });
+      // C001→C002の移動時間: 20分（ギャップ10分 < 20分）
+      const travelTimeLookup = new Map([['C001_C002', 20]]);
+      const result = checkConstraints({
+        orders: [o1, o2],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+        travelTimeLookup,
+      });
+      expect(result.get('O001')?.some((v) => v.type === 'travel_time' && v.severity === 'warning')).toBe(true);
+      expect(result.get('O002')?.some((v) => v.type === 'travel_time' && v.severity === 'warning')).toBe(true);
+    });
+
+    it('移動時間十分 → travel_time violation なし', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([
+        ['C001', makeCustomer()],
+        ['C002', makeCustomer({ id: 'C002' })],
+      ]);
+      // ギャップ30分 >= 移動時間20分
+      const o1 = makeOrder({ id: 'O001', customer_id: 'C001', start_time: '08:00', end_time: '09:00' });
+      const o2 = makeOrder({ id: 'O002', customer_id: 'C002', start_time: '09:30', end_time: '10:00' });
+      const travelTimeLookup = new Map([['C001_C002', 20]]);
+      const result = checkConstraints({
+        orders: [o1, o2],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+        travelTimeLookup,
+      });
+      expect(result.get('O001')?.some((v) => v.type === 'travel_time')).toBeFalsy();
+      expect(result.get('O002')?.some((v) => v.type === 'travel_time')).toBeFalsy();
+    });
+
+    it('travelTimeLookup 未提供 → travel_time violation なし', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([
+        ['C001', makeCustomer()],
+        ['C002', makeCustomer({ id: 'C002' })],
+      ]);
+      const o1 = makeOrder({ id: 'O001', customer_id: 'C001', start_time: '08:00', end_time: '09:00' });
+      const o2 = makeOrder({ id: 'O002', customer_id: 'C002', start_time: '09:10', end_time: '10:00' });
+      // travelTimeLookup を渡さない
+      const result = checkConstraints({
+        orders: [o1, o2],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      expect(result.get('O001')?.some((v) => v.type === 'travel_time')).toBeFalsy();
+      expect(result.get('O002')?.some((v) => v.type === 'travel_time')).toBeFalsy();
+    });
+  });
+
   describe('推奨スタッフ外', () => {
     it('preferred_staff_ids 外 → warning violation', () => {
       const helpers = new Map([['H001', makeHelper()]]);

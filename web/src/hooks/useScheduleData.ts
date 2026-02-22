@@ -5,6 +5,7 @@ import { useHelpers } from './useHelpers';
 import { useCustomers } from './useCustomers';
 import { useOrders } from './useOrders';
 import { useStaffUnavailability } from './useStaffUnavailability';
+import { useTravelTimes } from './useTravelTimes';
 import type { DayOfWeek, Order, Helper, Customer } from '@/types';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 
@@ -31,6 +32,7 @@ export function useScheduleData(weekStart: Date) {
   const { customers, loading: customersLoading } = useCustomers();
   const { orders, loading: ordersLoading } = useOrders(weekStart);
   const { unavailability, loading: unavailabilityLoading } = useStaffUnavailability(weekStart);
+  const { travelTimeLookup } = useTravelTimes();
 
   const loading = helpersLoading || customersLoading || ordersLoading || unavailabilityLoading;
 
@@ -103,5 +105,6 @@ export function useScheduleData(weekStart: Date) {
     orderCounts,
     getDaySchedule,
     loading,
+    travelTimeLookup,
   };
 }

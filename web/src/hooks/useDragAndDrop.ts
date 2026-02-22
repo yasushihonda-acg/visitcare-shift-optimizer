@@ -21,10 +21,11 @@ interface UseDragAndDropInput {
   day: DayOfWeek;
   slotWidth: number;
   serviceTypes?: Map<string, ServiceTypeDoc>;
+  travelTimeLookup?: Map<string, number>;
 }
 
 export function useDragAndDrop(input: UseDragAndDropInput) {
-  const { helperRows, unassignedOrders, helpers, customers, unavailability, day, slotWidth, serviceTypes } = input;
+  const { helperRows, unassignedOrders, helpers, customers, unavailability, day, slotWidth, serviceTypes, travelTimeLookup } = input;
   const [dropZoneStatuses, setDropZoneStatuses] = useState<Map<string, DropZoneStatus>>(new Map());
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [previewTimes, setPreviewTimes] = useState<{ startTime: string; endTime: string } | null>(null);
@@ -116,6 +117,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
         newStartTime: shifted?.newStartTime,
         newEndTime: shifted?.newEndTime,
         serviceTypes,
+        travelTimeLookup,
       });
 
       const status: DropZoneStatus = !result.allowed
@@ -211,6 +213,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
         newStartTime: shifted?.newStartTime,
         newEndTime: shifted?.newEndTime,
         serviceTypes,
+        travelTimeLookup,
       });
 
       if (!result.allowed) {

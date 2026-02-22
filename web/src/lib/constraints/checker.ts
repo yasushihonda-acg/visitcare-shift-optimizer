@@ -1,6 +1,12 @@
 import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 import { isOverlapping } from '@/components/gantt/constants';
 import { getStaffCount } from '@/lib/dnd/staffCount';
+import { getTravelMinutes } from '@/lib/travelTime';
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
 
 export type ViolationSeverity = 'error' | 'warning';
 
@@ -9,7 +15,8 @@ export interface Violation {
   staffId?: string;
   type: 'ng_staff' | 'qualification' | 'overlap' | 'unavailability' | 'outside_hours'
       | 'gender' | 'training' | 'preferred_staff'
-      | 'staff_count_under' | 'staff_count_over';
+      | 'staff_count_under' | 'staff_count_over'
+      | 'travel_time';
   severity: ViolationSeverity;
   message: string;
 }
@@ -217,6 +224,28 @@ export function checkConstraints(input: CheckInput): ViolationMap {
           severity: 'error',
           message: `${name} の時間重複: ${sorted[i].start_time}-${sorted[i].end_time}`,
         });
+      }
+    }
+  }
+
+  // 移動時間チェック（スタッフ別の隣接オーダー間）
+  if (input.travelTimeLookup) {
+    const travelLookup = input.travelTimeLookup;
+    for (const [staffId, staffOrderList] of staffOrders) {
+      const helper = input.helpers.get(staffId);
+      const sorted = [...staffOrderList].sort((a, b) => a.start_time.localeCompare(b.start_time));
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const curr = sorted[i];
+        const next = sorted[i + 1];
+        if (curr.customer_id === next.customer_id) continue;
+        const gapMin = timeToMinutes(next.start_time) - timeToMinutes(curr.end_time);
+        const travelMin = getTravelMinutes(travelLookup, curr.customer_id, next.customer_id);
+        if (travelMin !== null && gapMin < travelMin) {
+          const name = helper?.name.family ?? staffId;
+          const msg = `${name} の移動時間が不足（必要: ${travelMin}分、余裕: ${gapMin}分）`;
+          addViolation({ orderId: curr.id, staffId, type: 'travel_time', severity: 'warning', message: msg });
+          addViolation({ orderId: next.id, staffId, type: 'travel_time', severity: 'warning', message: msg });
+        }
       }
     }
   }
