@@ -7,6 +7,7 @@ import { UnavailableBlocksOverlay } from './UnavailableBlocksOverlay';
 import { TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR, calculateUnavailableBlocks, timeToColumn } from './constants';
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer, StaffUnavailability, DayOfWeek } from '@/types';
+import { getStaffCount } from '@/lib/dnd/staffCount';
 import type { HelperScheduleRow } from '@/hooks/useScheduleData';
 import type { ViolationMap } from '@/lib/constraints/checker';
 import type { DropZoneStatus } from '@/lib/dnd/types';
@@ -136,16 +137,19 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
           const orderViolations = violations.get(order.id);
           const hasError = orderViolations?.some((v) => v.severity === 'error');
           const hasWarning = orderViolations?.some((v) => v.severity === 'warning');
+          const customer = customers.get(order.customer_id);
+          const sc = getStaffCount(order, customer, day);
           return (
             <GanttBar
               key={order.id}
               order={order}
-              customer={customers.get(order.customer_id)}
+              customer={customer}
               hasViolation={!!orderViolations?.length}
               violationType={hasError ? 'error' : hasWarning ? 'warning' : undefined}
               violationMessages={orderViolations?.map((v) => v.message)}
               onClick={onOrderClick}
               sourceHelperId={row.helper.id}
+              staffCount={sc}
             />
           );
         })}

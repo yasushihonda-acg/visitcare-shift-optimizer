@@ -1,6 +1,7 @@
 import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 import { isOverlapping } from '@/components/gantt/constants';
 import type { DropValidationResult } from './types';
+import { getStaffCount } from './staffCount';
 
 interface ValidateDropInput {
   order: Order;
@@ -32,8 +33,14 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
   if (!helper) return { allowed: false, reason: 'ヘルパーが見つかりません' };
 
   const customer = customers.get(order.customer_id);
+  const staffCount = getStaffCount(order, customer, day);
 
   // --- error 制約（ドロップ拒否） ---
+
+  // 同一ヘルパー二重割当防止
+  if (order.assigned_staff_ids.includes(targetHelperId)) {
+    return { allowed: false, reason: `${helper.name.family} はすでにこのオーダーに割当済みです` };
+  }
 
   // NGスタッフ
   if (customer?.ng_staff_ids.includes(targetHelperId)) {
@@ -55,9 +62,9 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
     return { allowed: false, reason: `${helper.name.family} は身体介護の資格がありません` };
   }
 
-  // 研修状態: not_visited → 拒否
+  // 研修状態: not_visited → staff_count=1 の場合は拒否、複数人体制は警告（同行するため）
   const trainingStatus = helper.customer_training_status[order.customer_id];
-  if (trainingStatus === 'not_visited') {
+  if (trainingStatus === 'not_visited' && staffCount === 1) {
     return { allowed: false, reason: `${helper.name.family} は未訪問のため単独訪問できません` };
   }
 
@@ -87,6 +94,16 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
 
   // --- warning 制約（ドロップ許可 + 警告表示） ---
   const warnings: string[] = [];
+
+  // 研修状態: not_visited + staff_count>1 → 警告（他スタッフと同行のため許可）
+  if (trainingStatus === 'not_visited' && staffCount > 1) {
+    warnings.push(`${helper.name.family} は未訪問ですが複数人体制のため同行可能です`);
+  }
+
+  // 満員チェック: 必要人数に達している → 警告（置換されます）
+  if (staffCount > 1 && order.assigned_staff_ids.length >= staffCount) {
+    warnings.push(`必要人数に達しています（${staffCount}人）。置換されます`);
+  }
 
   const availability = helper.weekly_availability[day];
   if (availability) {

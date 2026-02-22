@@ -1,5 +1,6 @@
 import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek, ServiceTypeDoc } from '@/types';
 import { isOverlapping } from '@/components/gantt/constants';
+import { getStaffCount } from '@/lib/dnd/staffCount';
 
 export type ViolationSeverity = 'error' | 'warning';
 
@@ -7,7 +8,8 @@ export interface Violation {
   orderId: string;
   staffId?: string;
   type: 'ng_staff' | 'qualification' | 'overlap' | 'unavailability' | 'outside_hours'
-      | 'gender' | 'training' | 'preferred_staff';
+      | 'gender' | 'training' | 'preferred_staff'
+      | 'staff_count_under' | 'staff_count_over';
   severity: ViolationSeverity;
   message: string;
 }
@@ -15,13 +17,14 @@ export interface Violation {
 /** orderId → Violation[] */
 export type ViolationMap = Map<string, Violation[]>;
 
-interface CheckInput {
+export interface CheckInput {
   orders: Order[];
   helpers: Map<string, Helper>;
   customers: Map<string, Customer>;
   unavailability: StaffUnavailability[];
   day: DayOfWeek;
   serviceTypes?: Map<string, ServiceTypeDoc>;
+  travelTimeLookup?: Map<string, number>;
 }
 
 export function checkConstraints(input: CheckInput): ViolationMap {
@@ -34,6 +37,29 @@ export function checkConstraints(input: CheckInput): ViolationMap {
   };
 
   const assignedOrders = input.orders.filter((o) => o.assigned_staff_ids.length > 0);
+
+  // staff_count 違反チェック（オーダー単位）
+  for (const order of assignedOrders) {
+    const customer = input.customers.get(order.customer_id);
+    const staffCount = getStaffCount(order, customer, input.day);
+    const assignedCount = order.assigned_staff_ids.length;
+
+    if (assignedCount > 0 && assignedCount < staffCount) {
+      addViolation({
+        orderId: order.id,
+        type: 'staff_count_under',
+        severity: 'warning',
+        message: `必要人数 ${staffCount}人に対して ${assignedCount}人が割当済み`,
+      });
+    } else if (assignedCount > staffCount) {
+      addViolation({
+        orderId: order.id,
+        type: 'staff_count_over',
+        severity: 'error',
+        message: `必要人数超過（必要: ${staffCount}人、割当: ${assignedCount}人）`,
+      });
+    }
+  }
 
   for (const order of assignedOrders) {
     const customer = input.customers.get(order.customer_id);
