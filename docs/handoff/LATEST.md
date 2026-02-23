@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-23（fix: ハードリフレッシュ後ガント幅バグ修正 / 利用者軸フォント改善 / seedデータ複数週対応）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応）実装済み・マージ済み
+**最終更新**: 2026-02-23（PR #117: 通知設定をFirestore/UIで管理 + E2E D&Dフレーキー修正）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -59,6 +59,20 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-02-19 ～ 2026-02-23）
+
+- **PR #117 (2026-02-23)** ✅: 通知設定をFirestore/UIで管理 + E2E D&Dフレーキー修正
+  - `firebase/firestore.rules`: `settings/{docId}` ルール追加（admin書き込み、認証済み読み取り）
+  - `firebase/__tests__/firestore.rules.test.ts`: settings 13件ルールテスト追加 → 合計106件 pass
+  - `web/src/lib/firestore/settings.ts` 新規: `updateNotificationSettings()` 実装
+  - `web/src/hooks/useNotificationSettings.ts` 新規: `onSnapshot` リアルタイム購読フック
+  - `web/src/app/settings/page.tsx` 新規: 設定ページUI（admin編集可、他ロールは読み取り専用）
+  - `web/src/components/layout/Header.tsx`: ナビに「通知設定」リンク追加
+  - `optimizer/src/optimizer/notification/sender.py`: `send_email()` に `sender_email` 引数追加
+  - `optimizer/src/optimizer/api/routes.py`: `_get_sender_email()` ヘルパー追加（Firestore優先、env varフォールバック）
+  - `optimizer/tests/test_notification.py`: `TestGetSenderEmail` 4件 + sender/endpointテスト追加 → 合計285件 pass
+  - `docs/schema/firestore-schema.md`: `settings` コレクション記載追加
+  - E2E D&Dフレーキー修正: `dragOrderToTarget` スクロール順を `source→target` から `target→source` に変更
+  - CI: テスト全 job 成功（E2E in_progress as of 2026-02-23T04:24:29Z）
 
 - **fix (2026-02-23)** ✅: ハードリフレッシュ後にガント幅が初期値のまま崩れるバグを修正
   - `GanttChart.tsx`: `useRef+useLayoutEffect([])` をコールバックref（useState）パターンに変更。`totalOrders` が 0→>0 になりDOMが出現したタイミングで再実行され `slotWidth` が 4px のまま固まる問題を解消
@@ -224,12 +238,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-23 ガント幅バグ修正後）
-- **Optimizer**: 279件 pass（PR #111 TestSender 5件更新）
+## 最新テスト結果サマリー（2026-02-23 PR #117 マージ後）
+- **Optimizer**: 285件 pass（PR #117 TestGetSenderEmail 4件追加）
 - **Web (Next.js)**: 372件 pass（PR #114: +31件、PR #115: +23件）
-- **Firestore Rules**: 94件 pass
-- **E2E Tests (Playwright)**: 41 passed, 2 skipped（CI 全 job success）
-- **CI/CD**: fix: ハードリフレッシュ後ガント幅バグ修正 CI success（2026-02-23T00:53:08Z）
+- **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
+- **E2E Tests (Playwright)**: CI in_progress（2026-02-23T04:24:29Z、D&Dフレーキー修正後）
+- **CI/CD**: PR #117 CI テスト全 job success、E2E のみ実行中
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -280,14 +294,14 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + Cloud Run 環境変数 `NOTIFICATION_SENDER_EMAIL` 設定（手動作業、コード外）
-2. **E2Eテスト拡充**: メール通知ボタン・利用者軸ビュー・基本予定一覧・移動時間D&D警告のE2Eテスト追加
+1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）
+2. **E2Eテスト拡充**: メール通知ボタン・利用者軸ビュー・基本予定一覧・移動時間D&D警告・/settings ページのE2Eテスト追加
 3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
 4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件（全クローズ）
-- **クローズ済み（直近）**: Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）
+- **クローズ済み（直近）**: Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）、PR #117（通知設定管理・フレーキー修正）
 - **クローズ済み（既往）**: Issue #96（PR #102）、Issue #98 Phase 1（PR #103）、Phase 2（PR #104）、Phase 3（PR #105）
 
 ## 参考資料（ローカルExcel）
