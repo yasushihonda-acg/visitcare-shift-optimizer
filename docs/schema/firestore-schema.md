@@ -10,6 +10,7 @@
 | `orders` | ~160/週 | 個別サービスオーダー |
 | `travel_times` | ~2,550 | 拠点間移動時間キャッシュ |
 | `staff_unavailability` | 随時 | スタッフ希望休 |
+| `settings` | 1 | アプリ設定（通知設定等） |
 
 ---
 
@@ -172,6 +173,29 @@ pending → cancelled（キャンセル）
 | all_day | boolean | 終日休みか |
 | start_time | string (HH:MM) | 不在開始（all_day=false時） |
 | end_time | string (HH:MM) | 不在終了（all_day=false時） |
+
+---
+
+## settings
+
+アプリ設定。ドキュメントID = 設定カテゴリ名（例: `notification`）。
+
+### settings/notification
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| sender_email | string | Yes | メール通知の送信元アドレス |
+| updated_at | Timestamp | Yes | 更新日時 |
+
+### セキュリティルール
+
+- read: 認証済みユーザー全員
+- create/update: admin のみ（デモモードは全員可）
+- delete: 禁止（常に false）
+
+### Optimizer API フォールバック
+
+`sender_email` が未設定の場合、`NOTIFICATION_SENDER_EMAIL` 環境変数を使用する。
 
 ---
 

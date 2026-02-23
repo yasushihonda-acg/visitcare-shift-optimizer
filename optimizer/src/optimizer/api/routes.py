@@ -465,6 +465,25 @@ def export_report(
 # 通知エンドポイント
 # ---------------------------------------------------------------------------
 
+
+def _get_sender_email() -> str:
+    """Firestore settings から sender_email を取得する。
+
+    settings/notification ドキュメントの sender_email フィールドを参照する。
+    未設定時は NOTIFICATION_SENDER_EMAIL 環境変数にフォールバックする。
+    """
+    try:
+        db = get_firestore_client()
+        doc_snapshot = db.collection("settings").document("notification").get()
+        if doc_snapshot.exists:
+            data = doc_snapshot.to_dict()
+            if data and data.get("sender_email"):
+                return str(data["sender_email"])
+    except Exception:
+        logger.exception("Firestore から sender_email の取得に失敗しました。env var にフォールバックします")
+    return os.getenv("NOTIFICATION_SENDER_EMAIL", "")
+
+
 @router.post(
     "/notify/shift-confirmed",
     response_model=NotificationResponse,
@@ -482,7 +501,8 @@ def notify_shift_confirmed(
         total_orders=req.total_orders,
         message=req.message,
     )
-    sent = send_email(recipients, subject, html)
+    sender_email = _get_sender_email()
+    sent = send_email(recipients, subject, html, sender_email=sender_email)
     logger.info("シフト確定通知送信: sent=%d, recipients=%s", sent, recipients)
     return NotificationResponse(emails_sent=sent, recipients=recipients)
 
@@ -502,7 +522,8 @@ def notify_shift_changed(
         week_start_date=req.week_start_date,
         changes=[c.model_dump() for c in req.changes],
     )
-    sent = send_email(recipients, subject, html)
+    sender_email = _get_sender_email()
+    sent = send_email(recipients, subject, html, sender_email=sender_email)
     logger.info("シフト変更通知送信: sent=%d, changes=%d件", sent, len(req.changes))
     return NotificationResponse(emails_sent=sent, recipients=recipients)
 
@@ -522,7 +543,8 @@ def notify_unavailability_reminder(
         target_week_start=req.target_week_start,
         helpers_not_submitted=req.helpers_not_submitted,
     )
-    sent = send_email(recipients, subject, html)
+    sender_email = _get_sender_email()
+    sent = send_email(recipients, subject, html, sender_email=sender_email)
     logger.info(
         "希望休催促通知送信: sent=%d, helpers=%d名",
         sent,

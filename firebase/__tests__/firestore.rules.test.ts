@@ -1119,3 +1119,132 @@ describe('認証済みユーザー - service_types delete', () => {
     await assertFails(deleteDoc(doc(authed.firestore(), 'service_types', 'physical_care')));
   });
 });
+
+// ============================================================
+// settings: アプリ設定（admin のみ編集可）
+// ============================================================
+
+/** isValidSettings を満たす有効な設定データ */
+const validSettingsData = {
+  sender_email: 'noreply@example.com',
+  updated_at: serverTimestamp(),
+};
+
+describe('settings - 未認証ユーザー', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'settings', 'notification'), validSettingsData);
+    });
+  });
+
+  it('未認証ユーザーは settings を読み取れない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(getDoc(doc(unauthed.firestore(), 'settings', 'notification')));
+  });
+
+  it('未認証ユーザーは settings を作成できない', async () => {
+    const unauthed = testEnv.unauthenticatedContext();
+    await assertFails(setDoc(doc(unauthed.firestore(), 'settings', 'notification2'), validSettingsData));
+  });
+});
+
+describe('settings - 認証済みユーザー（読み取り）', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'settings', 'notification'), validSettingsData);
+    });
+  });
+
+  it('認証済みユーザーは settings を読み取れる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(getDoc(doc(authed.firestore(), 'settings', 'notification')));
+  });
+
+  it('service_manager は settings を読み取れる', async () => {
+    const manager = testEnv.authenticatedContext('mgr-1', { role: 'service_manager' });
+    await assertSucceeds(getDoc(doc(manager.firestore(), 'settings', 'notification')));
+  });
+});
+
+describe('settings - admin 書き込み', () => {
+  it('admin は settings を新規作成できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'settings', 'notification'), validSettingsData)
+    );
+  });
+
+  it('admin は settings を更新できる', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'settings', 'notification'), validSettingsData);
+    });
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'settings', 'notification'), {
+        ...validSettingsData,
+        sender_email: 'updated@example.com',
+      })
+    );
+  });
+
+  it('sender_email が string でない場合は拒否される', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertFails(
+      setDoc(doc(admin.firestore(), 'settings', 'notification'), {
+        sender_email: 123,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+});
+
+describe('settings - service_manager 書き込み拒否', () => {
+  it('service_manager は settings を作成できない', async () => {
+    const manager = testEnv.authenticatedContext('mgr-1', { role: 'service_manager' });
+    await assertFails(
+      setDoc(doc(manager.firestore(), 'settings', 'notification'), validSettingsData)
+    );
+  });
+
+  it('service_manager は settings を更新できない', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'settings', 'notification'), validSettingsData);
+    });
+    const manager = testEnv.authenticatedContext('mgr-1', { role: 'service_manager' });
+    await assertFails(
+      updateDoc(doc(manager.firestore(), 'settings', 'notification'), {
+        sender_email: 'hacked@example.com',
+      })
+    );
+  });
+});
+
+describe('settings - delete 禁止', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'settings', 'notification'), validSettingsData);
+    });
+  });
+
+  it('admin でも settings を削除できない', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertFails(deleteDoc(doc(admin.firestore(), 'settings', 'notification')));
+  });
+});
+
+describe('settings - デモモード（hasNoRole）', () => {
+  it('デモモードユーザーは settings を読み取れる', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'settings', 'notification'), validSettingsData);
+    });
+    const authed = testEnv.authenticatedContext('demo-user');
+    await assertSucceeds(getDoc(doc(authed.firestore(), 'settings', 'notification')));
+  });
+
+  it('デモモードユーザーは settings を作成できる', async () => {
+    const authed = testEnv.authenticatedContext('demo-user');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'settings', 'notification'), validSettingsData)
+    );
+  });
+});
