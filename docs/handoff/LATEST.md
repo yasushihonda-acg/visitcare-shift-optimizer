@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-23（ファビコン追加 + PR #119: 利用者・ヘルパーマスタに詳細シート（読み取り専用）を追加）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加）実装済み・マージ済み
+**最終更新**: 2026-02-23（E2Eテスト拡充: 詳細シート・通知ダイアログ +10テスト → 計58テスト）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -60,10 +60,15 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-02-19 ～ 2026-02-23）
 
+- **test (2026-02-23)** ✅: E2Eテスト拡充（詳細シート・通知ダイアログ）— 48 → **58テスト**
+  - `web/e2e/masters-detail.spec.ts` 新規（7テスト）: 利用者/ヘルパー行クリック→DetailSheet表示・Escape閉じ・編集ボタン→EditDialog遷移・Pencilボタン直接遷移
+  - `web/e2e/schedule-interactions.spec.ts` 追加（3テスト）: 「変更通知」disabled確認・最適化後NotifyConfirmDialog表示・スキップ動作
+  - CI: in_progress（2026-02-23T07:36:16Z）
+
 - **feat (2026-02-23)** ✅: 訪問介護アプリ用ファビコンを追加（家＋ハート）
   - `web/src/app/icon.svg` 新規追加: ティール背景に白い家＋ピンクのハートデザイン
   - Next.js App Router の自動検出により `<link rel="icon">` として配信（追加設定不要）
-  - CI: in_progress（2026-02-23T06:55:39Z）
+  - CI: success（2026-02-23T06:55:39Z）
 
 - **PR #119 (2026-02-23)** ✅: 利用者・ヘルパーマスタに詳細シート（読み取り専用）を追加
   - `web/src/components/masters/CustomerDetailSheet.tsx` 新規: 行クリック → 右サイドパネルで詳細表示（Radix UI Sheet）
@@ -252,12 +257,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-23 ファビコン追加後）
+## 最新テスト結果サマリー（2026-02-23 E2Eテスト拡充後）
 - **Optimizer**: 285件 pass（PR #117 TestGetSenderEmail 4件追加）
 - **Web (Next.js)**: 403件 pass（PR #119: +31件）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
-- **E2E Tests (Playwright)**: 48テスト（PR #119 CI success 2026-02-23T06:27:14Z）
-- **CI/CD**: ファビコン追加 CI in_progress（main, 2026-02-23T06:55:39Z）/ PR #119 CI success（2026-02-23T06:27:14Z）
+- **E2E Tests (Playwright)**: **58テスト**（+10: 詳細シート7件・通知ダイアログ3件、CI in_progress 2026-02-23T07:36:16Z）
+- **CI/CD**: E2Eテスト拡充 CI in_progress（main, 2026-02-23T07:36:16Z）/ PR #119 CI success（2026-02-23T06:27:14Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
