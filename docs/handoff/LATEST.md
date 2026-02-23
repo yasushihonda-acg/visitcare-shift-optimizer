@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-23（利用者マスタ拡充: 詳細シート表示拡充・連絡先4列・担当居宅・あおぞらID・ふりがな検索・電話番号②/備考）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充）実装済み・マージ済み
+**最終更新**: 2026-02-24（利用者マスタ拡充続き: ふりがな入力・あかさたなソート/フィルター・あおぞらIDフォーム整理・基本予定一覧に行クリック詳細シート追加）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -58,7 +58,34 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-02-19 ～ 2026-02-23）
+## 直近の実装（2026-02-23 ～ 2026-02-24）
+
+- **feat (2026-02-24)** ✅: 基本予定一覧に行クリック詳細シートを追加
+  - `web/src/app/masters/weekly-schedule/page.tsx`: テーブル行クリックで `CustomerDetailSheet` を表示（利用者マスタと同一パターン）
+  - 詳細シートの編集ボタンから `CustomerEditDialog` に遷移（`canEditCustomers` 権限制御）
+  - ストライプ行 + hover ハイライトで視認性向上
+  - 利用者名セルにふりがなをサブテキスト表示
+
+- **feat (2026-02-24)** ✅: 利用者編集フォームのあおぞらIDをフォーム先頭に移動
+  - `CustomerEditDialog.tsx`: あおぞらID入力欄を「基本情報」セクションの先頭に移動
+
+- **feat (2026-02-23)** ✅: 利用者マスタに頭文字（あかさたな）フィルターボタンを追加
+  - `web/src/app/masters/customers/page.tsx`: 検索バー下に「頭文字」ボタンバー（あ か さ た な は ま や ら わ）配置
+  - ボタンクリックで該当かな行の利用者のみ表示（再クリックで解除、✕ボタンでもクリア）
+  - 濁音・半濁音も同じ行として扱う（例: が→か行、ば/ぱ→は行）
+  - 頭文字フィルターとテキスト検索・ふりがなソートは併用可能
+
+- **feat (2026-02-23)** ✅: 外部連携IDをあおぞらIDのみに整理（フォーム・スキーマ）
+  - `CustomerEditDialog.tsx`: 介ソルID・カカラID・CURA IDの入力欄を削除
+  - `schemas.ts`: `kaiso_id`/`karakara_id`/`cura_id` を Zodスキーマから削除
+  - あおぞらIDのみシンプルな1フィールドとして表示
+
+- **feat (2026-02-23)** ✅: 利用者マスタにふりがな入力・あかさたなソートを追加
+  - `CustomerEditDialog.tsx`: 姓/名のふりがな入力欄（`family_kana`/`given_kana`）追加
+  - `customers/page.tsx`: 氏名列ヘッダークリックでふりがなあかさたなソート（昇順/降順/なしの3トグル）
+  - 氏名セルにふりがなをサブテキストで表示
+  - `CustomerDetailSheet.tsx`: 名前の下にふりがなを表示
+  - `schemas.ts`: `personNameSchema` に `family_kana`/`given_kana` を追加（オプション）
 
 - **feat (2026-02-23)** ✅: 利用者に電話番号②・電話備考を追加（テーブル・詳細・編集フォーム）
   - 利用者マスタテーブルに `phone_number_2` / `phone_number_2_note` カラムを追加
@@ -295,12 +322,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-23 利用者マスタ拡充後）
+## 最新テスト結果サマリー（2026-02-24 基本予定一覧詳細シート・ふりがなフィルター追加後）
 - **Optimizer**: 285件 pass（PR #117 TestGetSenderEmail 4件追加）
-- **Web (Next.js)**: 403件 pass（PR #119: +31件）※今セッションの変更でユニットテスト追加の可能性あり
+- **Web (Next.js)**: 403件 pass（確認済み 2026-02-24）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
-- **E2E Tests (Playwright)**: **58テスト**（+10: 詳細シート7件・通知ダイアログ3件）
-- **CI/CD**: 最新コミット（電話番号②追加）CI success（2026-02-23T08:54:12Z）
+- **E2E Tests (Playwright)**: **58テスト**（直近追加: 詳細シート7件・通知ダイアログ3件）
+- **CI/CD**: 最新コミット（基本予定一覧詳細シート追加）CI success（2026-02-23T15:01:46Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -352,8 +379,8 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
-2. **利用者マスタ 本番Firestore再投入**: 今セッションで追加した `phone_number_2`/`phone_number_2_note` フィールドをseedに反映してから `SEED_TARGET=production npx tsx scripts/import-all.ts` で再投入を検討（本番データに新フィールドがなくてもUIは正常動作）
-3. **E2Eテスト拡充**: 電話番号②・検索（ふりがな/あおぞらID）のE2Eテスト追加（現在58テスト）
+2. **利用者マスタ 本番Firestore再投入**: `phone_number_2`/`phone_number_2_note`・`family_kana`/`given_kana` 等の新フィールドをseedに反映してから再投入を検討（本番データに新フィールドがなくてもUIは正常動作）
+3. **E2Eテスト拡充**: 電話番号②・ふりがな検索・あかさたなフィルター・基本予定一覧詳細シートのE2Eテスト追加（現在58テスト）
 4. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
 5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
