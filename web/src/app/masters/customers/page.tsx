@@ -117,12 +117,14 @@ export default function CustomersPage() {
       </div>
 
       <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[1350px]">
+        <Table className="min-w-[1600px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-28">あおぞらID</TableHead>
               <TableHead className="w-32">氏名</TableHead>
-              <TableHead className="w-28">電話番号</TableHead>
+              <TableHead className="w-28">電話番号①</TableHead>
+              <TableHead className="w-28">電話番号②</TableHead>
+              <TableHead className="w-36">電話備考</TableHead>
               <TableHead>住所</TableHead>
               <TableHead className="w-24">サ責</TableHead>
               <TableHead className="w-28">担当居宅</TableHead>
@@ -138,7 +140,7 @@ export default function CustomersPage() {
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={11 + (canEditCustomers ? 1 : 0)}
+                  colSpan={13 + (canEditCustomers ? 1 : 0)}
                   className="text-center text-muted-foreground py-8"
                 >
                   {search ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
@@ -159,6 +161,12 @@ export default function CustomersPage() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {customer.phone_number ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {customer.phone_number2 ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground truncate max-w-[9rem]">
+                    {customer.phone_note ?? '-'}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground truncate max-w-xs">
                     {customer.address}

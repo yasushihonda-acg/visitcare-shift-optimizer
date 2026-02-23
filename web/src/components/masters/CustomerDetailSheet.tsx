@@ -109,7 +109,13 @@ export function CustomerDetailSheet({
               <InfoRow label="住所" value={customer.address} />
               <InfoRow label="サ責" value={customer.service_manager} />
               {customer.phone_number && (
-                <InfoRow label="電話番号" value={customer.phone_number} />
+                <InfoRow label="電話番号①" value={customer.phone_number} />
+              )}
+              {customer.phone_number2 && (
+                <InfoRow label="電話番号②" value={customer.phone_number2} />
+              )}
+              {customer.phone_note && (
+                <InfoRow label="電話備考" value={customer.phone_note} />
               )}
               <InfoRow
                 label="性別要件"

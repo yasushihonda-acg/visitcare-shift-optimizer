@@ -266,11 +266,29 @@ export function CustomerEditDialog({
             <Label className="text-sm font-medium">連絡先・関連機関（任意）</Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="phone_number" className="text-xs text-muted-foreground">電話番号</Label>
+                <Label htmlFor="phone_number" className="text-xs text-muted-foreground">電話番号①</Label>
                 <Input
                   id="phone_number"
                   {...register('phone_number')}
                   placeholder="099-xxx-xxxx"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phone_number2" className="text-xs text-muted-foreground">電話番号②</Label>
+                <Input
+                  id="phone_number2"
+                  {...register('phone_number2')}
+                  placeholder="099-xxx-xxxx"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="phone_note" className="text-xs text-muted-foreground">電話備考</Label>
+                <Input
+                  id="phone_note"
+                  {...register('phone_note')}
+                  placeholder="電話番号に関する備考（例：夜間不可）"
                   className="h-8 text-sm"
                 />
               </div>
@@ -469,6 +487,8 @@ function getDefaults(customer?: Customer): CustomerFormValues {
       cura_id: '',
       aozora_id: '',
       phone_number: '',
+      phone_number2: '',
+      phone_note: '',
       home_care_office: '',
       consultation_support_office: '',
       care_manager_name: '',
@@ -492,6 +512,8 @@ function getDefaults(customer?: Customer): CustomerFormValues {
     cura_id: customer.cura_id ?? '',
     aozora_id: customer.aozora_id ?? '',
     phone_number: customer.phone_number ?? '',
+    phone_number2: customer.phone_number2 ?? '',
+    phone_note: customer.phone_note ?? '',
     home_care_office: customer.home_care_office ?? '',
     consultation_support_office: customer.consultation_support_office ?? '',
     care_manager_name: customer.care_manager_name ?? '',

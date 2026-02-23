@@ -88,6 +88,8 @@ export interface Customer {
   cura_id?: string;
   aozora_id?: string;
   phone_number?: string;
+  phone_number2?: string;
+  phone_note?: string;
   home_care_office?: string;
   consultation_support_office?: string;
   care_manager_name?: string;

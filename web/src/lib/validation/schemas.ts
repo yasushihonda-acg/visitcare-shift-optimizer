@@ -75,6 +75,8 @@ export const customerSchema = z.object({
   cura_id: z.string().optional(),
   aozora_id: z.string().optional(),
   phone_number: z.string().optional(),
+  phone_number2: z.string().optional(),
+  phone_note: z.string().optional(),
   home_care_office: z.string().optional(),
   consultation_support_office: z.string().optional(),
   care_manager_name: z.string().optional(),
