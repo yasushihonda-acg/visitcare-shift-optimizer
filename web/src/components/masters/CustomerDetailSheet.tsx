@@ -82,8 +82,8 @@ export function CustomerDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-lg overflow-y-auto" data-testid="customer-detail-sheet">
-        <SheetHeader>
+      <SheetContent className="sm:max-w-2xl overflow-y-auto" data-testid="customer-detail-sheet">
+        <SheetHeader className="sticky top-0 bg-background z-10 border-b">
           <div className="flex items-start justify-between gap-2">
             <SheetTitle className="text-lg">{fullName}</SheetTitle>
             <Button
@@ -99,7 +99,7 @@ export function CustomerDetailSheet({
           </div>
         </SheetHeader>
 
-        <div className="mt-4 space-y-6">
+        <div className="px-4 pb-6 space-y-6">
           {/* 1. 基本情報 */}
           <section>
             <SectionHeader>基本情報</SectionHeader>
