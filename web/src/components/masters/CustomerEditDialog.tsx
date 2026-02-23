@@ -354,46 +354,14 @@ export function CustomerEditDialog({
           </div>
 
           {/* 外部連携ID */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">外部連携ID（任意）</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="aozora_id" className="text-xs text-muted-foreground">あおぞらID</Label>
-                <Input
-                  id="aozora_id"
-                  {...register('aozora_id')}
-                  placeholder="AZ-001"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="kaiso_id" className="text-xs text-muted-foreground">介ソルID</Label>
-                <Input
-                  id="kaiso_id"
-                  {...register('kaiso_id')}
-                  placeholder="KS-001"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="karakara_id" className="text-xs text-muted-foreground">カカラID</Label>
-                <Input
-                  id="karakara_id"
-                  {...register('karakara_id')}
-                  placeholder="KK-001"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="cura_id" className="text-xs text-muted-foreground">CURA ID</Label>
-                <Input
-                  id="cura_id"
-                  {...register('cura_id')}
-                  placeholder="CR-001"
-                  className="h-8 text-sm"
-                />
-              </div>
-            </div>
+          <div className="space-y-1">
+            <Label htmlFor="aozora_id">あおぞらID（任意）</Label>
+            <Input
+              id="aozora_id"
+              {...register('aozora_id')}
+              placeholder="AZ-001"
+              className="max-w-[200px]"
+            />
           </div>
 
           {/* スタッフ性別要件 */}
@@ -504,9 +472,6 @@ function getDefaults(customer?: Customer): CustomerFormValues {
       household_id: '',
       notes: '',
       irregular_patterns: [],
-      kaiso_id: '',
-      karakara_id: '',
-      cura_id: '',
       aozora_id: '',
       phone_number: '',
       phone_number2: '',
@@ -529,9 +494,6 @@ function getDefaults(customer?: Customer): CustomerFormValues {
     household_id: customer.household_id ?? '',
     notes: customer.notes ?? '',
     irregular_patterns: customer.irregular_patterns ?? [],
-    kaiso_id: customer.kaiso_id ?? '',
-    karakara_id: customer.karakara_id ?? '',
-    cura_id: customer.cura_id ?? '',
     aozora_id: customer.aozora_id ?? '',
     phone_number: customer.phone_number ?? '',
     phone_number2: customer.phone_number2 ?? '',
