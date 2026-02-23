@@ -170,7 +170,7 @@ describe('customerSchema', () => {
     expect(customerSchema.safeParse(data).success).toBe(false);
   });
 
-  it('serviceSlotの不正なservice_typeはエラー', () => {
+  it('serviceSlotのservice_typeが空文字の場合エラー', () => {
     const data = {
       ...validCustomer(),
       weekly_services: {
@@ -178,7 +178,7 @@ describe('customerSchema', () => {
           {
             start_time: '09:00',
             end_time: '10:00',
-            service_type: 'invalid_type',
+            service_type: '',
             staff_count: 1,
           },
         ],
@@ -577,9 +577,13 @@ describe('unavailabilitySchema', () => {
 // ================================================================
 function validServiceType() {
   return {
-    code: 'physical_care',
-    label: '身体介護',
-    short_label: '身体',
+    code: '身体介護2・Ⅱ',
+    category: '訪問介護',
+    label: '身体介護2・Ⅱ',
+    duration: '30分以上60分未満',
+    care_level: '要介護1',
+    units: 396,
+    short_label: '身体介護2・Ⅱ',
     requires_physical_care_cert: true,
     sort_order: 1,
   };
@@ -590,10 +594,10 @@ describe('serviceTypeSchema', () => {
     expect(serviceTypeSchema.safeParse(validServiceType()).success).toBe(true);
   });
 
-  it('全8種のcodeでパースできる', () => {
+  it('日本語コード・英数字コードどちらでもパースできる', () => {
     const codes = [
-      'physical_care', 'daily_living', 'mixed', 'prevention',
-      'private', 'disability', 'transport_support', 'severe_visiting',
+      '身体介護2・Ⅱ', '生活援助３・Ⅱ', '通所介護Ⅰ11',
+      'physical_care', 'Physical_Care', 'daily-living',
     ];
     for (const code of codes) {
       const data = { ...validServiceType(), code };
@@ -606,13 +610,8 @@ describe('serviceTypeSchema', () => {
     expect(serviceTypeSchema.safeParse(data).success).toBe(false);
   });
 
-  it('codeに大文字が含まれる場合エラー', () => {
-    const data = { ...validServiceType(), code: 'Physical_Care' };
-    expect(serviceTypeSchema.safeParse(data).success).toBe(false);
-  });
-
-  it('codeにハイフンが含まれる場合エラー', () => {
-    const data = { ...validServiceType(), code: 'physical-care' };
+  it('categoryが空文字の場合エラー', () => {
+    const data = { ...validServiceType(), category: '' };
     expect(serviceTypeSchema.safeParse(data).success).toBe(false);
   });
 

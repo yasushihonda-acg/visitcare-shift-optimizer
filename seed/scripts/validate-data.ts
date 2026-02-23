@@ -12,10 +12,14 @@ interface ValidationError {
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const VALID_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-const VALID_SERVICE_TYPES = ['physical_care', 'daily_living', 'mixed', 'prevention', 'private', 'disability', 'transport_support', 'severe_visiting'];
 const VALID_CONSTRAINT_TYPES = ['ng', 'preferred'];
 const VALID_TRANSPORT = ['car', 'bicycle', 'walk'];
 const VALID_EMPLOYMENT = ['full_time', 'part_time'];
+
+function loadValidServiceTypes(): string[] {
+  const rows = parseCSV<Record<string, string>>(resolve(DATA_DIR, 'service-types.csv'));
+  return rows.map((r) => r.code);
+}
 
 // 鹿児島市の座標範囲
 const LAT_RANGE = { min: 31.5, max: 31.7 };
@@ -101,6 +105,7 @@ export function validateHelpers(): ValidationError[] {
 export function validateServices(): ValidationError[] {
   const errors: ValidationError[] = [];
   const services = parseCSV<Record<string, string>>(resolve(DATA_DIR, 'customer-services.csv'));
+  const validServiceTypes = new Set(loadValidServiceTypes());
 
   services.forEach((s, i) => {
     const row = i + 2;
@@ -117,7 +122,7 @@ export function validateServices(): ValidationError[] {
     if (!VALID_DAYS.includes(s.day_of_week)) {
       errors.push({ file: 'customer-services.csv', row, field: 'day_of_week', message: `Invalid day: ${s.day_of_week}` });
     }
-    if (!VALID_SERVICE_TYPES.includes(s.service_type)) {
+    if (!validServiceTypes.has(s.service_type)) {
       errors.push({ file: 'customer-services.csv', row, field: 'service_type', message: `Invalid type: ${s.service_type}` });
     }
   });

@@ -3,16 +3,8 @@
  * shared/types/ の Timestamp → Date 変換版
  */
 
-// リテラル型はそのまま再利用
-export type ServiceType =
-  | 'physical_care'
-  | 'daily_living'
-  | 'mixed'
-  | 'prevention'
-  | 'private'
-  | 'disability'
-  | 'transport_support'
-  | 'severe_visiting';
+// サービス種別（介護保険サービスコード文字列）
+export type ServiceType = string;
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 export type TimeString = string;
 export type EmploymentType = 'full_time' | 'part_time';
@@ -149,7 +141,11 @@ export interface StaffUnavailability {
 export interface ServiceTypeDoc {
   id: string;   // = code
   code: string;
+  category: string;                     // 通所介護Ⅰ / 地域密着型 / 訪問看護 / 訪問介護 / 大規模型（Ⅰ）
   label: string;
+  duration: string;                     // サービス内容時間（例: "30分以上60分未満"）
+  care_level: string;                   // 介護度（例: "要介護1"）、加算等は空文字
+  units: number;                        // 単位数
   short_label: string;
   requires_physical_care_cert: boolean;
   sort_order: number;

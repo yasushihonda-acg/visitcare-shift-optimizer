@@ -9,16 +9,13 @@ interface ServiceTypeSummaryCardProps {
   totalMinutes: number;
 }
 
-const SERVICE_TYPE_COLORS: Record<string, string> = {
-  physical_care: 'bg-violet-500',
-  daily_living: 'bg-teal-500',
-  mixed: 'bg-orange-500',
-  prevention: 'bg-purple-400',
-  private: 'bg-pink-500',
-  disability: 'bg-lime-500',
-  transport_support: 'bg-cyan-500',
-  severe_visiting: 'bg-red-500',
-};
+function getServiceBarColor(code: string): string {
+  if (code.startsWith('通所介護Ⅰ')) return 'bg-blue-500';
+  if (code.startsWith('地域密着型')) return 'bg-teal-500';
+  if (code.startsWith('訪問看護')) return 'bg-purple-500';
+  if (code.startsWith('大規模型Ⅰ')) return 'bg-red-500';
+  return 'bg-orange-500'; // 訪問介護（身体介護・生活援助等）
+}
 
 export function ServiceTypeSummaryCard({ items, totalMinutes }: ServiceTypeSummaryCardProps) {
   return (
@@ -38,7 +35,7 @@ export function ServiceTypeSummaryCard({ items, totalMinutes }: ServiceTypeSumma
             const pct = totalMinutes > 0
               ? Math.round((item.totalMinutes / totalMinutes) * 100)
               : 0;
-            const barColor = SERVICE_TYPE_COLORS[item.serviceType] ?? 'bg-gray-400';
+            const barColor = getServiceBarColor(item.serviceType);
             return (
               <div key={item.serviceType}>
                 <div className="mb-1 flex items-center justify-between">

@@ -3,7 +3,11 @@ import { getDb } from '@/lib/firebase';
 
 type ServiceTypeInput = {
   code: string;
+  category: string;
   label: string;
+  duration: string;
+  care_level: string;
+  units: number;
   short_label: string;
   requires_physical_care_cert: boolean;
   sort_order: number;

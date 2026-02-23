@@ -7,8 +7,11 @@ const DATA_DIR = resolve(import.meta.dirname, '../data');
 
 interface ServiceTypeRow {
   code: string;
+  category: string;
   label: string;
-  short_label: string;
+  duration: string;
+  care_level: string;
+  units: string;
   requires_physical_care_cert: string;
   sort_order: string;
 }
@@ -22,8 +25,12 @@ export async function importServiceTypes(): Promise<number> {
     id: row.code,
     data: {
       code: row.code,
+      category: row.category,
       label: row.label,
-      short_label: row.short_label,
+      duration: row.duration,
+      care_level: row.care_level,
+      units: parseInt(row.units, 10) || 0,
+      short_label: row.label,
       requires_physical_care_cert: row.requires_physical_care_cert === 'true',
       sort_order: parseInt(row.sort_order, 10),
       created_at: now,

@@ -83,11 +83,11 @@ export function ServiceTypeEditDialog({
                 <Input
                   id="code"
                   {...register('code')}
-                  placeholder="physical_care"
+                  placeholder="身体介護2・Ⅱ"
                   className="font-mono"
                 />
                 <p className="text-xs text-muted-foreground">
-                  英小文字とアンダースコアのみ。保存後は変更できません。
+                  介護保険サービスコード。保存後は変更できません。
                 </p>
               </>
             ) : (
@@ -107,14 +107,66 @@ export function ServiceTypeEditDialog({
           </div>
 
           <div className="space-y-1">
+            <Label htmlFor="category">カテゴリ</Label>
+            <Input
+              id="category"
+              {...register('category')}
+              placeholder="訪問介護"
+            />
+            {errors.category && (
+              <p className="text-xs text-destructive">{errors.category.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
             <Label htmlFor="label">表示名</Label>
             <Input
               id="label"
               {...register('label')}
-              placeholder="身体介護"
+              placeholder="身体介護2・Ⅱ"
             />
             {errors.label && (
               <p className="text-xs text-destructive">{errors.label.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="duration">サービス時間</Label>
+              <Input
+                id="duration"
+                {...register('duration')}
+                placeholder="30分以上60分未満"
+              />
+              {errors.duration && (
+                <p className="text-xs text-destructive">{errors.duration.message}</p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="care_level">介護度</Label>
+              <Input
+                id="care_level"
+                {...register('care_level')}
+                placeholder="要介護1〜5"
+              />
+              {errors.care_level && (
+                <p className="text-xs text-destructive">{errors.care_level.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="units">単位数</Label>
+            <Input
+              id="units"
+              type="number"
+              min={0}
+              {...register('units', { valueAsNumber: true })}
+              placeholder="394"
+              className="max-w-[120px]"
+            />
+            {errors.units && (
+              <p className="text-xs text-destructive">{errors.units.message}</p>
             )}
           </div>
 
@@ -186,7 +238,11 @@ function getDefaults(serviceType?: ServiceTypeDoc): ServiceTypeFormValues {
   if (!serviceType) {
     return {
       code: '',
+      category: '',
       label: '',
+      duration: '',
+      care_level: '',
+      units: 0,
       short_label: '',
       requires_physical_care_cert: false,
       sort_order: 1,
@@ -194,7 +250,11 @@ function getDefaults(serviceType?: ServiceTypeDoc): ServiceTypeFormValues {
   }
   return {
     code: serviceType.code,
+    category: serviceType.category,
     label: serviceType.label,
+    duration: serviceType.duration,
+    care_level: serviceType.care_level,
+    units: serviceType.units,
     short_label: serviceType.short_label,
     requires_physical_care_cert: serviceType.requires_physical_care_cert,
     sort_order: serviceType.sort_order,

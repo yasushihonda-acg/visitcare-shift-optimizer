@@ -132,44 +132,44 @@ class TestAggregateStatusSummary:
 # ===========================================================================
 class TestAggregateServiceTypeSummary:
     def test_mixed_types(self) -> None:
-        """physical_care と daily_living が混在"""
+        """異なるサービス種別コードが混在（configsなしはコードそのものがラベル）"""
         orders = [
-            _order(service_type="physical_care", start_time="09:00", end_time="10:00"),
-            _order(service_type="daily_living", start_time="10:00", end_time="11:30"),
-            _order(service_type="physical_care", start_time="13:00", end_time="14:00"),
+            _order(service_type="身体介護2・Ⅱ", start_time="09:00", end_time="10:00"),
+            _order(service_type="生活援助３・Ⅱ", start_time="10:00", end_time="11:30"),
+            _order(service_type="身体介護2・Ⅱ", start_time="13:00", end_time="14:00"),
         ]
         result = aggregate_service_type_summary(orders)
         assert len(result) == 2
-        phys = next(r for r in result if r.service_type == "physical_care")
-        daily = next(r for r in result if r.service_type == "daily_living")
+        phys = next(r for r in result if r.service_type == "身体介護2・Ⅱ")
+        daily = next(r for r in result if r.service_type == "生活援助３・Ⅱ")
         assert phys.visit_count == 2
         assert phys.total_minutes == 120
-        assert phys.label == "身体介護"
+        assert phys.label == "身体介護2・Ⅱ"
         assert daily.visit_count == 1
         assert daily.total_minutes == 90
-        assert daily.label == "生活援助"
+        assert daily.label == "生活援助３・Ⅱ"
 
     def test_single_type(self) -> None:
         """1種類のみ"""
         orders = [
-            _order(service_type="daily_living", start_time="09:00", end_time="10:00"),
+            _order(service_type="生活援助３・Ⅱ", start_time="09:00", end_time="10:00"),
         ]
         result = aggregate_service_type_summary(orders)
         assert len(result) == 1
-        assert result[0].service_type == "daily_living"
+        assert result[0].service_type == "生活援助３・Ⅱ"
 
     def test_sorted_by_visit_count_desc(self) -> None:
         """visitCount降順ソート確認"""
         orders = [
-            _order(service_type="daily_living", start_time="09:00", end_time="10:00"),
-            _order(service_type="physical_care", start_time="09:00", end_time="10:00"),
-            _order(service_type="physical_care", start_time="11:00", end_time="12:00"),
-            _order(service_type="physical_care", start_time="13:00", end_time="14:00"),
+            _order(service_type="生活援助３・Ⅱ", start_time="09:00", end_time="10:00"),
+            _order(service_type="身体介護2・Ⅱ", start_time="09:00", end_time="10:00"),
+            _order(service_type="身体介護2・Ⅱ", start_time="11:00", end_time="12:00"),
+            _order(service_type="身体介護2・Ⅱ", start_time="13:00", end_time="14:00"),
         ]
         result = aggregate_service_type_summary(orders)
-        assert result[0].service_type == "physical_care"
+        assert result[0].service_type == "身体介護2・Ⅱ"
         assert result[0].visit_count == 3
-        assert result[1].service_type == "daily_living"
+        assert result[1].service_type == "生活援助３・Ⅱ"
         assert result[1].visit_count == 1
 
     def test_empty_orders(self) -> None:
@@ -179,33 +179,33 @@ class TestAggregateServiceTypeSummary:
 
     def test_dynamic_label_from_service_type_configs(self) -> None:
         """service_type_configsから動的ラベルを取得"""
-        orders = [_order(service_type="physical_care")]
-        configs = [{"code": "physical_care", "label": "カスタム身体介護"}]
+        orders = [_order(service_type="身体介護2・Ⅱ")]
+        configs = [{"code": "身体介護2・Ⅱ", "label": "カスタム身体介護"}]
         result = aggregate_service_type_summary(orders, service_type_configs=configs)
         assert len(result) == 1
         assert result[0].label == "カスタム身体介護"
 
-    def test_static_fallback_when_no_configs(self) -> None:
-        """service_type_configsなしの場合は静的フォールバック"""
-        orders = [_order(service_type="physical_care")]
+    def test_fallback_to_code_when_no_configs(self) -> None:
+        """service_type_configsなしの場合はコード文字列がラベルになる"""
+        orders = [_order(service_type="身体介護2・Ⅱ")]
         result = aggregate_service_type_summary(orders)
-        assert result[0].label == "身体介護"
+        assert result[0].label == "身体介護2・Ⅱ"
 
-    def test_dynamic_label_overrides_static(self) -> None:
-        """マスタラベルが静的ラベルを上書きする"""
-        orders = [_order(service_type="daily_living")]
-        configs = [{"code": "daily_living", "label": "生活サポート（改）"}]
+    def test_dynamic_label_overrides_code(self) -> None:
+        """マスタラベルがコード文字列フォールバックを上書きする"""
+        orders = [_order(service_type="生活援助３・Ⅱ")]
+        configs = [{"code": "生活援助３・Ⅱ", "label": "生活サポート（改）"}]
         result = aggregate_service_type_summary(orders, service_type_configs=configs)
         assert result[0].label == "生活サポート（改）"
 
-    def test_static_fallback_for_unconfigured_type(self) -> None:
-        """マスタに存在しない種別は静的ラベルまたはコードにフォールバック"""
+    def test_code_fallback_for_unconfigured_type(self) -> None:
+        """マスタに存在しない種別はコード文字列をそのままラベルとして使う"""
         orders = [_order(service_type="physical_care")]
         # daily_livingのみ設定、physical_careは未設定
         configs = [{"code": "daily_living", "label": "生活援助"}]
         result = aggregate_service_type_summary(orders, service_type_configs=configs)
-        # physical_care は未設定なので静的ラベル（SERVICE_TYPE_LABELS）を使う
-        assert result[0].label == "身体介護"
+        # physical_care は未設定なのでコード文字列をそのまま返す（静的フォールバックなし）
+        assert result[0].label == "physical_care"
 
 
 # ===========================================================================

@@ -32,18 +32,6 @@ export interface ServiceTypeSummaryItem {
   totalMinutes: number;
 }
 
-/** @deprecated serviceTypes Map を使用してください */
-export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
-  physical_care: '身体介護',
-  daily_living: '生活援助',
-  mixed: '混合（身体+生活）',
-  prevention: '介護予防',
-  private: '自費サービス',
-  disability: '障がい福祉',
-  transport_support: '移動支援',
-  severe_visiting: '重度訪問介護',
-};
-
 /** 分数を "X時間Y分" 形式にフォーマット */
 export function formatMinutesToHours(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -159,7 +147,7 @@ export function aggregateServiceTypeSummary(orders: Order[], serviceTypes?: Map<
   return Array.from(map.entries())
     .map(([serviceType, data]) => ({
       serviceType,
-      label: serviceTypes?.get(serviceType)?.label ?? SERVICE_TYPE_LABELS[serviceType] ?? serviceType,
+      label: serviceTypes?.get(serviceType)?.label ?? serviceType,
       ...data,
     }))
     .sort((a, b) => b.visitCount - a.visitCount);

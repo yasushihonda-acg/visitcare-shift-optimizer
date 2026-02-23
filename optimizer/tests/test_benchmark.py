@@ -18,7 +18,6 @@ from optimizer.models import (
     HoursRange,
     OptimizationInput,
     Order,
-    ServiceType,
     StaffConstraint,
     StaffConstraintType,
     TravelTime,
@@ -92,7 +91,7 @@ def _generate_data(
             if rng.random() < orders_per_customer_per_day:
                 slot = rng.choice(TIME_SLOTS)
                 # 生活援助を多めに（身体介護は有資格者のみなので制約が厳しい）
-                stype = ServiceType.PHYSICAL_CARE if rng.random() < 0.4 else ServiceType.DAILY_LIVING
+                stype = "physical_care" if rng.random() < 0.4 else "daily_living"
                 orders.append(Order(
                     id=f"o{order_id:04d}",
                     customer_id=c.id,

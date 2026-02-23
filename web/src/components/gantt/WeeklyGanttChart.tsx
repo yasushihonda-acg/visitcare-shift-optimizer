@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { addDays, format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { SERVICE_COLORS, GANTT_START_HOUR, GANTT_END_HOUR, timeToMinutes } from './constants';
+import { getServiceColor, GANTT_START_HOUR, GANTT_END_HOUR, timeToMinutes } from './constants';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 import type { DayOfWeek, Helper, Customer, Order, StaffUnavailability } from '@/types';
 import type { DaySchedule } from '@/hooks/useScheduleData';
@@ -69,7 +69,7 @@ function WeeklyMiniBar({ order, customer, dayColWidth, onDayClick }: WeeklyMiniB
   const left = Math.max(0, ((startMin - GANTT_START_MIN) / GANTT_DURATION_MIN) * dayColWidth);
   const width = Math.max(3, ((endMin - startMin) / GANTT_DURATION_MIN) * dayColWidth);
 
-  const colors = SERVICE_COLORS[order.service_type] ?? SERVICE_COLORS.physical_care;
+  const colors = getServiceColor(order.service_type);
   const customerName = customer
     ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
     : order.customer_id;

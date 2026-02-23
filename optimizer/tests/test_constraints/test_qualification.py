@@ -48,100 +48,6 @@ def _make_order(id: str, customer_id: str, stype: str) -> Order:
     )
 
 
-class TestQualificationConstraint:
-    def test_unqualified_not_assigned_to_physical_care(self) -> None:
-        """無資格者は身体介護に割り当てられない"""
-        inp = OptimizationInput(
-            customers=[_make_customer("C1")],
-            helpers=[
-                _make_helper("H1", can_physical=True),
-                _make_helper("H2", can_physical=False),
-            ],
-            orders=[_make_order("O1", "C1", "physical_care")],
-            travel_times=[],
-            staff_unavailabilities=[],
-            staff_constraints=[],
-        )
-        result = solve(inp)
-        assert result.status == "Optimal"
-        assigned = result.assignments[0].staff_ids
-        assert "H1" in assigned
-        assert "H2" not in assigned
-
-    def test_unqualified_can_do_daily_living(self) -> None:
-        """無資格者は生活援助に割り当て可能"""
-        inp = OptimizationInput(
-            customers=[_make_customer("C1")],
-            helpers=[_make_helper("H1", can_physical=False)],
-            orders=[_make_order("O1", "C1", "daily_living")],
-            travel_times=[],
-            staff_unavailabilities=[],
-            staff_constraints=[],
-        )
-        result = solve(inp)
-        assert result.status == "Optimal"
-        assert "H1" in result.assignments[0].staff_ids
-
-    def test_infeasible_only_unqualified_for_physical(self) -> None:
-        """無資格者しかいないのに身体介護 → Infeasible"""
-        inp = OptimizationInput(
-            customers=[_make_customer("C1")],
-            helpers=[_make_helper("H1", can_physical=False)],
-            orders=[_make_order("O1", "C1", "physical_care")],
-            travel_times=[],
-            staff_unavailabilities=[],
-            staff_constraints=[],
-        )
-        result = solve(inp)
-        assert result.status == "Infeasible"
-
-    def test_unqualified_not_assigned_to_mixed(self) -> None:
-        """無資格者は混合サービスに割り当てられない"""
-        inp = OptimizationInput(
-            customers=[_make_customer("C1")],
-            helpers=[
-                _make_helper("H1", can_physical=True),
-                _make_helper("H2", can_physical=False),
-            ],
-            orders=[_make_order("O1", "C1", "mixed")],
-            travel_times=[],
-            staff_unavailabilities=[],
-            staff_constraints=[],
-        )
-        result = solve(inp)
-        assert result.status == "Optimal"
-        assigned = result.assignments[0].staff_ids
-        assert "H1" in assigned
-        assert "H2" not in assigned
-
-    def test_infeasible_only_unqualified_for_mixed(self) -> None:
-        """無資格者しかいないのに混合サービス → Infeasible"""
-        inp = OptimizationInput(
-            customers=[_make_customer("C1")],
-            helpers=[_make_helper("H1", can_physical=False)],
-            orders=[_make_order("O1", "C1", "mixed")],
-            travel_times=[],
-            staff_unavailabilities=[],
-            staff_constraints=[],
-        )
-        result = solve(inp)
-        assert result.status == "Infeasible"
-
-    def test_unqualified_can_do_prevention(self) -> None:
-        """無資格者は介護予防に割り当て可能"""
-        inp = OptimizationInput(
-            customers=[_make_customer("C1")],
-            helpers=[_make_helper("H1", can_physical=False)],
-            orders=[_make_order("O1", "C1", "prevention")],
-            travel_times=[],
-            staff_unavailabilities=[],
-            staff_constraints=[],
-        )
-        result = solve(inp)
-        assert result.status == "Optimal"
-        assert "H1" in result.assignments[0].staff_ids
-
-
 def _make_service_type_config(code: str, requires_cert: bool) -> ServiceTypeConfig:
     return ServiceTypeConfig(
         code=code,
@@ -150,6 +56,118 @@ def _make_service_type_config(code: str, requires_cert: bool) -> ServiceTypeConf
         requires_physical_care_cert=requires_cert,
         sort_order=0,
     )
+
+
+_CERT_CONFIGS = [
+    _make_service_type_config("身体介護2・Ⅱ", requires_cert=True),
+    _make_service_type_config("生活援助３・Ⅱ", requires_cert=False),
+]
+
+
+class TestQualificationConstraint:
+    def test_unqualified_not_assigned_to_physical_care(self) -> None:
+        """無資格者は資格必要サービス（身体介護2・Ⅱ）に割り当てられない"""
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[
+                _make_helper("H1", can_physical=True),
+                _make_helper("H2", can_physical=False),
+            ],
+            orders=[_make_order("O1", "C1", "身体介護2・Ⅱ")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+            service_type_configs=_CERT_CONFIGS,
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        assigned = result.assignments[0].staff_ids
+        assert "H1" in assigned
+        assert "H2" not in assigned
+
+    def test_unqualified_can_do_daily_living(self) -> None:
+        """無資格者は資格不要サービス（生活援助３・Ⅱ）に割り当て可能"""
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[_make_helper("H1", can_physical=False)],
+            orders=[_make_order("O1", "C1", "生活援助３・Ⅱ")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+            service_type_configs=_CERT_CONFIGS,
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        assert "H1" in result.assignments[0].staff_ids
+
+    def test_infeasible_only_unqualified_for_physical(self) -> None:
+        """無資格者しかいないのに資格必要サービス → Infeasible"""
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[_make_helper("H1", can_physical=False)],
+            orders=[_make_order("O1", "C1", "身体介護2・Ⅱ")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+            service_type_configs=_CERT_CONFIGS,
+        )
+        result = solve(inp)
+        assert result.status == "Infeasible"
+
+    def test_unqualified_not_assigned_to_mixed(self) -> None:
+        """無資格者は資格必要サービス（身体1生活1・Ⅱ）に割り当てられない"""
+        mixed_configs = [
+            _make_service_type_config("身体1生活1・Ⅱ", requires_cert=True),
+        ]
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[
+                _make_helper("H1", can_physical=True),
+                _make_helper("H2", can_physical=False),
+            ],
+            orders=[_make_order("O1", "C1", "身体1生活1・Ⅱ")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+            service_type_configs=mixed_configs,
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        assigned = result.assignments[0].staff_ids
+        assert "H1" in assigned
+        assert "H2" not in assigned
+
+    def test_infeasible_only_unqualified_for_mixed(self) -> None:
+        """無資格者しかいないのに資格必要混合サービス → Infeasible"""
+        mixed_configs = [
+            _make_service_type_config("身体1生活1・Ⅱ", requires_cert=True),
+        ]
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[_make_helper("H1", can_physical=False)],
+            orders=[_make_order("O1", "C1", "身体1生活1・Ⅱ")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+            service_type_configs=mixed_configs,
+        )
+        result = solve(inp)
+        assert result.status == "Infeasible"
+
+    def test_unqualified_can_do_prevention(self) -> None:
+        """無資格者は資格不要サービスに割り当て可能"""
+        inp = OptimizationInput(
+            customers=[_make_customer("C1")],
+            helpers=[_make_helper("H1", can_physical=False)],
+            orders=[_make_order("O1", "C1", "生活援助３・Ⅱ")],
+            travel_times=[],
+            staff_unavailabilities=[],
+            staff_constraints=[],
+            service_type_configs=_CERT_CONFIGS,
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        assert "H1" in result.assignments[0].staff_ids
 
 
 class TestDynamicQualificationConstraint:
@@ -187,8 +205,8 @@ class TestDynamicQualificationConstraint:
         result = solve(inp)
         assert result.status == "Optimal"  # 資格不問なので無資格者でも割当可
 
-    def test_static_fallback_when_no_configs(self) -> None:
-        """service_type_configsが空の場合は静的フォールバック（physical_careは資格必要）"""
+    def test_no_restriction_when_no_configs(self) -> None:
+        """service_type_configsが空の場合は制約なし（全員割り当て可能）"""
         inp = OptimizationInput(
             customers=[_make_customer("C1")],
             helpers=[_make_helper("H1", can_physical=False)],
@@ -196,27 +214,25 @@ class TestDynamicQualificationConstraint:
             travel_times=[],
             staff_unavailabilities=[],
             staff_constraints=[],
-            service_type_configs=[],  # 空 = 静的フォールバック
+            service_type_configs=[],  # 空 = 資格制約なし
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        assert result.status == "Optimal"  # 制約なしなので無資格者でも割当可
 
     def test_dynamic_config_for_unknown_type(self) -> None:
         """マスタに存在しない種別はrequires_cert=False（config_map.getがNoneの場合）"""
-        # new_custom_type はマスタに登録なし → フォールバックで非資格要件
-        # ただし静的フォールバックでも "new_custom_type" は _PHYSICAL_CARE_TYPES にない
         inp = OptimizationInput(
             customers=[_make_customer("C1")],
             helpers=[_make_helper("H1", can_physical=False)],
-            orders=[_make_order("O1", "C1", "daily_living")],
+            orders=[_make_order("O1", "C1", "生活援助３・Ⅱ")],
             travel_times=[],
             staff_unavailabilities=[],
             staff_constraints=[],
             service_type_configs=[
-                # physical_care のみ登録（daily_living は未登録）
-                _make_service_type_config("physical_care", requires_cert=True),
+                # 身体介護2・Ⅱのみ登録（生活援助３・Ⅱは未登録）
+                _make_service_type_config("身体介護2・Ⅱ", requires_cert=True),
             ],
         )
-        # daily_livingはマスタ未登録 → fallback to staticで資格不要
+        # 生活援助３・Ⅱはマスタ未登録 → requires_cert=False扱いで無資格者でも割当可
         result = solve(inp)
         assert result.status == "Optimal"

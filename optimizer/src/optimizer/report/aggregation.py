@@ -9,16 +9,6 @@ from .models import (
     StatusSummary,
 )
 
-SERVICE_TYPE_LABELS: dict[str, str] = {
-    "physical_care": "身体介護",
-    "daily_living": "生活援助",
-    "mixed": "混合（身体+生活）",
-    "prevention": "介護予防",
-    "private": "自費サービス",
-    "disability": "障がい福祉",
-    "transport_support": "移動支援",
-    "severe_visiting": "重度訪問介護",
-}
 
 
 def time_to_minutes(time: str) -> int:
@@ -71,10 +61,10 @@ def aggregate_service_type_summary(
     Args:
         orders: オーダーのdict リスト
         service_type_configs: Firestoreのservice_typesマスタ（動的ラベル解決用）。
-                              指定時はマスタ優先、なければSERVICE_TYPE_LABELSにフォールバック。
+                              指定時はマスタ優先、なければサービス種別コード文字列をそのままラベルに使用。
     """
-    # 動的ラベルマップを構築（静的フォールバックをコピーしてマスタで上書き）
-    label_map: dict[str, str] = dict(SERVICE_TYPE_LABELS)
+    # 動的ラベルマップを構築（マスタデータから）
+    label_map: dict[str, str] = {}
     if service_type_configs:
         for cfg in service_type_configs:
             code = str(cfg.get("code", ""))

@@ -177,7 +177,7 @@ def _build_staff_count_lookup(
     for c in customers:
         for dow, slots in c.weekly_services.items():
             for s in slots:
-                key = (c.id, dow.value, s.start_time, s.end_time, s.service_type.value)
+                key = (c.id, dow.value, s.start_time, s.end_time, s.service_type)
                 lookup[key] = s.staff_count
     return lookup
 

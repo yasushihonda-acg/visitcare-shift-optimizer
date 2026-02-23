@@ -25,10 +25,9 @@ interface WeeklyServicesEditorProps {
   onChange: (value: Partial<Record<DayOfWeek, ServiceSlot[]>>) => void;
 }
 
-const EMPTY_SLOT: ServiceSlot = {
+const EMPTY_SLOT_BASE = {
   start_time: '09:00',
   end_time: '10:00',
-  service_type: 'physical_care',
   staff_count: 1,
 };
 
@@ -58,7 +57,11 @@ export function WeeklyServicesEditor({
 
   const addSlot = (day: DayOfWeek) => {
     const current = value[day] ?? [];
-    onChange({ ...value, [day]: [...current, { ...EMPTY_SLOT }] });
+    const newSlot: ServiceSlot = {
+      ...EMPTY_SLOT_BASE,
+      service_type: serviceTypeList[0]?.code ?? '',
+    };
+    onChange({ ...value, [day]: [...current, newSlot] });
     setExpandedDays((prev) => new Set(prev).add(day));
   };
 

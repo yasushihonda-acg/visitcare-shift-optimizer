@@ -103,9 +103,16 @@ service cloud.firestore {
 
     function isValidServiceType() {
       let data = request.resource.data;
-      return data.keys().hasAll(['code', 'label', 'short_label', 'requires_physical_care_cert', 'sort_order'])
+      return data.keys().hasAll([
+          'code', 'category', 'label', 'duration', 'care_level', 'units',
+          'short_label', 'requires_physical_care_cert', 'sort_order'
+        ])
         && data.code is string
+        && data.category is string
         && data.label is string
+        && data.duration is string
+        && data.care_level is string
+        && data.units is int
         && data.short_label is string
         && data.requires_physical_care_cert is bool
         && data.sort_order is int;

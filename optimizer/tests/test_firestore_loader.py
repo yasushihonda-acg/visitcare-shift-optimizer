@@ -27,7 +27,6 @@ from optimizer.models import (
     DayOfWeek,
     GeoLocation,
     ServiceSlot,
-    ServiceType,
     ServiceTypeConfig,
     StaffConstraintType,
 )
@@ -154,7 +153,7 @@ class TestLoadCustomers:
         assert DayOfWeek.WEDNESDAY in c.weekly_services
         monday_slots = c.weekly_services[DayOfWeek.MONDAY]
         assert len(monday_slots) == 1
-        assert monday_slots[0].service_type == ServiceType.PHYSICAL_CARE
+        assert monday_slots[0].service_type == "physical_care"
         assert monday_slots[0].staff_count == 1
         wednesday_slots = c.weekly_services[DayOfWeek.WEDNESDAY]
         assert wednesday_slots[0].staff_count == 2
@@ -325,7 +324,7 @@ class TestLoadOrders:
                         ServiceSlot(
                             start_time="09:00",
                             end_time="10:00",
-                            service_type=ServiceType.PHYSICAL_CARE,
+                            service_type="physical_care",
                             staff_count=1,
                         )
                     ]
@@ -344,7 +343,7 @@ class TestLoadOrders:
         assert o.day_of_week == DayOfWeek.MONDAY
         assert o.start_time == "09:00"
         assert o.end_time == "10:00"
-        assert o.service_type == ServiceType.PHYSICAL_CARE
+        assert o.service_type == "physical_care"
 
     def test_staff_count_from_customer(self) -> None:
         """staff_countがFirestoreに無い場合、customerのweekly_servicesから導出"""
@@ -514,7 +513,7 @@ class TestBuildStaffCountLookup:
                         ServiceSlot(
                             start_time="09:00",
                             end_time="10:00",
-                            service_type=ServiceType.PHYSICAL_CARE,
+                            service_type="physical_care",
                             staff_count=2,
                         )
                     ]

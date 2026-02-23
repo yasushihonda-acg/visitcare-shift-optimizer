@@ -272,16 +272,16 @@ describe('aggregateServiceTypeSummary', () => {
     expect(daily.totalMinutes).toBe(60);
   });
 
-  it('physical_care には "身体介護" のラベルが付く', () => {
-    const orders = [makeOrder({ service_type: 'physical_care' })];
+  it('serviceTypes未指定の場合はサービス種別コードをそのままラベルとして使う', () => {
+    const orders = [makeOrder({ service_type: '身体介護2・Ⅱ' })];
     const result = aggregateServiceTypeSummary(orders);
-    expect(result[0].label).toBe('身体介護');
+    expect(result[0].label).toBe('身体介護2・Ⅱ');
   });
 
-  it('daily_living には "生活援助" のラベルが付く', () => {
-    const orders = [makeOrder({ service_type: 'daily_living' })];
+  it('英字コードでもラベルはコードそのもの（静的マップ削除後）', () => {
+    const orders = [makeOrder({ service_type: 'physical_care' })];
     const result = aggregateServiceTypeSummary(orders);
-    expect(result[0].label).toBe('生活援助');
+    expect(result[0].label).toBe('physical_care');
   });
 
   it('visitCount降順でソートされる', () => {
@@ -296,17 +296,23 @@ describe('aggregateServiceTypeSummary', () => {
 
   it('serviceTypes を渡すと動的ラベルが使われる', () => {
     const serviceTypes = new Map<string, ServiceTypeDoc>([
-      ['physical_care', { id: 'physical_care', code: 'physical_care', label: 'カスタム身体', short_label: '身体', requires_physical_care_cert: true, sort_order: 1, created_at: new Date(), updated_at: new Date() }],
+      ['身体介護2・Ⅱ', {
+        id: '身体介護2・Ⅱ', code: '身体介護2・Ⅱ', category: '訪問介護',
+        label: 'カスタム身体介護', duration: '30分以上60分未満', care_level: '要介護1',
+        units: 396, short_label: '身体介護2・Ⅱ',
+        requires_physical_care_cert: true, sort_order: 1,
+        created_at: new Date(), updated_at: new Date(),
+      }],
     ]);
-    const orders = [makeOrder({ service_type: 'physical_care' })];
+    const orders = [makeOrder({ service_type: '身体介護2・Ⅱ' })];
     const result = aggregateServiceTypeSummary(orders, serviceTypes);
-    expect(result[0].label).toBe('カスタム身体');
+    expect(result[0].label).toBe('カスタム身体介護');
   });
 
-  it('serviceTypes に該当がない場合は静的フォールバック', () => {
+  it('serviceTypes に該当がない場合はサービス種別コードをそのままラベルとして使う', () => {
     const serviceTypes = new Map<string, ServiceTypeDoc>(); // 空
-    const orders = [makeOrder({ service_type: 'physical_care' })];
+    const orders = [makeOrder({ service_type: '身体介護2・Ⅱ' })];
     const result = aggregateServiceTypeSummary(orders, serviceTypes);
-    expect(result[0].label).toBe('身体介護'); // 静的フォールバック
+    expect(result[0].label).toBe('身体介護2・Ⅱ'); // コードそのものがフォールバック
   });
 });

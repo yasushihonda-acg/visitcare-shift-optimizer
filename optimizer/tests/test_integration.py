@@ -114,17 +114,22 @@ class TestIntegration:
             )
 
     def test_no_qualification_violation(self, seed_data_dir: Path) -> None:
-        """身体介護に無資格者が割り当てられていない"""
+        """資格必要サービスに無資格者が割り当てられていない"""
         inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         result = solve(inp, time_limit_seconds=180)
         helper_map = {h.id: h for h in inp.helpers}
         order_map = {o.id: o for o in inp.orders}
+        cert_required_codes = (
+            {c.code for c in inp.service_type_configs if c.requires_physical_care_cert}
+            if inp.service_type_configs
+            else set()
+        )
         for a in result.assignments:
             order = order_map[a.order_id]
-            if order.service_type.value == "physical_care":
+            if order.service_type in cert_required_codes:
                 for sid in a.staff_ids:
                     assert helper_map[sid].can_physical_care, (
-                        f"Unqualified {sid} assigned to physical_care {a.order_id}"
+                        f"Unqualified {sid} assigned to {order.service_type} {a.order_id}"
                     )
 
     def test_no_overlap_violation(self, seed_data_dir: Path) -> None:

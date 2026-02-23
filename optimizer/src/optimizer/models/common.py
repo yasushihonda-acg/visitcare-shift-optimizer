@@ -5,16 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-
-class ServiceType(str, Enum):
-    PHYSICAL_CARE = "physical_care"
-    DAILY_LIVING = "daily_living"
-    MIXED = "mixed"
-    PREVENTION = "prevention"
-    PRIVATE = "private"
-    DISABILITY = "disability"
-    TRANSPORT_SUPPORT = "transport_support"
-    SEVERE_VISITING = "severe_visiting"
+# サービス種別は介護保険サービスコード文字列（例: "身体介護2・Ⅱ", "生活援助３・Ⅱ"）
+ServiceType = str
 
 
 class DayOfWeek(str, Enum):
@@ -68,7 +60,7 @@ class GeoLocation(BaseModel):
 class ServiceSlot(BaseModel):
     start_time: str  # "HH:MM"
     end_time: str  # "HH:MM"
-    service_type: ServiceType
+    service_type: str
     staff_count: int
 
 
@@ -103,7 +95,11 @@ class ServiceTypeConfig(BaseModel):
     """Firestore service_types コレクションのドキュメント"""
 
     code: str
+    category: str = ""
     label: str
+    duration: str = ""
+    care_level: str = ""
+    units: int = 0
     short_label: str
     requires_physical_care_cert: bool
     sort_order: int

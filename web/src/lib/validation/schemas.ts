@@ -19,12 +19,7 @@ const geoLocationSchema = z.object({
 const serviceSlotSchema = z.object({
   start_time: timeStringSchema,
   end_time: timeStringSchema,
-  service_type: z.enum([
-    'physical_care', 'daily_living', 'mixed', 'prevention',
-    'private', 'disability', 'transport_support', 'severe_visiting',
-  ], {
-    error: 'サービス種別は必須です',
-  }),
+  service_type: z.string().min(1, 'サービス種別は必須です'),
   staff_count: z.number().int().min(1, '必要人数は1以上です').max(3),
 });
 
@@ -137,11 +132,12 @@ export type UnavailabilityFormValues = z.infer<typeof unavailabilitySchema>;
 
 // ---- ServiceType ----
 export const serviceTypeSchema = z.object({
-  code: z
-    .string()
-    .min(1, 'コードは必須です')
-    .regex(/^[a-z_]+$/, '英小文字とアンダースコアのみ使用できます'),
+  code: z.string().min(1, 'コードは必須です'),
+  category: z.string().min(1, 'カテゴリは必須です'),
   label: z.string().min(1, '表示名は必須です'),
+  duration: z.string(),
+  care_level: z.string(),
+  units: z.number().int().min(0, '単位数は0以上です'),
   short_label: z.string().min(1, '短縮名は必須です'),
   requires_physical_care_cert: z.boolean(),
   sort_order: z.number().int().min(1, '表示順は1以上です'),

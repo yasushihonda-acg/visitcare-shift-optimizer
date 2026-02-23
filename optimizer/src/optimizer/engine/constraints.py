@@ -7,7 +7,6 @@ from optimizer.models import (
     DayOfWeek,
     GenderRequirement,
     OptimizationInput,
-    ServiceType,
     StaffConstraintType,
     TrainingStatus,
     TransportationType,
@@ -36,17 +35,14 @@ def add_all_hard_constraints(
     _add_walk_distance_constraint(prob, x, inp, travel_lookup)
 
 
-_PHYSICAL_CARE_TYPES = {ServiceType.PHYSICAL_CARE, ServiceType.MIXED}
-
-
 def _requires_physical_care_cert(service_type: str, inp: OptimizationInput) -> bool:
-    """service_type_configsがあれば動的判定、なければ静的フォールバック"""
+    """service_type_configsのマスタデータで資格要否を判定する"""
     if inp.service_type_configs:
         config_map = {c.code: c for c in inp.service_type_configs}
         config = config_map.get(service_type)
         if config is not None:
             return config.requires_physical_care_cert
-    return service_type in {t.value for t in _PHYSICAL_CARE_TYPES}
+    return False
 
 
 def _add_qualification_constraint(
@@ -58,7 +54,7 @@ def _add_qualification_constraint(
     for h in inp.helpers:
         if not h.can_physical_care:
             for o in inp.orders:
-                if _requires_physical_care_cert(o.service_type.value, inp):
+                if _requires_physical_care_cert(o.service_type, inp):
                     prob += x[h.id, o.id] == 0, f"qual_{h.id}_{o.id}"
 
 

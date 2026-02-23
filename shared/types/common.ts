@@ -1,21 +1,17 @@
 import { Timestamp } from 'firebase-admin/firestore';
 
-/** サービス種別（8種） */
-export type ServiceType =
-  | 'physical_care'       // 身体介護
-  | 'daily_living'        // 生活援助
-  | 'mixed'               // 混合（身体+生活）
-  | 'prevention'          // 介護予防
-  | 'private'             // 自費サービス
-  | 'disability'          // 障がい福祉サービス
-  | 'transport_support'   // 移動支援
-  | 'severe_visiting';    // 重度訪問介護
+/** サービス種別（介護保険サービスコード文字列） */
+export type ServiceType = string;
 
 /** サービス種別マスタドキュメント */
 export interface ServiceTypeDoc {
   code: string;                         // ドキュメントIDと同一
-  label: string;                        // "身体介護"
-  short_label: string;                  // "身体"
+  category: string;                     // 通所介護Ⅰ / 地域密着型 / 訪問看護 / 訪問介護 / 大規模型（Ⅰ）
+  label: string;                        // サービスコード表示名
+  duration: string;                     // サービス内容時間（例: "30分以上60分未満"）
+  care_level: string;                   // 介護度（例: "要介護1"）、加算等は空文字
+  units: number;                        // 単位数
+  short_label: string;                  // 短縮名（= label と同値）
   requires_physical_care_cert: boolean; // true → can_physical_care 必要
   sort_order: number;                   // 表示順（1始まり）
 }

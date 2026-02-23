@@ -13,7 +13,6 @@ from optimizer.models import (
     OptimizationInput,
     Order,
     ServiceSlot,
-    ServiceType,
     StaffConstraint,
     StaffUnavailability,
     TravelTime,
@@ -49,7 +48,7 @@ class TestCustomer:
                     ServiceSlot(
                         start_time="09:00",
                         end_time="10:00",
-                        service_type=ServiceType.PHYSICAL_CARE,
+                        service_type="physical_care",
                         staff_count=1,
                     )
                 ]

@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, X } from 'lucide-react';
-import { timeToColumn, SERVICE_COLORS } from './constants';
+import { timeToColumn, getServiceColor } from './constants';
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
 import type { DragData } from '@/lib/dnd/types';
@@ -39,7 +39,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
     disabled: isFinalized,
   });
 
-  const colors = SERVICE_COLORS[order.service_type] ?? SERVICE_COLORS.physical_care;
+  const colors = getServiceColor(order.service_type);
   const customerName = customer
     ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
     : order.customer_id;

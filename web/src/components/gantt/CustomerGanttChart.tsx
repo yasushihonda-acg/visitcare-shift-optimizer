@@ -8,7 +8,7 @@ import {
   HELPER_NAME_WIDTH_PX,
   ROW_HEIGHT_PX,
   timeToMinutes,
-  SERVICE_COLORS,
+  getServiceColor,
 } from './constants';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 import type { Customer, Helper, Order } from '@/types';
@@ -40,7 +40,7 @@ function CustomerOrderBar({ order, chartWidth, helpers, onOrderClick }: Customer
   const endMin = timeToMinutes(order.end_time);
   const left = Math.max(0, ((startMin - GANTT_START_MIN) / GANTT_DURATION_MIN) * chartWidth);
   const width = Math.max(8, ((endMin - startMin) / GANTT_DURATION_MIN) * chartWidth);
-  const colors = SERVICE_COLORS[order.service_type] ?? SERVICE_COLORS.physical_care;
+  const colors = getServiceColor(order.service_type);
   const helperLabel =
     order.assigned_staff_ids
       .map((id) => {
