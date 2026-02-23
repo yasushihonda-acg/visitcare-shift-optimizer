@@ -39,7 +39,11 @@ export default function CustomersPage() {
       (c) =>
         c.name.family.toLowerCase().includes(q) ||
         c.name.given.toLowerCase().includes(q) ||
-        c.address.toLowerCase().includes(q)
+        c.address.toLowerCase().includes(q) ||
+        (c.phone_number?.toLowerCase().includes(q) ?? false) ||
+        (c.care_manager_name?.toLowerCase().includes(q) ?? false) ||
+        (c.consultation_support_office?.toLowerCase().includes(q) ?? false) ||
+        (c.support_specialist_name?.toLowerCase().includes(q) ?? false)
     );
   }, [customers, search]);
 
@@ -94,29 +98,36 @@ export default function CustomersPage() {
       <div className="relative max-w-sm">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="名前・住所で検索..."
+          placeholder="名前・住所・電話番号・ケアマネで検索..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
         />
       </div>
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[1100px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-32">氏名</TableHead>
+              <TableHead className="w-28">電話番号</TableHead>
               <TableHead>住所</TableHead>
               <TableHead className="w-24">サ責</TableHead>
-              <TableHead className="w-24 text-center">サービス日数</TableHead>
+              <TableHead className="w-28">ケアマネ</TableHead>
+              <TableHead className="w-36">相談支援事業所</TableHead>
+              <TableHead className="w-28">担当相談員</TableHead>
+              <TableHead className="w-20 text-center">サービス日数</TableHead>
               <TableHead className="w-28 text-center">NG/推奨</TableHead>
-              <TableHead className="w-16" />
+              {canEditCustomers && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={9 + (canEditCustomers ? 1 : 0)}
+                  className="text-center text-muted-foreground py-8"
+                >
                   {search ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
                 </TableCell>
               </TableRow>
@@ -130,10 +141,22 @@ export default function CustomersPage() {
                   <TableCell className="font-medium">
                     {customer.name.family} {customer.name.given}
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {customer.phone_number ?? '-'}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground truncate max-w-xs">
                     {customer.address}
                   </TableCell>
                   <TableCell className="text-sm">{customer.service_manager}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {customer.care_manager_name ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground truncate max-w-[9rem]">
+                    {customer.consultation_support_office ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {customer.support_specialist_name ?? '-'}
+                  </TableCell>
                   <TableCell className="text-center">
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                       {serviceDayCount(customer)}
