@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-23（PR #117: 通知設定をFirestore/UIで管理 + E2E D&Dフレーキー修正）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化）実装済み・マージ済み
+**最終更新**: 2026-02-23（ファビコン追加 + PR #119: 利用者・ヘルパーマスタに詳細シート（読み取り専用）を追加）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -59,6 +59,20 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-02-19 ～ 2026-02-23）
+
+- **feat (2026-02-23)** ✅: 訪問介護アプリ用ファビコンを追加（家＋ハート）
+  - `web/src/app/icon.svg` 新規追加: ティール背景に白い家＋ピンクのハートデザイン
+  - Next.js App Router の自動検出により `<link rel="icon">` として配信（追加設定不要）
+  - CI: in_progress（2026-02-23T06:55:39Z）
+
+- **PR #119 (2026-02-23)** ✅: 利用者・ヘルパーマスタに詳細シート（読み取り専用）を追加
+  - `web/src/components/masters/CustomerDetailSheet.tsx` 新規: 行クリック → 右サイドパネルで詳細表示（Radix UI Sheet）
+  - `web/src/components/masters/HelperDetailSheet.tsx` 新規: ヘルパー詳細右パネル（資格バッジ・研修状態含む）
+  - 表示内容: Customer（基本情報・連絡先関連機関・NG/推奨スタッフ名前解決・週間サービス・不定期パターン・外部連携ID）/ Helper（基本情報・雇用条件・週間勤務可能時間・利用者別研修状態）
+  - UIパターン: 読み取り専用=Sheet（右パネル）/ 編集=Dialog への「編集」ボタンでシームレス遷移
+  - `CustomerEditDialog` / `HelperEditDialog` に `DialogDescription` 追加（aria-describedby 警告解消）
+  - ユニットテスト 31件追加（CustomerDetailSheet 17件・HelperDetailSheet 14件）
+  - CI: success（2026-02-23T06:27:14Z）、E2E 48テスト
 
 - **PR #117 (2026-02-23)** ✅: 通知設定をFirestore/UIで管理 + E2E D&Dフレーキー修正
   - `firebase/firestore.rules`: `settings/{docId}` ルール追加（admin書き込み、認証済み読み取り）
@@ -238,12 +252,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-23 PR #117 マージ後）
+## 最新テスト結果サマリー（2026-02-23 ファビコン追加後）
 - **Optimizer**: 285件 pass（PR #117 TestGetSenderEmail 4件追加）
-- **Web (Next.js)**: 372件 pass（PR #114: +31件、PR #115: +23件）
+- **Web (Next.js)**: 403件 pass（PR #119: +31件）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
-- **E2E Tests (Playwright)**: CI in_progress（2026-02-23T04:24:29Z、D&Dフレーキー修正後）
-- **CI/CD**: PR #117 CI テスト全 job success、E2E のみ実行中
+- **E2E Tests (Playwright)**: 48テスト（PR #119 CI success 2026-02-23T06:27:14Z）
+- **CI/CD**: ファビコン追加 CI in_progress（main, 2026-02-23T06:55:39Z）/ PR #119 CI success（2026-02-23T06:27:14Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -294,8 +308,8 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）
-2. **E2Eテスト拡充**: メール通知ボタン・利用者軸ビュー・基本予定一覧・移動時間D&D警告・/settings ページのE2Eテスト追加
+1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
+2. **E2Eテスト拡充**: 詳細シート・メール通知ボタン・移動時間D&D警告のE2Eテスト追加
 3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
 4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
