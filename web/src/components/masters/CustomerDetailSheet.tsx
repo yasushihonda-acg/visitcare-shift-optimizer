@@ -62,6 +62,10 @@ export function CustomerDetailSheet({
   if (!customer) return null;
 
   const fullName = `${customer.name.family} ${customer.name.given}`;
+  const fullKana =
+    customer.name.family_kana || customer.name.given_kana
+      ? `${customer.name.family_kana ?? ''} ${customer.name.given_kana ?? ''}`.trim()
+      : null;
   const ngHelpers = customer.ng_staff_ids.map((id) => helpers.get(id)).filter(Boolean) as Helper[];
   const preferredHelpers = customer.preferred_staff_ids
     .map((id) => helpers.get(id))
@@ -84,7 +88,12 @@ export function CustomerDetailSheet({
       <SheetContent className="sm:max-w-2xl overflow-y-auto" data-testid="customer-detail-sheet">
         <SheetHeader className="sticky top-0 bg-background z-10 border-b">
           <div className="flex items-start justify-between gap-2">
-            <SheetTitle className="text-lg">{fullName}</SheetTitle>
+            <div>
+              <SheetTitle className="text-lg">{fullName}</SheetTitle>
+              {fullKana && (
+                <p className="text-sm text-muted-foreground">{fullKana}</p>
+              )}
+            </div>
             <Button
               size="sm"
               variant="outline"

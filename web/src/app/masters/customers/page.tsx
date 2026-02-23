@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Search } from 'lucide-react';
+import { Plus, Pencil, Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useHelpers } from '@/hooks/useHelpers';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
@@ -33,6 +33,7 @@ export default function CustomersPage() {
   const { helpers } = useHelpers();
   const { canEditCustomers } = useAuthRole();
   const [search, setSearch] = useState('');
+  const [sortKana, setSortKana] = useState<'asc' | 'desc' | null>(null);
   const [editTarget, setEditTarget] = useState<Customer | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailTarget, setDetailTarget] = useState<Customer | null>(null);
@@ -57,6 +58,23 @@ export default function CustomersPage() {
         (c.support_specialist_name?.toLowerCase().includes(q) ?? false)
     );
   }, [customers, search]);
+
+  const sorted = useMemo(() => {
+    if (!sortKana) return filtered;
+    return [...filtered].sort((a, b) => {
+      const kanaA = toHiragana((a.name.family_kana ?? '') + (a.name.given_kana ?? ''));
+      const kanaB = toHiragana((b.name.family_kana ?? '') + (b.name.given_kana ?? ''));
+      if (!kanaA && !kanaB) return 0;
+      if (!kanaA) return 1;
+      if (!kanaB) return -1;
+      return sortKana === 'asc'
+        ? kanaA.localeCompare(kanaB, 'ja')
+        : kanaB.localeCompare(kanaA, 'ja');
+    });
+  }, [filtered, sortKana]);
+
+  const toggleSort = () =>
+    setSortKana((prev) => (prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'));
 
   const openNew = () => {
     setEditTarget(undefined);
@@ -121,7 +139,21 @@ export default function CustomersPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-28">あおぞらID</TableHead>
-              <TableHead className="w-32">氏名</TableHead>
+              <TableHead
+                className="w-36 cursor-pointer select-none hover:bg-muted/50"
+                onClick={toggleSort}
+              >
+                <span className="flex items-center gap-1">
+                  氏名
+                  {sortKana === 'asc' ? (
+                    <ChevronUp className="h-3.5 w-3.5 text-primary" />
+                  ) : sortKana === 'desc' ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  )}
+                </span>
+              </TableHead>
               <TableHead className="w-28">電話番号①</TableHead>
               <TableHead className="w-28">電話番号②</TableHead>
               <TableHead className="w-36">電話備考</TableHead>
@@ -147,7 +179,7 @@ export default function CustomersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((customer, index) => (
+              sorted.map((customer, index) => (
                 <TableRow
                   key={customer.id}
                   className={`cursor-pointer hover:bg-muted/50 ${index % 2 === 1 ? 'bg-muted/30' : ''}`}
@@ -157,7 +189,12 @@ export default function CustomersPage() {
                     {customer.aozora_id ?? '-'}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {customer.name.family} {customer.name.given}
+                    <div>{customer.name.family} {customer.name.given}</div>
+                    {(customer.name.family_kana || customer.name.given_kana) && (
+                      <div className="text-xs text-muted-foreground font-normal">
+                        {customer.name.family_kana} {customer.name.given_kana}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {customer.phone_number ?? '-'}
@@ -228,6 +265,7 @@ export default function CustomersPage() {
 
       <p className="text-xs text-muted-foreground">
         全{customers.size}件{search && `（表示: ${filtered.length}件）`}
+        {sortKana && <span className="ml-2">ふりがな{sortKana === 'asc' ? '昇順' : '降順'}ソート中</span>}
       </p>
 
       <CustomerDetailSheet

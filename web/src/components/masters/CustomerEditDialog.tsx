@@ -157,6 +157,28 @@ export function CustomerEditDialog({
             </div>
           </div>
 
+          {/* ふりがな */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="name.family_kana" className="text-xs text-muted-foreground">姓（ふりがな）</Label>
+              <Input
+                id="name.family_kana"
+                {...register('name.family_kana')}
+                placeholder="たなか"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="name.given_kana" className="text-xs text-muted-foreground">名（ふりがな）</Label>
+              <Input
+                id="name.given_kana"
+                {...register('name.given_kana')}
+                placeholder="たろう"
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
+
           {/* 住所 + ジオコーディング */}
           <div className="space-y-1">
             <Label htmlFor="address">住所</Label>
@@ -471,7 +493,7 @@ export function CustomerEditDialog({
 function getDefaults(customer?: Customer): CustomerFormValues {
   if (!customer) {
     return {
-      name: { family: '', given: '' },
+      name: { family: '', given: '', family_kana: '', given_kana: '' },
       address: '',
       location: { lat: 0, lng: 0 },
       ng_staff_ids: [],

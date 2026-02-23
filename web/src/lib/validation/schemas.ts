@@ -7,6 +7,8 @@ const personNameSchema = z.object({
   family: z.string().min(1, '姓は必須です'),
   given: z.string().min(1, '名は必須です'),
   short: z.string().optional(),
+  family_kana: z.string().optional(),
+  given_kana: z.string().optional(),
 });
 
 const geoLocationSchema = z.object({
