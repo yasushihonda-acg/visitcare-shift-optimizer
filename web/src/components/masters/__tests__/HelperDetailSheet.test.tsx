@@ -132,14 +132,16 @@ describe('HelperDetailSheet', () => {
     expect(screen.getByText('同行研修中')).toBeInTheDocument();
   });
 
-  it('independent な利用者は研修状態リストに表示されない', () => {
+  it('independent な利用者は自立済みセクションに表示される', () => {
     const customer = makeCustomer('cust-2', '高橋', '三郎');
     const customers = new Map([['cust-2', customer]]);
     const helper = makeHelper({
       customer_training_status: { 'cust-2': 'independent' },
     });
     render(<HelperDetailSheet {...defaultProps} helper={helper} customers={customers} />);
-    expect(screen.queryByTestId('training-status-list')).not.toBeInTheDocument();
+    expect(screen.getByTestId('training-status-list')).toBeInTheDocument();
+    expect(screen.getByText('自立済み（1名）')).toBeInTheDocument();
+    expect(screen.getByText('高橋 三郎')).toBeInTheDocument();
   });
 
   it('編集ボタンクリックで onEdit が呼ばれる', () => {
