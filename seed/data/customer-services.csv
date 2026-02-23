@@ -167,9 +167,9 @@ C001,friday,17:30,18:00,daily_living,1
 C006,monday,16:00,16:30,physical_care,1
 C006,wednesday,16:00,16:30,physical_care,1
 C006,friday,16:00,16:30,physical_care,1
-C010,monday,07:30,08:00,physical_care,1
-C010,wednesday,07:30,08:00,physical_care,1
-C010,friday,07:30,08:00,physical_care,1
+C010,monday,17:00,17:30,daily_living,1
+C010,wednesday,17:00,17:30,daily_living,1
+C010,friday,17:00,17:30,daily_living,1
 C025,monday,17:00,18:00,daily_living,1
 C025,wednesday,17:00,18:00,daily_living,1
 C025,friday,17:00,17:30,daily_living,1

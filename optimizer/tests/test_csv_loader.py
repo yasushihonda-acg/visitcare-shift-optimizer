@@ -65,7 +65,7 @@ class TestGenerateOrders:
     def test_order_count(self, seed_data_dir: Path) -> None:
         customers = load_customers(seed_data_dir)
         orders = generate_orders(customers, date(2025, 1, 6))
-        assert len(orders) == 162
+        assert len(orders) == 185
 
     def test_order_dates(self, seed_data_dir: Path) -> None:
         customers = load_customers(seed_data_dir)
@@ -127,12 +127,15 @@ class TestGenerateOrdersLinkedOrders:
 
         # C001(山田太郎)とC002(山田花子)は世帯H001
         # C001: 月曜09:00-10:00, C002: 月曜10:00-11:00 → 連続
+        # C001は月曜に2スロット（09:00-10:00 と 17:30-18:00）を持つ
         c001_mon = [o for o in orders if o.customer_id == "C001" and o.day_of_week == DayOfWeek.MONDAY]
         c002_mon = [o for o in orders if o.customer_id == "C002" and o.day_of_week == DayOfWeek.MONDAY]
-        assert len(c001_mon) == 1
+        assert len(c001_mon) == 2  # 09:00-10:00 と 17:30-18:00
         assert len(c002_mon) == 1
-        assert c001_mon[0].linked_order_id == c002_mon[0].id
-        assert c002_mon[0].linked_order_id == c001_mon[0].id
+        # 09:00 スロットがC002とリンクされているか確認
+        c001_mon_09 = next(o for o in c001_mon if o.start_time == "09:00")
+        assert c001_mon_09.linked_order_id == c002_mon[0].id
+        assert c002_mon[0].linked_order_id == c001_mon_09.id
 
     def test_non_household_not_linked(self, seed_data_dir: Path) -> None:
         """世帯ペアでない利用者はlinked_order_idがNone"""
@@ -157,6 +160,6 @@ class TestLoadOptimizationInput:
         inp = load_optimization_input(seed_data_dir, date(2025, 1, 6))
         assert len(inp.customers) == 50
         assert len(inp.helpers) == 20
-        assert len(inp.orders) == 162
+        assert len(inp.orders) == 185
         assert len(inp.travel_times) > 0
         assert len(inp.staff_constraints) == 19
