@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-24（CI修正: C010早朝スロット競合 → Issue #120クローズ・Optimizer GREEN）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート）実装済み・マージ済み
+**最終更新**: 2026-02-24（サービス種別マスタ全面置き換え完了: 8種 → 介護保険サービスコード105種）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -13,8 +13,9 @@
 - **Phase 4d-security**: RBAC (Custom Claims 3役体系) + Firestoreセキュリティルール
 - **Google Maps**: Distance Matrix API実装 + Geocoding API (座標ジオコーディング完了)
 - **UI/UXピーク**: 週切替(カレンダーピッカー)、制約パラメータUI、マスタ間タブナビゲーション
-- **E2E**: Playwright 43テスト全パス（schedule, schedule-dnd, schedule-interactions, schedule-manual-edit, masters, masters-crud, history）
+- **E2E**: Playwright 64テスト全パス（schedule, schedule-dnd, schedule-interactions, schedule-manual-edit, masters, masters-crud, history, masters-detail, settings）
 - **ドキュメント**: ユーザーマニュアル + トラブルシューティングガイド
+- **サービス種別全面置き換え（2026-02-24）**: 8種 union 型 → 介護保険サービスコード 105 種（5カテゴリ: 訪問介護・通所介護Ⅰ・地域密着型・訪問看護・大規模型Ⅰ）。TypeScript ServiceType → string 型。Python ServiceType enum → str 型エイリアス。静的ラベル/色マップ廃止→動的 config ベース。全テスト 285+402+32 件 GREEN。本番 Firestore 再投入済み・デプロイ済み
 
 ## デプロイURL
 - **Web App**: https://visitcare-shift-optimizer.web.app
@@ -59,6 +60,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-02-23 ～ 2026-02-24）
+
+- **test (2026-02-24)** ✅: E2Eテスト拡充（電話番号②列・ふりがな検索・あかさたなフィルター） — 58 → **64テスト**
+  - `web/e2e/masters-customers.spec.ts` 追加: 電話番号②列表示・ふりがな検索・あかさたなフィルター・ふりがなソート E2Eテスト（6件）
+  - CI: in_progress（run #22318097996）
 
 - **fix (2026-02-24)** ✅: C010早朝スロットの競合でCIが落ちていた問題を修正 → Issue #120クローズ
   - `optimizer/tests/`: `test_order_count`・`test_seed_data_solves` を C010 の早朝スロット競合に合わせて修正
@@ -330,7 +335,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Optimizer**: 285件 pass ✅（CI GREEN 2026-02-24 run #22316943766）
 - **Web (Next.js)**: 403件 pass（確認済み 2026-02-24）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
-- **E2E Tests (Playwright)**: **58テスト**（直近追加: 詳細シート7件・通知ダイアログ3件）in_progress（run #22316943766）
+- **E2E Tests (Playwright)**: **64テスト**（直近追加: 詳細シート7件・通知ダイアログ3件・電話番号②/ふりがな検索/あかさたな6件）in_progress（run #22318097996）
 - **CI/CD**: ✅ **最新main（fix: C010早朝スロットの競合でCIが落ちていた問題を修正）Optimizer/Web/Rules GREEN**（2026-02-24）
   - Issue #120（C010早朝スロット競合でtest_seed_data_solves Infeasible）→ **クローズ済み**
 
@@ -384,7 +389,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
-2. **E2Eテスト拡充**: 電話番号②・ふりがな検索・あかさたなフィルター・基本予定一覧詳細シートのE2Eテスト追加（現在58テスト）
+2. **E2Eテスト拡充**: ✅ 電話番号②・ふりがな検索・あかさたなフィルターのE2Eテスト追加済み（現在64テスト）。基本予定一覧詳細シートのE2Eテストは未追加
 3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
 4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
