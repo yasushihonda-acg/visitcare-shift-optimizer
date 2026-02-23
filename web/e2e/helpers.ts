@@ -64,12 +64,17 @@ export async function waitForGanttBars(page: Page) {
  * 低レベルmouse制御でD&Dを実行する。
  * @dnd-kit PointerSensor (distance: 5px) を確実にトリガーするため、
  * 中間点を経由し、dragover発火のためdrop位置へ2回moveする。
- * scrollIntoViewIfNeeded で要素をビューポート内に確実に配置する。
+ *
+ * スクロール順: target→source の順でスクロールし、ドラッグ開始時に
+ * source が必ずビューポート内に収まるようにする。
+ * （source→target 順ではソースが押し出される場合がある）
  */
 export async function dragOrderToTarget(page: Page, source: Locator, target: Locator) {
-  // ソースとターゲットをビューポート内にスクロール
-  await source.scrollIntoViewIfNeeded();
+  // ターゲットを先にスクロール、次にソース（ソースをビューポート内に確保）
   await target.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  await source.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
 
   const dragBox = await source.boundingBox();
   const dropBox = await target.boundingBox();
@@ -84,14 +89,16 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   // overflow-visible バーの重なりによる intercept を回避するため座標ベースで移動
   await page.mouse.move(startX, startY);
   await page.mouse.down();
+  // PointerSensor の初期検出を待つ
+  await page.waitForTimeout(100);
   // distance: 5px を確実に超えるため中間点を経由
   await page.mouse.move(startX + 10, startY + 10, { steps: 5 });
-  await page.mouse.move(endX, endY, { steps: 10 });
+  await page.mouse.move(endX, endY, { steps: 20 });
   // dragover発火用に再度move
   await page.mouse.move(endX, endY);
   await page.mouse.up();
   // 非同期のhandleDragEnd（Firestore書き込み）完了を待つ
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
 }
 
 /**

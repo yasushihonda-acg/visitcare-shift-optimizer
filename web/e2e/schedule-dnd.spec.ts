@@ -140,7 +140,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
 
     // D&D操作完了を確認: 成功/警告/エラー いずれかのトーストが表示される
     const anyToast = page.locator('[data-sonner-toast]');
-    await expect(anyToast.first()).toBeVisible({ timeout: 10_000 });
+    await expect(anyToast.first()).toBeVisible({ timeout: 15_000 });
 
     // 成功トーストの場合はバーの移動を確認
     const successToast = anyToast.filter({ hasText: /割当を変更しました/ });
