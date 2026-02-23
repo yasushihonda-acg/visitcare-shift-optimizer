@@ -41,6 +41,7 @@ export default function CustomersPage() {
         c.name.given.toLowerCase().includes(q) ||
         c.address.toLowerCase().includes(q) ||
         (c.phone_number?.toLowerCase().includes(q) ?? false) ||
+        (c.home_care_office?.toLowerCase().includes(q) ?? false) ||
         (c.care_manager_name?.toLowerCase().includes(q) ?? false) ||
         (c.consultation_support_office?.toLowerCase().includes(q) ?? false) ||
         (c.support_specialist_name?.toLowerCase().includes(q) ?? false)
@@ -106,13 +107,14 @@ export default function CustomersPage() {
       </div>
 
       <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[1100px]">
+        <Table className="min-w-[1250px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-32">氏名</TableHead>
               <TableHead className="w-28">電話番号</TableHead>
               <TableHead>住所</TableHead>
               <TableHead className="w-24">サ責</TableHead>
+              <TableHead className="w-28">担当居宅</TableHead>
               <TableHead className="w-28">ケアマネ</TableHead>
               <TableHead className="w-36">相談支援事業所</TableHead>
               <TableHead className="w-28">担当相談員</TableHead>
@@ -125,7 +127,7 @@ export default function CustomersPage() {
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={9 + (canEditCustomers ? 1 : 0)}
+                  colSpan={10 + (canEditCustomers ? 1 : 0)}
                   className="text-center text-muted-foreground py-8"
                 >
                   {search ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
@@ -148,6 +150,9 @@ export default function CustomersPage() {
                     {customer.address}
                   </TableCell>
                   <TableCell className="text-sm">{customer.service_manager}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {customer.home_care_office ?? '-'}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {customer.care_manager_name ?? '-'}
                   </TableCell>
