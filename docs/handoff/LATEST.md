@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-22（PR #115: travel_times移動時間D&Dバリデーション統合）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合）実装済み・マージ済み
+**最終更新**: 2026-02-23（fix: ハードリフレッシュ後ガント幅バグ修正 / 利用者軸フォント改善 / seedデータ複数週対応）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -58,7 +58,20 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-02-19 ～ 2026-02-22）
+## 直近の実装（2026-02-19 ～ 2026-02-23）
+
+- **fix (2026-02-23)** ✅: ハードリフレッシュ後にガント幅が初期値のまま崩れるバグを修正
+  - `GanttChart.tsx`: `useRef+useLayoutEffect([])` をコールバックref（useState）パターンに変更。`totalOrders` が 0→>0 になりDOMが出現したタイミングで再実行され `slotWidth` が 4px のまま固まる問題を解消
+  - `page.tsx`: `dayDate` を `useMemo` でメモ化し、毎レンダーで新 Date を生成して schedule メモが不必要に再計算される問題を修正
+  - `ScheduleContext.tsx`: `ganttAxis` を localStorage に永続化し、ハードリフレッシュ後もスタッフ軸 / 利用者軸の選択を維持
+
+- **feat (2026-02-23)** ✅: 利用者軸ブロックのフォント改善 + seedデータ複数週対応
+  - `CustomerGanttChart.tsx`: `CustomerOrderBar` / `UnassignedOrderBar` のテキストスタイルをスタッフ軸（GanttBar）と統一（text-xs font-medium flex items-center rounded-lg px-2）
+  - `import-all.ts`: `--weeks` パラメータ追加（カンマ区切り複数週を一括生成）
+  - `import-orders.ts`: `staff_count` フィールドを order doc に追加
+
+- **fix (2026-02-22)** ✅: useDragAndDrop の useCallback 依存配列に serviceTypes/travelTimeLookup を追加
+  - `useDragAndDrop.ts`: `processPreview` / `handleDragEnd` の依存配列漏れによる stale closure を修正
 
 - **PR #115** ✅: travel_times移動時間D&Dバリデーション統合（Issue #113）
   - `web/src/lib/travelTime.ts` 新規: `parseTravelTimeDocId` / `buildTravelTimeLookup` / `getTravelMinutes`（双方向検索）
@@ -211,12 +224,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-22 PR #115 実装後）
+## 最新テスト結果サマリー（2026-02-23 ガント幅バグ修正後）
 - **Optimizer**: 279件 pass（PR #111 TestSender 5件更新）
 - **Web (Next.js)**: 372件 pass（PR #114: +31件、PR #115: +23件）
 - **Firestore Rules**: 94件 pass
-- **E2E Tests (Playwright)**: 41 passed, 2 skipped（PR #114/115 CI 全 job success）
-- **CI/CD**: PR #115 CI テスト全 job success、Deploy進行中（2026-02-22T03:29:19Z）
+- **E2E Tests (Playwright)**: 41 passed, 2 skipped（CI 全 job success）
+- **CI/CD**: fix: ハードリフレッシュ後ガント幅バグ修正 CI success（2026-02-23T00:53:08Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -270,6 +283,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + Cloud Run 環境変数 `NOTIFICATION_SENDER_EMAIL` 設定（手動作業、コード外）
 2. **E2Eテスト拡充**: メール通知ボタン・利用者軸ビュー・基本予定一覧・移動時間D&D警告のE2Eテスト追加
 3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
+4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件（全クローズ）

@@ -111,6 +111,11 @@ service cloud.firestore {
         && data.sort_order is int;
     }
 
+    function isValidSettings() {
+      let data = request.resource.data;
+      return data.sender_email is string;
+    }
+
     // ── コレクションルール ──────────────────────────
 
     // 利用者マスタ: admin + service_manager が編集可
@@ -170,6 +175,15 @@ service cloud.firestore {
         && (hasNoRole() || isManagerOrAbove())
         && isValidOrderUpdate();
       allow create, delete: if false;
+    }
+
+    // アプリ設定: admin のみ編集可、認証済みで読み取り可、delete 禁止
+    match /settings/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated()
+        && (hasNoRole() || isAdmin())
+        && isValidSettings();
+      allow delete: if false;
     }
   }
 }
