@@ -125,4 +125,37 @@ test.describe('スケジュール画面インタラクション', () => {
 
     await waitForToast(page, /最適化不可/);
   });
+
+  test('利用者軸ボタンをクリックするとgantt-axis-customerがアクティブになる', async ({ page }) => {
+    await goToSchedule(page);
+    await waitForGanttBars(page);
+
+    const customerAxisBtn = page.locator('[data-testid="gantt-axis-customer"]');
+    const staffAxisBtn = page.locator('[data-testid="gantt-axis-staff"]');
+
+    // 初期状態: スタッフ軸がアクティブ
+    await expect(staffAxisBtn).toHaveAttribute('aria-pressed', 'true');
+    await expect(customerAxisBtn).toHaveAttribute('aria-pressed', 'false');
+
+    // 利用者軸に切り替え
+    await customerAxisBtn.click();
+
+    await expect(customerAxisBtn).toHaveAttribute('aria-pressed', 'true');
+    await expect(staffAxisBtn).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('スタッフ軸ボタンをクリックするとgantt-axis-staffがアクティブになる', async ({ page }) => {
+    await goToSchedule(page);
+    await waitForGanttBars(page);
+
+    // 利用者軸に切り替えてから戻す
+    await page.locator('[data-testid="gantt-axis-customer"]').click();
+    await expect(page.locator('[data-testid="gantt-axis-customer"]')).toHaveAttribute('aria-pressed', 'true');
+
+    // スタッフ軸に戻す
+    await page.locator('[data-testid="gantt-axis-staff"]').click();
+
+    await expect(page.locator('[data-testid="gantt-axis-staff"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-testid="gantt-axis-customer"]')).toHaveAttribute('aria-pressed', 'false');
+  });
 });
