@@ -981,9 +981,13 @@ describe('optimization_runs', () => {
 // ============================================================
 /** isValidServiceType を満たす有効なデータ */
 const validServiceTypeData = {
-  code: 'physical_care',
-  label: '身体介護',
-  short_label: '身体',
+  code: '身体介護2・Ⅱ',
+  category: '訪問介護',
+  label: '身体介護2・Ⅱ',
+  duration: '30分以上60分未満',
+  care_level: '要介護1',
+  units: 396,
+  short_label: '身体介護',
   requires_physical_care_cert: true,
   sort_order: 1,
   created_at: serverTimestamp(),
