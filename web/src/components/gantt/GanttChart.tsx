@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useLayoutEffect, useEffect } from 'react';
+import { useState, useLayoutEffect, useEffect } from 'react';
 import { GanttTimeHeader } from './GanttTimeHeader';
 import { GanttRow } from './GanttRow';
 import { UnassignedSection } from './UnassignedSection';
@@ -30,22 +30,23 @@ interface GanttChartProps {
 }
 
 export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes, dropMessage }: GanttChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // コールバックref: totalOrders が 0→>0 になりDOMが現れたタイミングで再測定できるよう
+  // useRef + useLayoutEffect([]) の代わりに useState を使用する
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const [slotWidth, setSlotWidth] = useState(SLOT_WIDTH_PX);
 
   useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    if (!containerEl) return;
     const measure = () => {
-      const w = el.clientWidth;
+      const w = containerEl.clientWidth;
       const sw = Math.max(SLOT_WIDTH_PX, (w - HELPER_NAME_WIDTH_PX) / TOTAL_SLOTS);
       setSlotWidth(sw);
     };
     measure();
     const ro = new ResizeObserver(() => measure());
-    ro.observe(el);
+    ro.observe(containerEl);
     return () => ro.disconnect();
-  }, []);
+  }, [containerEl]);
 
   // slotWidth をページに公開
   useEffect(() => {
@@ -65,7 +66,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
   return (
     <GanttScaleProvider value={slotWidth}>
       <div className="flex flex-col">
-        <div ref={containerRef} className="overflow-x-auto border rounded-lg shadow-brand-sm">
+        <div ref={setContainerEl} className="overflow-x-auto border rounded-lg shadow-brand-sm">
           <GanttTimeHeader />
           <div className="relative">
             {schedule.helperRows.map((row, index) => (

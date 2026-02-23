@@ -30,7 +30,19 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     DAY_OF_WEEK_ORDER[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]
   );
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-  const [ganttAxis, setGanttAxis] = useState<'staff' | 'customer'>('staff');
+  const [ganttAxis, setGanttAxisState] = useState<'staff' | 'customer'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ganttAxis');
+      if (saved === 'staff' || saved === 'customer') return saved;
+    }
+    return 'staff';
+  });
+  const setGanttAxis = useCallback((axis: 'staff' | 'customer') => {
+    setGanttAxisState(axis);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ganttAxis', axis);
+    }
+  }, []);
 
   const goToNextWeek = useCallback(() => setWeekStart((w) => addWeeks(w, 1)), []);
   const goToPrevWeek = useCallback(() => setWeekStart((w) => subWeeks(w, 1)), []);

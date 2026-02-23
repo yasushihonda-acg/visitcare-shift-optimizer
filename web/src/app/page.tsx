@@ -54,7 +54,7 @@ function SchedulePage() {
   const { diffMap } = useAssignmentDiff(weekStart, allOrders);
 
   const dayIndex = DAY_OF_WEEK_ORDER.indexOf(selectedDay);
-  const dayDate = addDays(weekStart, dayIndex);
+  const dayDate = useMemo(() => addDays(weekStart, dayIndex), [weekStart, dayIndex]);
   const schedule = useMemo(
     () => getDaySchedule(selectedDay, dayDate),
     [getDaySchedule, selectedDay, dayDate]
