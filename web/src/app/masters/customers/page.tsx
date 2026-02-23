@@ -37,6 +37,7 @@ export default function CustomersPage() {
     const q = search.trim().toLowerCase();
     return list.filter(
       (c) =>
+        (c.aozora_id?.toLowerCase().includes(q) ?? false) ||
         c.name.family.toLowerCase().includes(q) ||
         c.name.given.toLowerCase().includes(q) ||
         c.address.toLowerCase().includes(q) ||
@@ -107,9 +108,10 @@ export default function CustomersPage() {
       </div>
 
       <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[1250px]">
+        <Table className="min-w-[1350px]">
           <TableHeader>
             <TableRow>
+              <TableHead className="w-28">あおぞらID</TableHead>
               <TableHead className="w-32">氏名</TableHead>
               <TableHead className="w-28">電話番号</TableHead>
               <TableHead>住所</TableHead>
@@ -127,7 +129,7 @@ export default function CustomersPage() {
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={10 + (canEditCustomers ? 1 : 0)}
+                  colSpan={11 + (canEditCustomers ? 1 : 0)}
                   className="text-center text-muted-foreground py-8"
                 >
                   {search ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
@@ -140,6 +142,9 @@ export default function CustomersPage() {
                   className={`cursor-pointer hover:bg-muted/50 ${index % 2 === 1 ? 'bg-muted/30' : ''}`}
                   onClick={() => openDetail(customer)}
                 >
+                  <TableCell className="text-sm text-muted-foreground">
+                    {customer.aozora_id ?? '-'}
+                  </TableCell>
                   <TableCell className="font-medium">
                     {customer.name.family} {customer.name.given}
                   </TableCell>

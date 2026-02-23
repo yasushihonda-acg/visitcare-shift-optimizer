@@ -73,8 +73,7 @@ export function CustomerDetailSheet({
     customer.consultation_support_office ||
     customer.support_specialist_name;
 
-  const hasExternalIds =
-    customer.aozora_id || customer.kaiso_id || customer.karakara_id || customer.cura_id;
+  const hasExternalIds = !!customer.aozora_id;
 
   const hasWeeklyServices = DAY_OF_WEEK_ORDER.some(
     (d) => customer.weekly_services[d] && customer.weekly_services[d]!.length > 0
@@ -257,10 +256,7 @@ export function CustomerDetailSheet({
             <section>
               <SectionHeader>外部連携ID</SectionHeader>
               <div className="space-y-2 rounded-lg border bg-accent/30 p-3">
-                {customer.aozora_id && <InfoRow label="あおぞらID" value={customer.aozora_id} />}
-                {customer.kaiso_id && <InfoRow label="介ソルID" value={customer.kaiso_id} />}
-                {customer.karakara_id && <InfoRow label="カカラID" value={customer.karakara_id} />}
-                {customer.cura_id && <InfoRow label="CURA ID" value={customer.cura_id} />}
+                <InfoRow label="あおぞらID" value={customer.aozora_id!} />
               </div>
             </section>
           )}
