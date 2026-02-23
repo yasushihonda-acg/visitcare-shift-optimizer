@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { HelperEditDialog } from '@/components/masters/HelperEditDialog';
+import { HelperDetailSheet } from '@/components/masters/HelperDetailSheet';
 import type { Helper } from '@/types';
 
 const TRANSPORTATION_LABELS: Record<string, string> = {
@@ -36,6 +37,8 @@ export default function HelpersPage() {
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<Helper | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<Helper | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const list = Array.from(helpers.values());
@@ -57,6 +60,16 @@ export default function HelpersPage() {
   const openEdit = (helper: Helper) => {
     setEditTarget(helper);
     setDialogOpen(true);
+  };
+
+  const openDetail = (helper: Helper) => {
+    setDetailTarget(helper);
+    setDetailOpen(true);
+  };
+
+  const handleDetailEdit = () => {
+    setDetailOpen(false);
+    if (detailTarget) openEdit(detailTarget);
   };
 
   if (loading) {
@@ -115,7 +128,11 @@ export default function HelpersPage() {
               </TableRow>
             ) : (
               filtered.map((helper, index) => (
-                <TableRow key={helper.id} className={index % 2 === 1 ? 'bg-muted/30' : ''}>
+                <TableRow
+                  key={helper.id}
+                  className={`cursor-pointer hover:bg-muted/50 ${index % 2 === 1 ? 'bg-muted/30' : ''}`}
+                  onClick={() => openDetail(helper)}
+                >
                   <TableCell className="font-medium">
                     {helper.name.family} {helper.name.given}
                   </TableCell>
@@ -155,7 +172,10 @@ export default function HelpersPage() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
-                        onClick={() => openEdit(helper)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(helper);
+                        }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -171,6 +191,14 @@ export default function HelpersPage() {
       <p className="text-xs text-muted-foreground">
         全{helpers.size}件{search && `（表示: ${filtered.length}件）`}
       </p>
+
+      <HelperDetailSheet
+        helper={detailTarget}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onEdit={handleDetailEdit}
+        customers={customers}
+      />
 
       <HelperEditDialog
         open={dialogOpen}

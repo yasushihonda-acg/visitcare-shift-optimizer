@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Search } from 'lucide-react';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useHelpers } from '@/hooks/useHelpers';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,15 +17,19 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { CustomerEditDialog } from '@/components/masters/CustomerEditDialog';
+import { CustomerDetailSheet } from '@/components/masters/CustomerDetailSheet';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Customer } from '@/types';
 
 export default function CustomersPage() {
   const { customers, loading } = useCustomers();
+  const { helpers } = useHelpers();
   const { canEditCustomers } = useAuthRole();
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<Customer | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<Customer | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const list = Array.from(customers.values());
@@ -46,6 +51,16 @@ export default function CustomersPage() {
   const openEdit = (customer: Customer) => {
     setEditTarget(customer);
     setDialogOpen(true);
+  };
+
+  const openDetail = (customer: Customer) => {
+    setDetailTarget(customer);
+    setDetailOpen(true);
+  };
+
+  const handleDetailEdit = () => {
+    setDetailOpen(false);
+    if (detailTarget) openEdit(detailTarget);
   };
 
   const serviceDayCount = (customer: Customer) =>
@@ -107,7 +122,11 @@ export default function CustomersPage() {
               </TableRow>
             ) : (
               filtered.map((customer, index) => (
-                <TableRow key={customer.id} className={index % 2 === 1 ? 'bg-muted/30' : ''}>
+                <TableRow
+                  key={customer.id}
+                  className={`cursor-pointer hover:bg-muted/50 ${index % 2 === 1 ? 'bg-muted/30' : ''}`}
+                  onClick={() => openDetail(customer)}
+                >
                   <TableCell className="font-medium">
                     {customer.name.family} {customer.name.given}
                   </TableCell>
@@ -141,7 +160,10 @@ export default function CustomersPage() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
-                        onClick={() => openEdit(customer)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(customer);
+                        }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -157,6 +179,14 @@ export default function CustomersPage() {
       <p className="text-xs text-muted-foreground">
         全{customers.size}件{search && `（表示: ${filtered.length}件）`}
       </p>
+
+      <CustomerDetailSheet
+        customer={detailTarget}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onEdit={handleDetailEdit}
+        helpers={helpers}
+      />
 
       <CustomerEditDialog
         open={dialogOpen}

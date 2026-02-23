@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -133,6 +134,7 @@ export function HelperEditDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isNew ? 'ヘルパーを追加' : 'ヘルパーを編集'}</DialogTitle>
+          <DialogDescription>ヘルパーの基本情報と勤務条件を管理します</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
