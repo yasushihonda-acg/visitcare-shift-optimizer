@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-24（利用者マスタ拡充続き: ふりがな入力・あかさたなソート/フィルター・あおぞらIDフォーム整理・基本予定一覧に行クリック詳細シート追加）
+**最終更新**: 2026-02-24（利用者マスタ拡充続き: ふりがな入力・あかさたなソート/フィルター・あおぞらIDフォーム整理・基本予定一覧に行クリック詳細シート追加）⚠️ CI失敗中 → Issue #120
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -322,12 +322,14 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-24 基本予定一覧詳細シート・ふりがなフィルター追加後）
-- **Optimizer**: 285件 pass（PR #117 TestGetSenderEmail 4件追加）
+## 最新テスト結果サマリー（2026-02-24）
+- **Optimizer**: 285件（ローカル）⚠️ CI失敗中 → Issue #120（test_order_count 162→185, test_integration Infeasible: 4件FAIL）
 - **Web (Next.js)**: 403件 pass（確認済み 2026-02-24）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
 - **E2E Tests (Playwright)**: **58テスト**（直近追加: 詳細シート7件・通知ダイアログ3件）
-- **CI/CD**: 最新コミット（基本予定一覧詳細シート追加）CI success（2026-02-23T15:01:46Z）
+- **CI/CD**: ⚠️ **最新main（fix: 電話番号②のある全行に電話備考を追加）Optimizer Tests FAIL**（2026-02-23T16:36:40Z）
+  - 原因: seedデータにC001の1日2回スロット追加 → オーダー数 162→185 でハードコード値不一致
+  - 1つ前のコミット（基本予定一覧詳細シート追加）はsuccess（2026-02-23T15:01:46Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -378,6 +380,10 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
+0. **[P0 ブロッカー] Issue #120 CI修正**: Optimizer Pythonテスト4件失敗を修正してCIをグリーンに戻す
+   - `test_order_count`・`test_full_load`: ハードコード値162→185に更新
+   - `test_household_pair_linked`: 新スロット構成に合わせてアサーション修正
+   - `test_seed_data_solves`: Infeasible原因調査（C001の1日2回スロット追加が制約と競合?）
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
 2. **利用者マスタ 本番Firestore再投入**: `phone_number_2`/`phone_number_2_note`・`family_kana`/`given_kana` 等の新フィールドをseedに反映してから再投入を検討（本番データに新フィールドがなくてもUIは正常動作）
 3. **E2Eテスト拡充**: 電話番号②・ふりがな検索・あかさたなフィルター・基本予定一覧詳細シートのE2Eテスト追加（現在58テスト）
@@ -385,7 +391,9 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
 ## GitHub Issuesサマリー
-- **オープンIssue**: 0件（全クローズ）
+- **オープンIssue**: 2件
+  - #118 Gmail API DWD: Google Workspace 管理者に DWD スコープ追加を依頼 [enhancement, P1]
+  - #120 fix: seedデータ変更でPythonテストが壊れている（order_count 162→185, integration Infeasible）[bug, P0] ← **対応急務**
 - **クローズ済み（直近）**: Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）、PR #117（通知設定管理・フレーキー修正）
 - **クローズ済み（既往）**: Issue #96（PR #102）、Issue #98 Phase 1（PR #103）、Phase 2（PR #104）、Phase 3（PR #105）
 
