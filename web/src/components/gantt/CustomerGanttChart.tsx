@@ -52,7 +52,7 @@ function CustomerOrderBar({ order, chartWidth, helpers, onOrderClick }: Customer
   return (
     <button
       className={cn(
-        'absolute top-1 rounded overflow-hidden text-left px-1 text-[10px] leading-tight',
+        'absolute top-1 flex items-center rounded-lg overflow-hidden px-2 text-xs font-medium whitespace-nowrap',
         colors.bar,
         'transition-opacity hover:opacity-80',
       )}
@@ -60,7 +60,7 @@ function CustomerOrderBar({ order, chartWidth, helpers, onOrderClick }: Customer
       title={`${order.start_time}-${order.end_time} ${helperLabel}`}
       onClick={() => onOrderClick?.(order)}
     >
-      <span className="truncate block">{helperLabel}</span>
+      {helperLabel}
     </button>
   );
 }
@@ -80,12 +80,12 @@ function UnassignedOrderBar({ order, chartWidth, customerName, onOrderClick }: U
 
   return (
     <button
-      className="absolute top-1 rounded overflow-hidden text-left px-1 text-[10px] leading-tight bg-amber-200 text-amber-900 transition-opacity hover:opacity-80"
+      className="absolute top-1 flex items-center rounded-lg overflow-hidden px-2 text-xs font-medium whitespace-nowrap bg-amber-200 text-amber-900 transition-opacity hover:opacity-80"
       style={{ left, width, height: ROW_HEIGHT_PX - 8 }}
       title={`${customerName} ${order.start_time}-${order.end_time}`}
       onClick={() => onOrderClick?.(order)}
     >
-      <span className="truncate block">{customerName}</span>
+      {customerName}
     </button>
   );
 }

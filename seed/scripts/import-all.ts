@@ -45,15 +45,17 @@ async function assignSampleOrders(): Promise<number> {
   return assignCount;
 }
 
-function parseArgs(): { week?: string; ordersOnly?: boolean } {
+function parseArgs(): { week?: string; weeks?: string[]; ordersOnly?: boolean } {
   const args = process.argv.slice(2);
-  const result: { week?: string; ordersOnly?: boolean } = {};
+  const result: { week?: string; weeks?: string[]; ordersOnly?: boolean } = {};
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--week' && args[i + 1]) {
       result.week = args[i + 1];
       i++;
-    }
-    if (args[i] === '--orders-only') {
+    } else if (args[i] === '--weeks' && args[i + 1]) {
+      result.weeks = args[i + 1].split(',').map((s) => s.trim());
+      i++;
+    } else if (args[i] === '--orders-only') {
       result.ordersOnly = true;
     }
   }
@@ -61,12 +63,17 @@ function parseArgs(): { week?: string; ordersOnly?: boolean } {
 }
 
 async function main() {
-  const { week, ordersOnly } = parseArgs();
+  const { week, weeks, ordersOnly } = parseArgs();
 
   console.log('=== Seed Data Import ===\n');
 
-  if (week) {
-    console.log(`📅 Week start date: ${week}\n`);
+  // 生成対象週のリストを決定（--weeks > --week > undefined（現在の週））
+  const targetWeeks: Array<string | undefined> = weeks ?? (week ? [week] : [undefined]);
+
+  if (targetWeeks.length > 1) {
+    console.log(`📅 Weeks: ${targetWeeks.join(', ')}\n`);
+  } else if (targetWeeks[0]) {
+    console.log(`📅 Week start date: ${targetWeeks[0]}\n`);
   }
 
   // 1. バリデーション
@@ -82,7 +89,7 @@ async function main() {
   console.log('✅ All validations passed\n');
 
   if (ordersOnly) {
-    // ordersのみ再生成（本番で週を切り替える時に便利）
+    // ordersのみ再生成（週を切り替える時・複数週追加時に便利）
     console.log('🗑️  Clearing orders...');
     const deleted = await clearCollection('orders');
     if (deleted > 0) {
@@ -90,12 +97,18 @@ async function main() {
     }
     console.log('');
 
-    console.log('📥 Importing orders...');
-    const orderCount = await importOrders(week);
-    console.log(`   orders: ${orderCount}`);
+    let totalOrders = 0;
+    for (const w of targetWeeks) {
+      const label = w ?? '(current week)';
+      console.log(`📥 Importing orders for week ${label}...`);
+      const orderCount = await importOrders(w);
+      console.log(`   orders (${label}): ${orderCount}`);
+      totalOrders += orderCount;
+    }
 
     const assignedCount = await assignSampleOrders();
-    console.log(`   assigned: ${assignedCount}/${orderCount}`);
+    console.log(`\n   total orders: ${totalOrders}`);
+    console.log(`   assigned: ${assignedCount}/${totalOrders}`);
 
     console.log('\n✅ Import complete!');
     process.exit(0);
@@ -123,20 +136,25 @@ async function main() {
   const helperCount = await importHelpers();
   console.log(`   helpers: ${helperCount}`);
 
-  const orderCount = await importOrders(week);
-  console.log(`   orders: ${orderCount}`);
+  let totalOrders = 0;
+  for (const w of targetWeeks) {
+    const label = w ?? '(current week)';
+    const orderCount = await importOrders(w);
+    console.log(`   orders (${label}): ${orderCount}`);
+    totalOrders += orderCount;
+  }
 
   const assignedCount = await assignSampleOrders();
-  console.log(`   assigned: ${assignedCount}/${orderCount}`);
+  console.log(`   assigned: ${assignedCount}/${totalOrders}`);
 
   const travelTimeCount = await generateTravelTimes();
   console.log(`   travel_times: ${travelTimeCount}`);
 
-  const unavailCount = await importStaffUnavailability(week);
+  const unavailCount = await importStaffUnavailability(targetWeeks[0]);
   console.log(`   staff_unavailability: ${unavailCount}`);
 
   console.log('\n✅ Import complete!');
-  console.log(`   Total: ${serviceTypeCount + customerCount + helperCount + orderCount + travelTimeCount + unavailCount} documents`);
+  console.log(`   Total: ${serviceTypeCount + customerCount + helperCount + totalOrders + travelTimeCount + unavailCount} documents`);
 
   process.exit(0);
 }

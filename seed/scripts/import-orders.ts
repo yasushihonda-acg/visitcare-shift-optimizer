@@ -110,6 +110,7 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
     const orderId = `ORD-${weekStartDate.replace(/-/g, '')}-${String(orderNum).padStart(4, '0')}`;
     orderNum++;
 
+    const staffCount = parseInt(s.staff_count ?? '1', 10);
     const doc = {
       id: orderId,
       data: {
@@ -119,6 +120,7 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
         start_time: s.start_time,
         end_time: s.end_time,
         service_type: s.service_type,
+        staff_count: isNaN(staffCount) ? 1 : staffCount,
         assigned_staff_ids: [],
         status: 'pending',
         manually_edited: false,
