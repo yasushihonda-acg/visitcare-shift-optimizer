@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-23（E2Eテスト拡充: 詳細シート・通知ダイアログ +10テスト → 計58テスト）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充）実装済み・マージ済み
+**最終更新**: 2026-02-23（利用者マスタ拡充: 詳細シート表示拡充・連絡先4列・担当居宅・あおぞらID・ふりがな検索・電話番号②/備考）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -59,6 +59,44 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-02-19 ～ 2026-02-23）
+
+- **feat (2026-02-23)** ✅: 利用者に電話番号②・電話備考を追加（テーブル・詳細・編集フォーム）
+  - 利用者マスタテーブルに `phone_number_2` / `phone_number_2_note` カラムを追加
+  - `CustomerDetailSheet.tsx`: 電話番号②・備考を表示
+  - `CustomerEditDialog.tsx`: 電話番号②・備考の入力フォームを追加
+  - shared/types + web/src/types + Zodスキーマ更新
+  - CI: success（2026-02-23T08:54:12Z）
+
+- **fix (2026-02-23)** ✅: web側PersonName型にfamily_kana/given_kanaを追加（ビルドエラー修正）
+  - `web/src/types/index.ts` の `PersonName` に `family_kana?`・`given_kana?` を追加
+  - CI: success（2026-02-23T08:51:34Z）
+
+- **feat (2026-02-23)** ✅: 利用者検索にあおぞらID・ふりがな（ひらがな/カタカナ統一）を追加・外部連携IDテスト修正
+  - 検索バーでふりがな（`name.family_kana`/`name.given_kana`）・あおぞらIDによる絞り込みを追加
+  - カタカナ入力をひらがなに正規化して一致判定（`toHiragana` ユーティリティ）
+  - CI: success（2026-02-23T08:45:59Z の実行は1ジョブ失敗だが後続で解消）
+
+- **feat (2026-02-23)** ✅: 利用者マスタにあおぞらIDカラム追加・外部連携IDをあおぞらIDのみに整理
+  - 利用者一覧テーブルに `aozora_id` カラムを追加
+  - 不要な外部連携IDカラム（介ソルID/カカラID/CURA ID）をテーブルから削除し画面をすっきり
+
+- **feat (2026-02-23)** ✅: 利用者マスタテーブルに担当居宅カラムを追加
+  - `home_care_office` フィールドを一覧テーブルに表示
+
+- **test (2026-02-23)** ✅: HelperDetailSheetテストを新仕様（自立済み表示）に更新
+
+- **feat (2026-02-23)** ✅: 詳細シートの表示内容を拡充
+  - `CustomerDetailSheet.tsx`: 連絡先・関連機関（担当居宅・相談支援事務所・ケアマネ・支援専門員）表示を追加
+  - `HelperDetailSheet.tsx`: 研修状態を「未経験/研修中/自立済み」のバッジで分類表示
+
+- **feat (2026-02-23)** ✅: 利用者マスタテーブルに連絡先4列を追加
+  - 担当居宅・ケアマネ・相談支援事務所・支援専門員カラムを一覧に追加（横スクロール対応）
+
+- **feat (2026-02-23)** ✅: 詳細シートを幅拡張・ヘッダー固定に改善
+  - Sheet 幅を `max-w-md` → `max-w-2xl` に拡大、タイトルヘッダーをスクロール固定
+
+- **fix (2026-02-23)** ✅: E2EテストのgetByText strict mode violation修正（サ責ラベル）
+  - `masters-detail.spec.ts`: 複数マッチするテキストを `first()` で限定
 
 - **test (2026-02-23)** ✅: E2Eテスト拡充（詳細シート・通知ダイアログ）— 48 → **58テスト**
   - `web/e2e/masters-detail.spec.ts` 新規（7テスト）: 利用者/ヘルパー行クリック→DetailSheet表示・Escape閉じ・編集ボタン→EditDialog遷移・Pencilボタン直接遷移
@@ -257,12 +295,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
-## 最新テスト結果サマリー（2026-02-23 E2Eテスト拡充後）
+## 最新テスト結果サマリー（2026-02-23 利用者マスタ拡充後）
 - **Optimizer**: 285件 pass（PR #117 TestGetSenderEmail 4件追加）
-- **Web (Next.js)**: 403件 pass（PR #119: +31件）
+- **Web (Next.js)**: 403件 pass（PR #119: +31件）※今セッションの変更でユニットテスト追加の可能性あり
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
-- **E2E Tests (Playwright)**: **58テスト**（+10: 詳細シート7件・通知ダイアログ3件、CI in_progress 2026-02-23T07:36:16Z）
-- **CI/CD**: E2Eテスト拡充 CI in_progress（main, 2026-02-23T07:36:16Z）/ PR #119 CI success（2026-02-23T06:27:14Z）
+- **E2E Tests (Playwright)**: **58テスト**（+10: 詳細シート7件・通知ダイアログ3件）
+- **CI/CD**: 最新コミット（電話番号②追加）CI success（2026-02-23T08:54:12Z）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -314,9 +352,10 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
-2. **E2Eテスト拡充**: 詳細シート・メール通知ボタン・移動時間D&D警告のE2Eテスト追加
-3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
-4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
+2. **利用者マスタ 本番Firestore再投入**: 今セッションで追加した `phone_number_2`/`phone_number_2_note` フィールドをseedに反映してから `SEED_TARGET=production npx tsx scripts/import-all.ts` で再投入を検討（本番データに新フィールドがなくてもUIは正常動作）
+3. **E2Eテスト拡充**: 電話番号②・検索（ふりがな/あおぞらID）のE2Eテスト追加（現在58テスト）
+4. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
+5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件（全クローズ）
