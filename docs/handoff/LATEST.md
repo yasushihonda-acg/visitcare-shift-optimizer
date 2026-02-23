@@ -384,10 +384,9 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
-2. **利用者マスタ 本番Firestore再投入**: `phone_number_2`/`phone_number_2_note`・`family_kana`/`given_kana` 等の新フィールドをseedに反映してから再投入を検討（本番データに新フィールドがなくてもUIは正常動作）
-3. **E2Eテスト拡充**: 電話番号②・ふりがな検索・あかさたなフィルター・基本予定一覧詳細シートのE2Eテスト追加（現在58テスト）
-4. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
-5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
+2. **E2Eテスト拡充**: 電話番号②・ふりがな検索・あかさたなフィルター・基本予定一覧詳細シートのE2Eテスト追加（現在58テスト）
+3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
+4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 1件
