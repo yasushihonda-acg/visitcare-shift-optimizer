@@ -28,12 +28,26 @@ function toHiragana(str: string): string {
   );
 }
 
+const KANA_ROWS: { label: string; chars: Set<string> }[] = [
+  { label: 'あ', chars: new Set(['あ', 'い', 'う', 'え', 'お']) },
+  { label: 'か', chars: new Set(['か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご']) },
+  { label: 'さ', chars: new Set(['さ', 'し', 'す', 'せ', 'そ', 'ざ', 'じ', 'ず', 'ぜ', 'ぞ']) },
+  { label: 'た', chars: new Set(['た', 'ち', 'つ', 'て', 'と', 'だ', 'ぢ', 'づ', 'で', 'ど']) },
+  { label: 'な', chars: new Set(['な', 'に', 'ぬ', 'ね', 'の']) },
+  { label: 'は', chars: new Set(['は', 'ひ', 'ふ', 'へ', 'ほ', 'ば', 'び', 'ぶ', 'べ', 'ぼ', 'ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ']) },
+  { label: 'ま', chars: new Set(['ま', 'み', 'む', 'め', 'も']) },
+  { label: 'や', chars: new Set(['や', 'ゆ', 'よ']) },
+  { label: 'ら', chars: new Set(['ら', 'り', 'る', 'れ', 'ろ']) },
+  { label: 'わ', chars: new Set(['わ', 'を', 'ん']) },
+];
+
 export default function CustomersPage() {
   const { customers, loading } = useCustomers();
   const { helpers } = useHelpers();
   const { canEditCustomers } = useAuthRole();
   const [search, setSearch] = useState('');
   const [sortKana, setSortKana] = useState<'asc' | 'desc' | null>(null);
+  const [kanaRow, setKanaRow] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Customer | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailTarget, setDetailTarget] = useState<Customer | null>(null);
@@ -59,9 +73,19 @@ export default function CustomersPage() {
     );
   }, [customers, search]);
 
+  const kanaFiltered = useMemo(() => {
+    if (!kanaRow) return filtered;
+    const row = KANA_ROWS.find((r) => r.label === kanaRow);
+    if (!row) return filtered;
+    return filtered.filter((c) => {
+      const first = toHiragana((c.name.family_kana ?? '').trim())[0];
+      return first ? row.chars.has(first) : false;
+    });
+  }, [filtered, kanaRow]);
+
   const sorted = useMemo(() => {
-    if (!sortKana) return filtered;
-    return [...filtered].sort((a, b) => {
+    if (!sortKana) return kanaFiltered;
+    return [...kanaFiltered].sort((a, b) => {
       const kanaA = toHiragana((a.name.family_kana ?? '') + (a.name.given_kana ?? ''));
       const kanaB = toHiragana((b.name.family_kana ?? '') + (b.name.given_kana ?? ''));
       if (!kanaA && !kanaB) return 0;
@@ -71,7 +95,7 @@ export default function CustomersPage() {
         ? kanaA.localeCompare(kanaB, 'ja')
         : kanaB.localeCompare(kanaA, 'ja');
     });
-  }, [filtered, sortKana]);
+  }, [kanaFiltered, sortKana]);
 
   const toggleSort = () =>
     setSortKana((prev) => (prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc'));
@@ -134,6 +158,34 @@ export default function CustomersPage() {
         />
       </div>
 
+      {/* 頭文字フィルター */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground shrink-0">頭文字</span>
+        <div className="flex items-center gap-0.5 rounded-lg border bg-muted/30 px-2 py-1 flex-wrap">
+          {KANA_ROWS.map((row) => (
+            <button
+              key={row.label}
+              onClick={() => setKanaRow((prev) => (prev === row.label ? null : row.label))}
+              className={`min-w-[2rem] rounded px-2 py-0.5 text-sm transition-colors ${
+                kanaRow === row.label
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              {row.label}
+            </button>
+          ))}
+          {kanaRow && (
+            <button
+              onClick={() => setKanaRow(null)}
+              className="ml-1 text-xs text-muted-foreground hover:text-foreground px-1"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="rounded-md border overflow-x-auto">
         <Table className="min-w-[1600px]">
           <TableHeader>
@@ -169,13 +221,13 @@ export default function CustomersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {sorted.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={13 + (canEditCustomers ? 1 : 0)}
                   className="text-center text-muted-foreground py-8"
                 >
-                  {search ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
+                  {search || kanaRow ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -264,7 +316,8 @@ export default function CustomersPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        全{customers.size}件{search && `（表示: ${filtered.length}件）`}
+        全{customers.size}件
+        {(search || kanaRow) && `（表示: ${sorted.length}件）`}
         {sortKana && <span className="ml-2">ふりがな{sortKana === 'asc' ? '昇順' : '降順'}ソート中</span>}
       </p>
 
