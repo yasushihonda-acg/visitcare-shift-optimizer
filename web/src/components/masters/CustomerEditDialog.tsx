@@ -8,6 +8,7 @@ import { APIProvider } from '@vis.gl/react-google-maps';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -122,6 +123,7 @@ export function CustomerEditDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isNew ? '利用者を追加' : '利用者を編集'}</DialogTitle>
+          <DialogDescription>利用者の基本情報とサービス設定を管理します</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
