@@ -84,6 +84,71 @@ test.describe('希望休管理', () => {
   });
 });
 
+test.describe('利用者マスタ 検索・フィルター機能', () => {
+  test.describe.configure({ timeout: 30_000 });
+
+  test('電話番号②列がテーブルに表示される', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('columnheader', { name: '電話番号②' })).toBeVisible();
+  });
+
+  test('ふりがなで検索すると一致する利用者に絞り込まれる', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    const searchInput = page.getByPlaceholder(/検索/);
+    await searchInput.fill('やまだ');
+    // 山田（やまだ）行が残り、中村（なかむら）行が消える
+    await expect(page.getByText('山田').first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('中村')).toBeHidden({ timeout: 5_000 });
+  });
+
+  test('あおぞらIDで検索できる', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    const searchInput = page.getByPlaceholder(/検索/);
+    await searchInput.fill('AZ-001');
+    // AZ-001（山田太郎）だけが表示され、中村が消える
+    await expect(page.getByText('山田')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('中村')).toBeHidden({ timeout: 5_000 });
+  });
+
+  test('頭文字フィルターのボタン行が表示される', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    await expect(page.getByText('頭文字')).toBeVisible();
+    for (const label of ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ']) {
+      await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+    }
+  });
+
+  test('頭文字フィルター"さ"行で絞り込まれる', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    await page.getByRole('button', { name: 'さ', exact: true }).click();
+    // さ行（ささき=佐々木）が表示され、や行（やまだ=山田）が消える
+    await expect(page.getByText('佐々木')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('山田')).toBeHidden({ timeout: 5_000 });
+  });
+
+  test('頭文字フィルターを✕で解除すると全件表示に戻る', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    // "さ" 行フィルターを適用
+    await page.getByRole('button', { name: 'さ', exact: true }).click();
+    await expect(page.getByText('山田')).toBeHidden({ timeout: 5_000 });
+
+    // ✕ボタンでクリア → 山田が再表示
+    await page.getByRole('button', { name: '✕', exact: true }).click();
+    await expect(page.getByText('山田').first()).toBeVisible({ timeout: 5_000 });
+  });
+});
+
 test.describe('マスタ管理タブナビゲーション', () => {
   test('利用者→ヘルパー→希望休のタブ切替が動作する', async ({ page }) => {
     await goToMasters(page, 'customers');
