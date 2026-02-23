@@ -127,6 +127,17 @@ export function CustomerEditDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* あおぞらID */}
+          <div className="space-y-1">
+            <Label htmlFor="aozora_id">あおぞらID（任意）</Label>
+            <Input
+              id="aozora_id"
+              {...register('aozora_id')}
+              placeholder="AZ-001"
+              className="max-w-[200px]"
+            />
+          </div>
+
           {/* 氏名 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -351,17 +362,6 @@ export function CustomerEditDialog({
                 />
               </div>
             </div>
-          </div>
-
-          {/* 外部連携ID */}
-          <div className="space-y-1">
-            <Label htmlFor="aozora_id">あおぞらID（任意）</Label>
-            <Input
-              id="aozora_id"
-              {...register('aozora_id')}
-              placeholder="AZ-001"
-              className="max-w-[200px]"
-            />
           </div>
 
           {/* スタッフ性別要件 */}
