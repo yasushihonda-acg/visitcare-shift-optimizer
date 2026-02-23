@@ -9,6 +9,8 @@ interface CustomerRow {
   id: string;
   family_name: string;
   given_name: string;
+  family_kana: string;
+  given_kana: string;
   address: string;
   lat: string;
   lng: string;
@@ -18,9 +20,11 @@ interface CustomerRow {
   gender_requirement: string;
   aozora_id: string;
   phone_number: string;
+  phone_number2: string;
+  phone_note: string;
   home_care_office: string;
-  consultation_support_office: string;
   care_manager_name: string;
+  consultation_support_office: string;
   support_specialist_name: string;
 }
 
@@ -99,7 +103,12 @@ export async function importCustomers(): Promise<number> {
     return {
       id: c.id,
       data: {
-        name: { family: c.family_name, given: c.given_name },
+        name: {
+          family: c.family_name,
+          given: c.given_name,
+          ...(c.family_kana ? { family_kana: c.family_kana } : {}),
+          ...(c.given_kana ? { given_kana: c.given_kana } : {}),
+        },
         address: c.address,
         location: { lat: parseFloat(c.lat), lng: parseFloat(c.lng) },
         ng_staff_ids: ngStaffIds,
@@ -112,6 +121,8 @@ export async function importCustomers(): Promise<number> {
         ...(c.gender_requirement ? { gender_requirement: c.gender_requirement } : {}),
         ...(c.aozora_id ? { aozora_id: c.aozora_id } : {}),
         ...(c.phone_number ? { phone_number: c.phone_number } : {}),
+        ...(c.phone_number2 ? { phone_number2: c.phone_number2 } : {}),
+        ...(c.phone_note ? { phone_note: c.phone_note } : {}),
         ...(c.home_care_office ? { home_care_office: c.home_care_office } : {}),
         ...(c.consultation_support_office ? { consultation_support_office: c.consultation_support_office } : {}),
         ...(c.care_manager_name ? { care_manager_name: c.care_manager_name } : {}),
