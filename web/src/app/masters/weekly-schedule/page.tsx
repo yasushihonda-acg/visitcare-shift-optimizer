@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useHelpers } from '@/hooks/useHelpers';
+import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -13,6 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CustomerDetailSheet } from '@/components/masters/CustomerDetailSheet';
+import { CustomerEditDialog } from '@/components/masters/CustomerEditDialog';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 import type { Customer, ServiceSlot } from '@/types';
 
@@ -63,7 +67,26 @@ function totalWeeklySlots(customer: Customer): number {
 
 export default function WeeklySchedulePage() {
   const { customers, loading } = useCustomers();
+  const { helpers } = useHelpers();
+  const { canEditCustomers } = useAuthRole();
   const [search, setSearch] = useState('');
+  const [detailTarget, setDetailTarget] = useState<Customer | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Customer | undefined>(undefined);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const openDetail = (customer: Customer) => {
+    setDetailTarget(customer);
+    setDetailOpen(true);
+  };
+
+  const handleDetailEdit = () => {
+    setDetailOpen(false);
+    if (detailTarget) {
+      setEditTarget(detailTarget);
+      setDialogOpen(true);
+    }
+  };
 
   const filtered = useMemo(() => {
     const list = Array.from(customers.values()).sort((a, b) => {
@@ -133,18 +156,28 @@ export default function WeeklySchedulePage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((customer) => {
+              filtered.map((customer, index) => {
                 const total = totalWeeklySlots(customer);
                 const name =
                   customer.name.short ??
                   `${customer.name.family} ${customer.name.given}`;
                 return (
-                  <TableRow key={customer.id}>
+                  <TableRow
+                    key={customer.id}
+                    className={`cursor-pointer hover:bg-muted/50 ${index % 2 === 1 ? 'bg-muted/30' : ''}`}
+                    onClick={() => openDetail(customer)}
+                  >
                     <TableCell
-                      className="font-medium sticky left-0 bg-background z-10 border-r"
+                      className="font-medium sticky left-0 z-10 border-r"
+                      style={{ backgroundColor: index % 2 === 1 ? 'hsl(var(--muted) / 0.3)' : 'hsl(var(--background))' }}
                       title={`${customer.name.family} ${customer.name.given}`}
                     >
-                      <span className="truncate block max-w-[120px]">{name}</span>
+                      <div className="truncate max-w-[120px]">{name}</div>
+                      {(customer.name.family_kana || customer.name.given_kana) && (
+                        <div className="text-[10px] text-muted-foreground font-normal truncate max-w-[120px]">
+                          {customer.name.family_kana} {customer.name.given_kana}
+                        </div>
+                      )}
                     </TableCell>
                     {DAY_OF_WEEK_ORDER.map((day) => {
                       const slots = customer.weekly_services[day] ?? [];
@@ -176,6 +209,22 @@ export default function WeeklySchedulePage() {
           </TableBody>
         </Table>
       </div>
+
+      <CustomerDetailSheet
+        customer={detailTarget}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onEdit={handleDetailEdit}
+        helpers={helpers}
+      />
+
+      {canEditCustomers && (
+        <CustomerEditDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          customer={editTarget}
+        />
+      )}
     </div>
   );
 }
