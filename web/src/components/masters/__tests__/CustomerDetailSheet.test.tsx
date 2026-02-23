@@ -161,10 +161,10 @@ describe('CustomerDetailSheet', () => {
     expect(screen.queryByText('備考')).not.toBeInTheDocument();
   });
 
-  it('外部IDが1つでもある場合に外部連携IDセクションが表示される', () => {
-    const customer = makeCustomer({ kaiso_id: 'KAISO-001' });
+  it('あおぞらIDがある場合に外部連携IDセクションが表示される', () => {
+    const customer = makeCustomer({ aozora_id: 'AO-001' });
     render(<CustomerDetailSheet {...defaultProps} customer={customer} />);
-    expect(screen.getByText('KAISO-001')).toBeInTheDocument();
+    expect(screen.getByText('AO-001')).toBeInTheDocument();
   });
 
   it('外部IDが全て空のとき外部連携IDセクションが表示されない', () => {

@@ -21,6 +21,13 @@ import { CustomerDetailSheet } from '@/components/masters/CustomerDetailSheet';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Customer } from '@/types';
 
+/** カタカナをひらがなに変換（検索正規化用） */
+function toHiragana(str: string): string {
+  return str.replace(/[\u30A1-\u30F6]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60)
+  );
+}
+
 export default function CustomersPage() {
   const { customers, loading } = useCustomers();
   const { helpers } = useHelpers();
@@ -34,12 +41,14 @@ export default function CustomersPage() {
   const filtered = useMemo(() => {
     const list = Array.from(customers.values());
     if (!search.trim()) return list;
-    const q = search.trim().toLowerCase();
+    const q = toHiragana(search.trim().toLowerCase());
     return list.filter(
       (c) =>
         (c.aozora_id?.toLowerCase().includes(q) ?? false) ||
-        c.name.family.toLowerCase().includes(q) ||
-        c.name.given.toLowerCase().includes(q) ||
+        toHiragana(c.name.family.toLowerCase()).includes(q) ||
+        toHiragana(c.name.given.toLowerCase()).includes(q) ||
+        toHiragana(c.name.family_kana ?? '').includes(q) ||
+        toHiragana(c.name.given_kana ?? '').includes(q) ||
         c.address.toLowerCase().includes(q) ||
         (c.phone_number?.toLowerCase().includes(q) ?? false) ||
         (c.home_care_office?.toLowerCase().includes(q) ?? false) ||
@@ -100,7 +109,7 @@ export default function CustomersPage() {
       <div className="relative max-w-sm">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="名前・住所・電話番号・ケアマネで検索..."
+          placeholder="あおぞらID・名前・ふりがな・住所・ケアマネで検索..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"

@@ -84,6 +84,8 @@ export interface PersonName {
   family: string;
   given: string;
   short?: string;
+  family_kana?: string;
+  given_kana?: string;
 }
 
 /** 座標 */
