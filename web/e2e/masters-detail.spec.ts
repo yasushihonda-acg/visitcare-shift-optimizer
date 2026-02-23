@@ -26,10 +26,10 @@ test.describe('利用者マスタ 詳細シート', () => {
     const sheet = page.locator('[data-testid="customer-detail-sheet"]');
     await expect(sheet).toBeVisible({ timeout: 5_000 });
 
-    // 住所・サ責などの基本情報セクション
+    // 住所・サ責などの基本情報セクション（ラベル要素のみにマッチさせるため exact: true）
     await expect(sheet.getByText('基本情報')).toBeVisible();
-    await expect(sheet.getByText('住所')).toBeVisible();
-    await expect(sheet.getByText('サ責')).toBeVisible();
+    await expect(sheet.getByText('住所', { exact: true })).toBeVisible();
+    await expect(sheet.getByText('サ責', { exact: true })).toBeVisible();
   });
 
   test('詳細シートをEscapeキーで閉じられる', async ({ page }) => {
