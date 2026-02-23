@@ -104,6 +104,9 @@ export function CustomerDetailSheet({
           <section>
             <SectionHeader>基本情報</SectionHeader>
             <div className="space-y-2 rounded-lg border bg-accent/30 p-3">
+              {customer.name.short && (
+                <InfoRow label="短縮名" value={customer.name.short} />
+              )}
               <InfoRow label="住所" value={customer.address} />
               <InfoRow label="サ責" value={customer.service_manager} />
               {customer.phone_number && (
@@ -223,11 +226,18 @@ export function CustomerDetailSheet({
               <SectionHeader>不定期パターン</SectionHeader>
               <div className="space-y-1.5">
                 {customer.irregular_patterns.map((p, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline">
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <Badge variant="outline" className="shrink-0">
                       {IRREGULAR_PATTERN_LABELS[p.type] ?? p.type}
                     </Badge>
-                    <span className="text-muted-foreground">{p.description}</span>
+                    <div>
+                      <span className="text-muted-foreground">{p.description}</span>
+                      {p.active_weeks && p.active_weeks.length > 0 && (
+                        <span className="ml-1.5 text-xs text-muted-foreground">
+                          （第{p.active_weeks.join('・')}週）
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

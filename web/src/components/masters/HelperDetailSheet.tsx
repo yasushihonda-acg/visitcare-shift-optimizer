@@ -80,9 +80,9 @@ export function HelperDetailSheet({
     (d) => helper.weekly_availability[d] && helper.weekly_availability[d]!.length > 0
   );
 
-  const trainingEntries = Object.entries(helper.customer_training_status).filter(
-    ([, status]) => status !== 'independent'
-  );
+  const trainingEntries = Object.entries(helper.customer_training_status);
+  const pendingTraining = trainingEntries.filter(([, s]) => s !== 'independent');
+  const independentEntries = trainingEntries.filter(([, s]) => s === 'independent');
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -202,25 +202,54 @@ export function HelperDetailSheet({
             </section>
           )}
 
-          {/* 4. 利用者別研修状態（independentを除く） */}
+          {/* 4. 利用者別研修状態 */}
           {trainingEntries.length > 0 && (
             <section>
               <SectionHeader>利用者別研修状態</SectionHeader>
-              <div className="space-y-1.5" data-testid="training-status-list">
-                {trainingEntries.map(([customerId, status]) => {
-                  const customer = customers.get(customerId);
-                  const displayName = customer
-                    ? `${customer.name.family} ${customer.name.given}`
-                    : customerId;
-                  return (
-                    <div key={customerId} className="flex items-center justify-between text-sm">
-                      <span>{displayName}</span>
-                      <Badge variant={TRAINING_STATUS_VARIANTS[status as TrainingStatus]}>
-                        {TRAINING_STATUS_LABELS[status as TrainingStatus] ?? status}
-                      </Badge>
+              <div className="space-y-3" data-testid="training-status-list">
+                {/* 要対応（研修中・未訪問） */}
+                {pendingTraining.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1.5">要対応</p>
+                    <div className="space-y-1.5">
+                      {pendingTraining.map(([customerId, status]) => {
+                        const customer = customers.get(customerId);
+                        const displayName = customer
+                          ? `${customer.name.family} ${customer.name.given}`
+                          : customerId;
+                        return (
+                          <div key={customerId} className="flex items-center justify-between text-sm">
+                            <span>{displayName}</span>
+                            <Badge variant={TRAINING_STATUS_VARIANTS[status as TrainingStatus]}>
+                              {TRAINING_STATUS_LABELS[status as TrainingStatus] ?? status}
+                            </Badge>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
+                {/* 自立済み */}
+                {independentEntries.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1.5">
+                      自立済み（{independentEntries.length}名）
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {independentEntries.map(([customerId]) => {
+                        const customer = customers.get(customerId);
+                        const displayName = customer
+                          ? `${customer.name.family} ${customer.name.given}`
+                          : customerId;
+                        return (
+                          <Badge key={customerId} variant="default" className="text-xs">
+                            {displayName}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           )}
