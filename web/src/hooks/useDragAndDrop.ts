@@ -11,6 +11,8 @@ import type { Order, Helper, Customer, StaffUnavailability, DayOfWeek, ServiceTy
 import type { HelperScheduleRow } from './useScheduleData';
 import { getStaffCount } from '@/lib/dnd/staffCount';
 import { computeNewStaffIds } from '@/lib/dnd/computeStaffIds';
+import { createDragDropCommand } from '@/lib/undo/commands';
+import type { UndoCommand } from '@/lib/undo/types';
 
 interface UseDragAndDropInput {
   helperRows: HelperScheduleRow[];
@@ -22,10 +24,11 @@ interface UseDragAndDropInput {
   slotWidth: number;
   serviceTypes?: Map<string, ServiceTypeDoc>;
   travelTimeLookup?: Map<string, number>;
+  onCommand?: (cmd: UndoCommand) => void;
 }
 
 export function useDragAndDrop(input: UseDragAndDropInput) {
-  const { helperRows, unassignedOrders, helpers, customers, unavailability, day, slotWidth, serviceTypes, travelTimeLookup } = input;
+  const { helperRows, unassignedOrders, helpers, customers, unavailability, day, slotWidth, serviceTypes, travelTimeLookup, onCommand } = input;
   const [dropZoneStatuses, setDropZoneStatuses] = useState<Map<string, DropZoneStatus>>(new Map());
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [previewTimes, setPreviewTimes] = useState<{ startTime: string; endTime: string } | null>(null);
@@ -193,6 +196,20 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
           } else {
             toast.success('割当を解除しました');
           }
+          if (onCommand) {
+            onCommand(createDragDropCommand({
+              orderId: order.id,
+              label: '割当解除',
+              before: {
+                assigned_staff_ids: order.assigned_staff_ids,
+                manually_edited: order.manually_edited ?? false,
+              },
+              after: {
+                assigned_staff_ids: newIds,
+                manually_edited: true,
+              },
+            }));
+          }
         } catch (err) {
           console.error('Failed to unassign order:', err);
           toast.error('割当解除に失敗しました');
@@ -253,12 +270,41 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
             toast.success('割当を変更しました');
           }
         }
+
+        if (onCommand) {
+          const targetHelper = helpers.get(targetId);
+          const targetHelperName = targetHelper
+            ? `${targetHelper.name.family} ${targetHelper.name.given}`
+            : targetId;
+          const timeLabel = shifted ? `${shifted.newStartTime}-${shifted.newEndTime}` : null;
+          const label = isSameHelper
+            ? `時間を ${timeLabel} に変更`
+            : timeLabel
+              ? `${targetHelperName}に割当変更 (${timeLabel})`
+              : `${targetHelperName}に割当変更`;
+          onCommand(createDragDropCommand({
+            orderId: order.id,
+            label,
+            before: {
+              assigned_staff_ids: order.assigned_staff_ids,
+              start_time: order.start_time,
+              end_time: order.end_time,
+              manually_edited: order.manually_edited ?? false,
+            },
+            after: {
+              assigned_staff_ids: newStaffIds,
+              start_time: shifted?.newStartTime ?? order.start_time,
+              end_time: shifted?.newEndTime ?? order.end_time,
+              manually_edited: true,
+            },
+          }));
+        }
       } catch (err) {
         console.error('Failed to update order:', err);
         toast.error('更新に失敗しました');
       }
     },
-    [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth, serviceTypes, travelTimeLookup]
+    [findOrder, helperRows, helpers, customers, unavailability, day, slotWidth, serviceTypes, travelTimeLookup, onCommand]
   );
 
   const handleDragCancel = useCallback(() => {

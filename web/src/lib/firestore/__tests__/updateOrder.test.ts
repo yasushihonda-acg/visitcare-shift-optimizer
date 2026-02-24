@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock firebase/firestore
 vi.mock('firebase/firestore', () => ({
@@ -15,7 +15,8 @@ vi.mock('@/lib/firebase', () => ({
   getDb: vi.fn(() => ({})),
 }));
 
-import { updateOrderStatus, bulkUpdateOrderStatus, isValidTransition, isOrderStatus } from '../updateOrder';
+import { updateOrderStatus, bulkUpdateOrderStatus, isValidTransition, isOrderStatus, patchOrder } from '../updateOrder';
+import { doc, updateDoc } from 'firebase/firestore';
 
 describe('updateOrderStatus - 状態遷移バリデーション', () => {
   it('assigned → completed は許可される', async () => {
@@ -94,6 +95,51 @@ describe('isOrderStatus - 型ガードテスト', () => {
   it('無効な値は false', () => {
     expect(isOrderStatus('invalid')).toBe(false);
     expect(isOrderStatus('')).toBe(false);
+  });
+});
+
+describe('patchOrder', () => {
+  beforeEach(() => {
+    vi.mocked(doc).mockReturnValue({} as ReturnType<typeof doc>);
+    vi.mocked(updateDoc).mockResolvedValue(undefined);
+  });
+
+  it('指定フィールドとupdated_atを書き込む', async () => {
+    const mockRef = { id: 'orders/o1' };
+    vi.mocked(doc).mockReturnValue(mockRef as ReturnType<typeof doc>);
+
+    await patchOrder('o1', { assigned_staff_ids: ['h1', 'h2'], manually_edited: true });
+
+    expect(updateDoc).toHaveBeenCalledWith(mockRef, {
+      assigned_staff_ids: ['h1', 'h2'],
+      manually_edited: true,
+      updated_at: 'SERVER_TIMESTAMP',
+    });
+  });
+
+  it('時刻フィールドのみ更新できる', async () => {
+    const mockRef = {};
+    vi.mocked(doc).mockReturnValue(mockRef as ReturnType<typeof doc>);
+
+    await patchOrder('o2', { start_time: '09:00', end_time: '10:00' });
+
+    expect(updateDoc).toHaveBeenCalledWith(mockRef, {
+      start_time: '09:00',
+      end_time: '10:00',
+      updated_at: 'SERVER_TIMESTAMP',
+    });
+  });
+
+  it('manually_edited: false を書き込める（確認ボタンのundo用）', async () => {
+    const mockRef = {};
+    vi.mocked(doc).mockReturnValue(mockRef as ReturnType<typeof doc>);
+
+    await patchOrder('o3', { manually_edited: false });
+
+    expect(updateDoc).toHaveBeenCalledWith(mockRef, {
+      manually_edited: false,
+      updated_at: 'SERVER_TIMESTAMP',
+    });
   });
 });
 

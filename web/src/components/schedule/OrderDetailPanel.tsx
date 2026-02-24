@@ -34,7 +34,7 @@ interface OrderDetailPanelProps {
   open: boolean;
   onClose: () => void;
   helpers?: Map<string, Helper>;
-  onStaffChange?: (orderId: string, staffIds: string[]) => void;
+  onStaffChange?: (orderId: string, staffIds: string[], beforeState?: { assigned_staff_ids: string[]; manually_edited: boolean }) => void;
   diff?: AssignmentDiff;
   saving?: boolean;
 }
@@ -196,7 +196,7 @@ export function OrderDetailPanel({
                 <StaffMultiSelect
                   label="割当スタッフ"
                   selected={order.assigned_staff_ids}
-                  onChange={(ids) => onStaffChange(order.id, ids)}
+                  onChange={(ids) => onStaffChange(order.id, ids, { assigned_staff_ids: order.assigned_staff_ids, manually_edited: order.manually_edited ?? false })}
                   helpers={helpers}
                 />
               </div>

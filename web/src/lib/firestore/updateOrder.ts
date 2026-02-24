@@ -1,6 +1,6 @@
 import { doc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
-import type { OrderStatus } from '@/types';
+import type { Order, OrderStatus } from '@/types';
 
 /**
  * オーダーの割当スタッフを更新する。
@@ -96,6 +96,18 @@ export async function confirmManualEdit(orderId: string): Promise<void> {
     manually_edited: false,
     updated_at: serverTimestamp(),
   });
+}
+
+/**
+ * 任意フィールドを書き込む汎用更新関数。
+ * undo/redo コマンドが before/after の値を復元する際に使用。
+ */
+export async function patchOrder(
+  orderId: string,
+  fields: Partial<Pick<Order, 'assigned_staff_ids' | 'start_time' | 'end_time' | 'manually_edited'>>
+): Promise<void> {
+  const ref = doc(getDb(), 'orders', orderId);
+  await updateDoc(ref, { ...fields, updated_at: serverTimestamp() });
 }
 
 /**

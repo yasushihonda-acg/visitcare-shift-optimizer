@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { addDays } from 'date-fns';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { ScheduleProvider, useScheduleContext } from '@/contexts/ScheduleContext';
@@ -14,6 +14,7 @@ import { OptimizeButton } from '@/components/schedule/OptimizeButton';
 import { NotifyChangesButton } from '@/components/schedule/NotifyChangesButton';
 import { ResetButton } from '@/components/schedule/ResetButton';
 import { BulkCompleteButton } from '@/components/schedule/BulkCompleteButton';
+import { UndoRedoButtons } from '@/components/schedule/UndoRedoButtons';
 import { GanttChart } from '@/components/gantt/GanttChart';
 import { WeeklyGanttChart } from '@/components/gantt/WeeklyGanttChart';
 import { CustomerGanttChart } from '@/components/gantt/CustomerGanttChart';
@@ -21,9 +22,11 @@ import { OrderDetailPanel } from '@/components/schedule/OrderDetailPanel';
 import { useScheduleData } from '@/hooks/useScheduleData';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { useOrderEdit } from '@/hooks/useOrderEdit';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { useUndoRedoKeyboard } from '@/hooks/useUndoRedoKeyboard';
 import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { checkConstraints } from '@/lib/constraints/checker';
-import { confirmManualEdit } from '@/lib/firestore/updateOrder';
+import { createConfirmEditCommand } from '@/lib/undo/commands';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { SLOT_WIDTH_PX } from '@/components/gantt/constants';
 import { DAY_OF_WEEK_ORDER } from '@/types';
@@ -38,7 +41,10 @@ function SchedulePage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const { saving, handleStaffChange } = useOrderEdit();
+  const { canUndo, canRedo, undo, redo, pushCommand, clearHistory, undoLabel, redoLabel } = useUndoRedo();
+  useUndoRedoKeyboard({ undo, redo, canUndo, canRedo });
+
+  const { saving, handleStaffChange } = useOrderEdit({ onCommand: pushCommand });
   const { serviceTypes } = useServiceTypes();
 
   const allOrders = useMemo(() => {
@@ -75,6 +81,11 @@ function SchedulePage() {
     [schedule, helpers, customers, unavailability, selectedDay, serviceTypes, travelTimeLookup]
   );
 
+  // 週変更時に履歴をクリア
+  useEffect(() => {
+    clearHistory();
+  }, [weekStart]);
+
   // DnD — distance: 5px でクリックとドラッグを区別
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -103,6 +114,7 @@ function SchedulePage() {
     slotWidth,
     serviceTypes,
     travelTimeLookup,
+    onCommand: pushCommand,
   });
 
   const handleDayNavigation = useCallback(
@@ -137,8 +149,10 @@ function SchedulePage() {
   };
 
   const handleConfirmManualEdit = useCallback(async (orderId: string) => {
-    await confirmManualEdit(orderId);
-  }, []);
+    const cmd = createConfirmEditCommand(orderId);
+    await cmd.redo();
+    pushCommand(cmd);
+  }, [pushCommand]);
 
   const assignedHelpers = useMemo(() => {
     if (!selectedOrder) return [];
@@ -176,6 +190,14 @@ function SchedulePage() {
           {viewMode === 'day' && <DayTabs orderCounts={orderCounts} />}
         </div>
         <div className="flex items-center gap-2 px-4">
+          <UndoRedoButtons
+            canUndo={canUndo}
+            canRedo={canRedo}
+            undoLabel={undoLabel}
+            redoLabel={redoLabel}
+            onUndo={undo}
+            onRedo={redo}
+          />
           {viewMode === 'day' && <BulkCompleteButton schedule={schedule} />}
           <NotifyChangesButton
             diffMap={diffMap}
@@ -183,8 +205,8 @@ function SchedulePage() {
             customers={customers}
             orders={allOrders}
           />
-          <ResetButton />
-          <OptimizeButton />
+          <ResetButton onHistoryClear={clearHistory} />
+          <OptimizeButton onHistoryClear={clearHistory} />
         </div>
       </div>
       <StatsBar

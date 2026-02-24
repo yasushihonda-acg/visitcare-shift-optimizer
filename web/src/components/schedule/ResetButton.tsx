@@ -17,7 +17,11 @@ import { toast } from 'sonner';
 import { resetAssignments, OptimizeApiError } from '@/lib/api/optimizer';
 import { useScheduleContext } from '@/contexts/ScheduleContext';
 
-export function ResetButton() {
+interface ResetButtonProps {
+  onHistoryClear?: () => void;
+}
+
+export function ResetButton({ onHistoryClear }: ResetButtonProps = {}) {
   const { weekStart } = useScheduleContext();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,6 +32,7 @@ export function ResetButton() {
       const result = await resetAssignments(format(weekStart, 'yyyy-MM-dd'));
       toast.success(`割当リセット完了: ${result.orders_reset}件`);
       setOpen(false);
+      onHistoryClear?.();
     } catch (err) {
       if (err instanceof OptimizeApiError) {
         toast.error(`リセットエラー: ${err.message}`);

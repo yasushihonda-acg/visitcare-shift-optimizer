@@ -23,7 +23,11 @@ import {
 } from './ConstraintWeightsForm';
 import { NotifyConfirmDialog } from './NotifyConfirmDialog';
 
-export function OptimizeButton() {
+interface OptimizeButtonProps {
+  onHistoryClear?: () => void;
+}
+
+export function OptimizeButton({ onHistoryClear }: OptimizeButtonProps = {}) {
   const { weekStart } = useScheduleContext();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,6 +49,7 @@ export function OptimizeButton() {
       setOpen(false);
       setLastResult({ assignedCount: result.assigned_count, totalOrders: result.total_orders });
       setNotifyOpen(true);
+      onHistoryClear?.();
     } catch (err) {
       if (err instanceof OptimizeApiError) {
         const messages: Record<number, string> = {
