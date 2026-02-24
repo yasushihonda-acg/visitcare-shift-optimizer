@@ -27,9 +27,11 @@ interface GanttChartProps {
   previewTimes?: { startTime: string; endTime: string } | null;
   /** ドロップ拒否/警告の理由テキスト */
   dropMessage?: string | null;
+  /** 変更確認済みにするコールバック */
+  onConfirmManualEdit?: (orderId: string) => void;
 }
 
-export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes, dropMessage }: GanttChartProps) {
+export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes, dropMessage, onConfirmManualEdit }: GanttChartProps) {
   // コールバックref: totalOrders が 0→>0 になりDOMが現れたタイミングで再測定できるよう
   // useRef + useLayoutEffect([]) の代わりに useState を使用する
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -84,6 +86,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
                 activeOrder={activeOrder}
                 previewTimes={previewTimes}
                 dropMessage={dropMessage}
+                onConfirmManualEdit={onConfirmManualEdit}
               />
             ))}
             {/* ドラッグ中の時間帯ハイライト（全行横断） */}

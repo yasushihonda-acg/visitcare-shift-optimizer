@@ -87,6 +87,18 @@ export async function bulkUpdateOrderStatus(
 }
 
 /**
+ * 手動編集フラグをリセットして変更確認済みにする。
+ * 青リング（manually_edited: true）を消す際に使用。
+ */
+export async function confirmManualEdit(orderId: string): Promise<void> {
+  const orderRef = doc(getDb(), 'orders', orderId);
+  await updateDoc(orderRef, {
+    manually_edited: false,
+    updated_at: serverTimestamp(),
+  });
+}
+
+/**
  * オーダーの割当スタッフと時刻を同時に更新する。
  * D&D 時間軸移動時に使用。
  */
