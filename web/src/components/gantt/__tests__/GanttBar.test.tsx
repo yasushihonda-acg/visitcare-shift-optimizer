@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { GanttBar } from '../GanttBar';
 import type { Order } from '@/types';
 
@@ -124,5 +124,42 @@ describe('GanttBar - 手動編集リング表示', () => {
     const bar = screen.getByTestId('gantt-bar-order-1');
     expect(bar.className).toContain('ring-yellow-500');
     expect(bar.className).not.toContain('ring-blue-500');
+  });
+});
+
+describe('GanttBar - 変更確認チェックボタン', () => {
+  it('manually_edited: true + onConfirmManualEdit → チェックボタンが表示される', () => {
+    const order = makeOrder({ manually_edited: true });
+    const onConfirm = vi.fn();
+    render(<GanttBar order={order} sourceHelperId="h1" onConfirmManualEdit={onConfirm} />);
+
+    expect(screen.getByTestId('confirm-edit-order-1')).toBeTruthy();
+  });
+
+  it('manually_edited: false → チェックボタンが表示されない', () => {
+    const order = makeOrder({ manually_edited: false });
+    const onConfirm = vi.fn();
+    render(<GanttBar order={order} sourceHelperId="h1" onConfirmManualEdit={onConfirm} />);
+
+    expect(screen.queryByTestId('confirm-edit-order-1')).toBeNull();
+  });
+
+  it('チェックボタンクリック → onConfirmManualEdit が orderId で呼ばれる', () => {
+    const order = makeOrder({ manually_edited: true });
+    const onConfirm = vi.fn();
+    render(<GanttBar order={order} sourceHelperId="h1" onConfirmManualEdit={onConfirm} />);
+
+    fireEvent.click(screen.getByTestId('confirm-edit-order-1'));
+
+    expect(onConfirm).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledWith('order-1');
+  });
+
+  it('status: completed → manually_edited: true でもチェックボタンが表示されない', () => {
+    const order = makeOrder({ status: 'completed', manually_edited: true });
+    const onConfirm = vi.fn();
+    render(<GanttBar order={order} sourceHelperId="h1" onConfirmManualEdit={onConfirm} />);
+
+    expect(screen.queryByTestId('confirm-edit-order-1')).toBeNull();
   });
 });

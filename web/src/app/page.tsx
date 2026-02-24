@@ -23,6 +23,7 @@ import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { useOrderEdit } from '@/hooks/useOrderEdit';
 import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { checkConstraints } from '@/lib/constraints/checker';
+import { confirmManualEdit } from '@/lib/firestore/updateOrder';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { SLOT_WIDTH_PX } from '@/components/gantt/constants';
 import { DAY_OF_WEEK_ORDER } from '@/types';
@@ -135,6 +136,10 @@ function SchedulePage() {
     setDetailOpen(true);
   };
 
+  const handleConfirmManualEdit = useCallback(async (orderId: string) => {
+    await confirmManualEdit(orderId);
+  }, []);
+
   const assignedHelpers = useMemo(() => {
     if (!selectedOrder) return [];
     return selectedOrder.assigned_staff_ids
@@ -216,6 +221,7 @@ function SchedulePage() {
                 onSlotWidthChange={handleSlotWidthChange}
                 previewTimes={previewTimes}
                 dropMessage={dropMessage}
+                onConfirmManualEdit={handleConfirmManualEdit}
               />
             </DndContext>
           )

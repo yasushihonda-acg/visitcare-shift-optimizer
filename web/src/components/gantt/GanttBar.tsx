@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, X } from 'lucide-react';
+import { Check, CheckCircle2, X } from 'lucide-react';
 import { timeToColumn, getServiceColor } from './constants';
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
@@ -21,9 +21,11 @@ interface GanttBarProps {
   sourceHelperId: string | null;
   /** 必要スタッフ人数（バッジ表示用） */
   staffCount?: number;
+  /** 変更確認済みにするコールバック */
+  onConfirmManualEdit?: (orderId: string) => void;
 }
 
-export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId, staffCount }: GanttBarProps) {
+export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId, staffCount, onConfirmManualEdit }: GanttBarProps) {
   const slotWidth = useSlotWidth();
   const startCol = timeToColumn(order.start_time);
   const endCol = timeToColumn(order.end_time);
@@ -87,6 +89,17 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
           <span className="shrink-0 ml-0.5 px-1 py-0.5 rounded text-[10px] font-bold leading-none bg-white/30 text-current">
             {order.assigned_staff_ids.length}/{staffCount}
           </span>
+        )}
+        {!isFinalized && order.manually_edited && onConfirmManualEdit && (
+          <button
+            data-testid={`confirm-edit-${order.id}`}
+            className="shrink-0 ml-auto -mr-1 p-0.5 rounded-full hover:bg-white/40 transition-colors"
+            onClick={(e) => { e.stopPropagation(); onConfirmManualEdit(order.id); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            title="変更を確認済みにする"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          </button>
         )}
       </span>
     </button>
