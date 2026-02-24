@@ -80,10 +80,13 @@ export async function importCustomers(): Promise<number> {
       });
     }
 
-    // NG/推奨スタッフ
+    // NG/入れるスタッフ/推奨スタッフ
     const customerConstraints = constraints.filter((ct) => ct.customer_id === c.id);
     const ngStaffIds = customerConstraints
       .filter((ct) => ct.constraint_type === 'ng')
+      .map((ct) => ct.staff_id);
+    const allowedStaffIds = customerConstraints
+      .filter((ct) => ct.constraint_type === 'allowed')
       .map((ct) => ct.staff_id);
     const preferredStaffIds = customerConstraints
       .filter((ct) => ct.constraint_type === 'preferred')
@@ -112,6 +115,7 @@ export async function importCustomers(): Promise<number> {
         address: c.address,
         location: { lat: parseFloat(c.lat), lng: parseFloat(c.lng) },
         ng_staff_ids: ngStaffIds,
+        allowed_staff_ids: allowedStaffIds,
         preferred_staff_ids: preferredStaffIds,
         weekly_services: weeklyServices,
         ...(c.household_id ? { household_id: c.household_id } : {}),

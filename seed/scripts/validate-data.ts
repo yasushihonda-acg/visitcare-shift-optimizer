@@ -12,7 +12,7 @@ interface ValidationError {
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const VALID_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-const VALID_CONSTRAINT_TYPES = ['ng', 'preferred'];
+const VALID_CONSTRAINT_TYPES = ['ng', 'allowed', 'preferred'];
 const VALID_TRANSPORT = ['car', 'bicycle', 'walk'];
 const VALID_EMPLOYMENT = ['full_time', 'part_time'];
 
