@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Sparkles } from 'lucide-react';
+import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,12 +16,15 @@ import {
 import { toast } from 'sonner';
 import { runOptimize, OptimizeApiError } from '@/lib/api/optimizer';
 import { useScheduleContext } from '@/contexts/ScheduleContext';
+import { useScheduleData } from '@/hooks/useScheduleData';
 import {
   ConstraintWeightsForm,
   DEFAULT_WEIGHTS,
   type ConstraintWeights,
 } from './ConstraintWeightsForm';
 import { NotifyConfirmDialog } from './NotifyConfirmDialog';
+import { checkAllowedStaff, type AllowedStaffWarning } from '@/lib/validation/allowed-staff-check';
+import { DAY_OF_WEEK_LABELS } from '@/types';
 
 interface OptimizeButtonProps {
   onHistoryClear?: () => void;
@@ -29,11 +32,27 @@ interface OptimizeButtonProps {
 
 export function OptimizeButton({ onHistoryClear }: OptimizeButtonProps = {}) {
   const { weekStart } = useScheduleContext();
+  const { customers, helpers, orders, unavailability } = useScheduleData(weekStart);
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [weights, setWeights] = useState<ConstraintWeights>({ ...DEFAULT_WEIGHTS });
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [lastResult, setLastResult] = useState<{ assignedCount: number; totalOrders: number } | null>(null);
+
+  const [warnOpen, setWarnOpen] = useState(false);
+  const [warnings, setWarnings] = useState<AllowedStaffWarning[]>([]);
+
+  /** 最適化ボタン押下: 事前チェック → 警告 or 直接ダイアログ */
+  const handleClickOptimize = () => {
+    const found = checkAllowedStaff({ customers, helpers, orders, unavailability });
+    if (found.length > 0) {
+      setWarnings(found);
+      setWarnOpen(true);
+    } else {
+      setOpen(true);
+    }
+  };
 
   const handleOptimize = async () => {
     setLoading(true);
@@ -67,11 +86,54 @@ export function OptimizeButton({ onHistoryClear }: OptimizeButtonProps = {}) {
 
   return (
     <>
+    {/* ── 事前警告ダイアログ ── */}
+    <Dialog open={warnOpen} onOpenChange={setWarnOpen}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-amber-600">
+            <AlertTriangle className="h-5 w-5" />
+            最適化前の注意
+          </DialogTitle>
+          <DialogDescription>
+            以下の利用者のオーダーで「入れるスタッフ」が対象週に全員対応不可のため、
+            最適化が失敗する可能性があります。
+          </DialogDescription>
+        </DialogHeader>
+        <ul className="max-h-60 overflow-y-auto space-y-2 text-sm">
+          {warnings.map((w) => (
+            <li key={w.order_id} className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+              <span className="font-medium">{w.customer_name}</span>
+              {' — '}
+              {DAY_OF_WEEK_LABELS[w.day_of_week]}曜 {w.start_time}〜{w.end_time}
+              {w.allowed_helper_names.length > 0 && (
+                <span className="block text-xs text-muted-foreground mt-0.5">
+                  設定中: {w.allowed_helper_names.join('、')} → 全員対応不可
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => setWarnOpen(false)}>
+            戻って修正する
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => { setWarnOpen(false); setOpen(true); }}
+          >
+            警告を無視して実行
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* ── ウェイト設定 → 実行ダイアログ ── */}
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           size="sm"
           disabled={loading}
+          onClick={(e) => { e.preventDefault(); handleClickOptimize(); }}
           className="rounded-full bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] text-white shadow-brand-sm hover:shadow-brand hover:brightness-110 transition-all duration-200"
         >
           {loading ? (
@@ -105,6 +167,7 @@ export function OptimizeButton({ onHistoryClear }: OptimizeButtonProps = {}) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
     {lastResult && (
       <NotifyConfirmDialog
         open={notifyOpen}
