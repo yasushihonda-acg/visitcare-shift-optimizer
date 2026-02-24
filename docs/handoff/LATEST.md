@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-24（ガントチャートに変更確認チェックボタン追加 PR #121 マージ済み）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート）実装済み・マージ済み
+**最終更新**: 2026-02-24（iPad横向きレスポンシブ対応 PR #124 マージ済み）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -59,7 +59,35 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-02-23 ～ 2026-02-24）
+## 直近の実装（2026-02-24）
+
+- **fix (2026-02-24)** ✅: iPad横向き（1024px）レスポンシブ対応 — ツールバー横スクロール解消（PR #124 マージ済み）
+  - `ViewModeToggle` / `DayTabs` / `ResetButton` / `NotifyChangesButton` / `BulkCompleteButton`: xl 未満でアイコンのみ表示（テキストラベル非表示）
+  - `StatsBar`: `grid-cols-6` → `grid-cols-2/sm:3/lg:6` レスポンシブ化
+  - iPad(1024px)で約63px余裕あり、Desktop(1280px)で約45px余裕あり
+  - CI: success（run #22350898838）
+
+- **fix (2026-02-24)** ✅: 409 Infeasible バグ修正 — gender フィールド欠落 + Saturday helper 不足（PR #123）
+  - **根本原因**: 2026-02-20 性別制約実装後に Firestore 再インポート未実施 → helper に gender フィールドなし → firestore_loader が全員 female にデフォルト → gender_requirement=male の C003 に対して Infeasible
+  - `solver.py`: `_compute_feasible_pairs()` に性別制約チェック追加、`InfeasibilityDiagnosis` dataclass + `diagnose_infeasibility()` 追加
+  - `routes.py`: Infeasible 時に診断ログ出力
+  - `seed/data/helper-availability.csv`: H001 (female) に土曜 09:00-17:00 を追加（土曜 female オーダー 11件 に対応）
+  - Firestore 本番: helpers 全 20 件に gender を PATCH 適用済み
+
+- **feat (2026-02-24)** ✅: スケジュール操作のUndo/Redo機能を実装（PR #123）
+  - Command Pattern + クライアントサイドスタック（最大50件）
+  - Cmd+Z / Cmd+Shift+Z キーボードショートカット対応
+  - D&D移動・スタッフ変更・変更確認ボタンの全操作をUndo/Redo対象に
+  - 最適化/リセット/週切替時に履歴自動クリア
+  - `patchOrder()` 汎用 Firestore 更新関数追加
+  - 新規ファイル: `lib/undo/types.ts` / `commands.ts` / `hooks/useUndoRedo.ts` / `useUndoRedoKeyboard.ts` / `UndoRedoButtons.tsx`
+  - テスト 36件追加 → **442件 pass**
+
+- **feat (2026-02-24)** ✅: 手動編集バーをアンバーデザインに刷新（視認性向上）（PR #122 マージ済み）
+  - `ring-blue-500` → `ring-amber-400`（要確認の標準色）
+  - 右上コーナーにアンバーパルスドット追加（`animate-pulse`）
+  - 確認ボタンをグリーンピル「✓ 確認」テキスト付きに刷新
+  - `button` 内 `button` HTML仕様違反 → `span[role=button]` で解消
 
 - **feat (2026-02-24)** ✅: ガントチャートに変更確認チェックボタンを追加（PR #121 マージ済み）
   - D&Dでオーダー移動後の青リング（`manually_edited: true`）をリセットするチェックボタンをガントバー右端に追加
@@ -341,12 +369,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 最新テスト結果サマリー（2026-02-24）
 - **Optimizer**: 285件 pass ✅（CI GREEN 2026-02-24 run #22316943766）
-- **Web (Next.js)**: 406件 pass（PR #121 4件追加、確認済み 2026-02-24）
+- **Web (Next.js)**: **442件 pass** ✅（PR #123 Undo/Redo 36件追加）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
-- **E2E Tests (Playwright)**: **64テスト**（直近追加: 詳細シート7件・通知ダイアログ3件・電話番号②/ふりがな検索/あかさたな6件）
-- **CI/CD**: in_progress（run #22334367734、PR #121 main push）
-  - 直前の main push（Firestoreルールテスト追加）✅ CI GREEN（run #22328688815）
-  - Issue #120（C010早朝スロット競合でtest_seed_data_solves Infeasible）→ **クローズ済み**
+- **E2E Tests (Playwright)**: **64テスト** pass（直近追加: 詳細シート7件・通知ダイアログ3件・電話番号②/ふりがな検索/あかさたな6件）
+- **CI/CD**: ✅ GREEN（run #22350898838、PR #124 main push 8m17s）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -398,16 +424,18 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
-2. **E2Eテスト拡充**: 基本予定一覧詳細シート（行クリック詳細シート）のE2Eテストが未追加
-3. **変更確認チェックボタン E2E動作確認**: PR #121 マニュアルテスト項目（D&D → 青リング確認 → チェックアイコンクリック → 解除確認）
-4. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
-5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
+2. **E2Eテスト拡充**: 以下が未追加
+   - 基本予定一覧詳細シート（行クリック詳細シート）E2E
+   - 変更確認チェックボタン（アンバーリング→緑確認ボタン→解除）E2E
+   - Undo/Redo ボタン操作（Cmd+Z / Cmd+Shift+Z）E2E
+3. **次フェーズ方針決定**: Phase 6（モバイル対応・PWA化・オフライン対応）等を検討
+4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 1件
   - #118 Gmail API DWD: Google Workspace 管理者に DWD スコープ追加を依頼 [enhancement, P1]
-- **クローズ済み（直近）**: PR #121（変更確認チェックボタン）、Issue #120（fix: C010競合修正）、Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）、PR #117（通知設定管理・フレーキー修正）
-- **クローズ済み（既往）**: Issue #96（PR #102）、Issue #98 Phase 1（PR #103）、Phase 2（PR #104）、Phase 3（PR #105）
+- **クローズ済み（直近）**: PR #124（iPad横向きレスポンシブ）、PR #123（Undo/Redo + Infeasibleバグ修正）、PR #122（アンバーデザイン刷新）、PR #121（変更確認チェックボタン）、Issue #120（C010競合修正）
+- **クローズ済み（既往）**: Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）、PR #117（通知設定管理）
 
 ## 参考資料（ローカルExcel）
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
