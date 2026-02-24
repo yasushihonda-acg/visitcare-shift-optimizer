@@ -73,7 +73,7 @@ from optimizer.data.firestore_writer import (
     save_optimization_run,
     write_assignments,
 )
-from optimizer.engine.solver import SoftWeights, solve
+from optimizer.engine.solver import SoftWeights, diagnose_infeasibility, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
 from optimizer.notification.recipients import list_manager_emails
 from optimizer.notification.sender import send_email
@@ -161,10 +161,19 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
     result = solve(inp, time_limit_seconds=req.time_limit_seconds, weights=weights)
 
     if result.status == "Infeasible":
-        raise HTTPException(
-            status_code=409,
-            detail="制約を満たす割当が見つかりません",
-        )
+        # 診断を実行してどのオーダーが問題かをログに記録
+        detail_msg = "制約を満たす割当が見つかりません"
+        try:
+            diagnosis = diagnose_infeasibility(inp, time_limit_seconds=30)
+            problem_orders = diagnosis.zero_feasible_orders + diagnosis.unassigned_orders + diagnosis.partially_assigned_orders
+            if problem_orders:
+                detail_msg = (
+                    f"制約を満たす割当が見つかりません。"
+                    f"問題のあるオーダー: {problem_orders}"
+                )
+        except Exception as diag_err:
+            logger.warning("Infeasibility診断でエラー: %s", diag_err)
+        raise HTTPException(status_code=409, detail=detail_msg)
 
     # Firestore書き戻し
     orders_updated = 0

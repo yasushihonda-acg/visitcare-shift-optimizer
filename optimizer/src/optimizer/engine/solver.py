@@ -1,17 +1,21 @@
 """MIPソルバー — PuLP + CBC"""
 
+import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pulp
 
 from optimizer.models import (
     Assignment,
+    GenderRequirement,
     OptimizationInput,
     OptimizationResult,
     Order,
     StaffConstraintType,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -22,6 +26,18 @@ class SoftWeights:
     preferred_staff: float = 5.0
     workload_balance: float = 10.0
     continuity: float = 3.0
+
+
+@dataclass
+class InfeasibilityDiagnosis:
+    """Infeasibility診断結果"""
+
+    # feasible_pairsが0件のオーダー（どのヘルパーも割当不可）
+    zero_feasible_orders: list[str] = field(default_factory=list)
+    # ソフト解で staff_count を一切満たせなかったオーダー
+    unassigned_orders: list[str] = field(default_factory=list)
+    # ソフト解で staff_count を部分的にしか満たせなかったオーダー
+    partially_assigned_orders: list[str] = field(default_factory=list)
 
 
 def _time_to_minutes(time_str: str) -> int:
@@ -49,7 +65,7 @@ def _build_travel_time_lookup(
 def _compute_feasible_pairs(inp: OptimizationInput) -> set[tuple[str, str]]:
     """割当可能な(helper_id, order_id)ペアを事前計算
 
-    資格制約・勤務可能日・勤務可能時間帯・NGスタッフを考慮し、
+    資格制約・性別制約・勤務可能日・勤務可能時間帯・NGスタッフを考慮し、
     明らかに割当不可能なペアを除外する。
     """
     # NGペアの事前計算
@@ -61,6 +77,9 @@ def _compute_feasible_pairs(inp: OptimizationInput) -> set[tuple[str, str]]:
     # 資格が必要なservice_typeのセットをマスタデータから構築
     _cert_required: set[str] = {c.code for c in inp.service_type_configs if c.requires_physical_care_cert} if inp.service_type_configs else set()
 
+    # 顧客マップ（customer_id → Customer）
+    customer_map = {c.id: c for c in inp.customers}
+
     feasible: set[tuple[str, str]] = set()
     for h in inp.helpers:
         for o in inp.orders:
@@ -70,6 +89,11 @@ def _compute_feasible_pairs(inp: OptimizationInput) -> set[tuple[str, str]]:
             # NGスタッフチェック
             if (o.customer_id, h.id) in ng_pairs:
                 continue
+            # 性別制約チェック
+            customer = customer_map.get(o.customer_id)
+            if customer and customer.gender_requirement != GenderRequirement.ANY:
+                if h.gender.value != customer.gender_requirement.value:
+                    continue
             # 勤務可能日チェック
             if h.weekly_availability:
                 slots = h.weekly_availability.get(o.day_of_week, [])
@@ -318,3 +342,98 @@ def _add_staff_continuity(
                 prob += y >= x[h.id, o.id], f"cont_y_{cid}_{h.id}_{o.id}"
 
             objective += weight * y
+
+
+def diagnose_infeasibility(
+    inp: OptimizationInput,
+    time_limit_seconds: int = 30,
+) -> InfeasibilityDiagnosis:
+    """Infeasible時の診断: どのオーダーが割当不可かを特定する
+
+    coverage制約をソフト化（unmet変数でペナルティ化）した MIP を解き、
+    割当が不足したオーダーを特定する。ハード制約（no_overlap, gender,
+    travel_time など）は引き続き有効なため、それらの制約を満たしながら
+    できるだけ多くのオーダーに割り当てた結果を返す。
+
+    Returns:
+        InfeasibilityDiagnosis — どのオーダーが問題かの診断結果
+    """
+    from optimizer.engine.constraints import add_all_hard_constraints
+
+    helpers = inp.helpers
+    orders = inp.orders
+    travel_lookup = _build_travel_time_lookup(inp)
+
+    # --- 0. feasible_pairsが0のオーダーを特定（cert/NG/availability考慮） ---
+    feasible_pairs = _compute_feasible_pairs(inp)
+    feasible_count_by_order: dict[str, int] = {o.id: 0 for o in orders}
+    for h_id, o_id in feasible_pairs:
+        feasible_count_by_order[o_id] += 1
+    zero_feasible_orders = [
+        oid for oid, cnt in feasible_count_by_order.items() if cnt == 0
+    ]
+
+    # --- 1. ソフトカバレッジ MIP ---
+    prob = pulp.LpProblem("diagnose", pulp.LpMinimize)
+
+    # 決定変数: feasible_pairs 外は upBound=0 で固定
+    x: dict[tuple[str, str], pulp.LpVariable] = {}
+    for h in helpers:
+        for o in orders:
+            if (h.id, o.id) in feasible_pairs:
+                x[h.id, o.id] = pulp.LpVariable(f"x_{h.id}_{o.id}", cat="Binary")
+            else:
+                x[h.id, o.id] = pulp.LpVariable(
+                    f"x_{h.id}_{o.id}", cat="Binary", upBound=0
+                )
+
+    # coverage 不足スラック変数（unmet[o] = staff_count - assigned）
+    unmet_vars: dict[str, pulp.LpVariable] = {}
+    for o in orders:
+        unmet = pulp.LpVariable(f"unmet_{o.id}", lowBound=0, upBound=o.staff_count)
+        unmet_vars[o.id] = unmet
+        assigned = pulp.lpSum(x[h.id, o.id] for h in helpers)
+        prob += unmet >= o.staff_count - assigned, f"soft_cover_{o.id}"
+        # 過剰割当は禁止（staff_count を超えない）
+        prob += assigned <= o.staff_count, f"max_cover_{o.id}"
+
+    # ハード制約を追加（coverage 制約はソフト化済みのため除外）
+    add_all_hard_constraints(prob, x, inp, travel_lookup)
+
+    # 目的: unmet の合計を最小化
+    prob += pulp.lpSum(unmet_vars[o.id] for o in orders), "minimize_unmet"
+
+    solver = pulp.PULP_CBC_CMD(msg=0, timeLimit=time_limit_seconds)
+    prob.solve(solver)
+
+    # --- 2. 結果の解析 ---
+    unassigned_orders: list[str] = []
+    partially_assigned_orders: list[str] = []
+
+    if prob.status != pulp.constants.LpStatusInfeasible:
+        for o in orders:
+            unmet_val = pulp.value(unmet_vars[o.id])
+            if unmet_val is None:
+                continue
+            if unmet_val >= o.staff_count - 0.5:
+                # staff_count を一切満たせなかった
+                unassigned_orders.append(o.id)
+            elif unmet_val > 0.5:
+                # 部分的にしか満たせなかった
+                partially_assigned_orders.append(o.id)
+    else:
+        logger.warning("diagnose_infeasibility: ソフト問題も Infeasible — 診断結果は不完全")
+
+    logger.warning(
+        "Infeasibility診断結果: "
+        "zero_feasible=%s, unassigned=%s, partially_assigned=%s",
+        zero_feasible_orders,
+        unassigned_orders,
+        partially_assigned_orders,
+    )
+
+    return InfeasibilityDiagnosis(
+        zero_feasible_orders=zero_feasible_orders,
+        unassigned_orders=unassigned_orders,
+        partially_assigned_orders=partially_assigned_orders,
+    )
