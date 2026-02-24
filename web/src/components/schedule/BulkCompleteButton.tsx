@@ -55,9 +55,10 @@ export function BulkCompleteButton({ schedule }: BulkCompleteButtonProps) {
           size="sm"
           disabled={assignedOrders.length === 0}
           data-testid="bulk-complete-button"
+          title="一括確認"
         >
-          <CheckCheck className="mr-1.5 h-4 w-4" />
-          一括確認
+          <CheckCheck className="h-4 w-4 xl:mr-1.5" />
+          <span className="hidden xl:inline">一括確認</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

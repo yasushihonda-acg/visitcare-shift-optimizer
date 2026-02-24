@@ -108,8 +108,8 @@ export function NotifyChangesButton({ diffMap, helpers, customers, orders }: Pro
         onClick={() => setOpen(true)}
         title={changes.length > 0 ? `${changes.length}件の変更を通知` : '変更なし'}
       >
-        <Bell className="mr-1.5 h-4 w-4" />
-        変更通知
+        <Bell className="h-4 w-4 xl:mr-1.5" />
+        <span className="hidden xl:inline">変更通知</span>
         {changes.length > 0 && (
           <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground">
             {changes.length}
