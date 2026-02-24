@@ -60,7 +60,7 @@ export const customerSchema = z.object({
   address: z.string().min(1, '住所は必須です'),
   location: geoLocationSchema,
   ng_staff_ids: z.array(z.string()),
-  allowed_staff_ids: z.array(z.string()).default([]),
+  allowed_staff_ids: z.array(z.string()),
   preferred_staff_ids: z.array(z.string()),
   weekly_services: weeklyServicesSchema,
   household_id: z.string().optional(),
