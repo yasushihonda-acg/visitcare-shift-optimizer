@@ -31,6 +31,7 @@ function validCustomerInput() {
     address: '大阪市北区1-1',
     location: { lat: 34.7025, lng: 135.4959 },
     ng_staff_ids: [],
+    allowed_staff_ids: ['H001'],
     preferred_staff_ids: ['H001'],
     weekly_services: {},
     service_manager: 'SM001',

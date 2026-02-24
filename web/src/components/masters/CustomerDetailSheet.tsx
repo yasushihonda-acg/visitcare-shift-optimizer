@@ -67,9 +67,10 @@ export function CustomerDetailSheet({
       ? `${customer.name.family_kana ?? ''} ${customer.name.given_kana ?? ''}`.trim()
       : null;
   const ngHelpers = customer.ng_staff_ids.map((id) => helpers.get(id)).filter(Boolean) as Helper[];
-  const preferredHelpers = customer.preferred_staff_ids
+  const allowedHelpers = (customer.allowed_staff_ids ?? [])
     .map((id) => helpers.get(id))
     .filter(Boolean) as Helper[];
+  const preferredSet = new Set(customer.preferred_staff_ids);
 
   const hasContact =
     customer.home_care_office ||
@@ -157,10 +158,10 @@ export function CustomerDetailSheet({
             </section>
           )}
 
-          {/* 3. NG/推奨スタッフ */}
-          {(ngHelpers.length > 0 || preferredHelpers.length > 0) && (
+          {/* 3. NG/入れるスタッフ */}
+          {(ngHelpers.length > 0 || allowedHelpers.length > 0) && (
             <section>
-              <SectionHeader>NG / 推奨スタッフ</SectionHeader>
+              <SectionHeader>NG / 入れるスタッフ</SectionHeader>
               <div className="space-y-2">
                 {ngHelpers.length > 0 && (
                   <div>
@@ -174,13 +175,21 @@ export function CustomerDetailSheet({
                     </div>
                   </div>
                 )}
-                {preferredHelpers.length > 0 && (
+                {allowedHelpers.length > 0 && (
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">推奨</p>
-                    <div className="flex flex-wrap gap-1.5" data-testid="preferred-staff-badges">
-                      {preferredHelpers.map((h) => (
+                    <p className="text-xs text-muted-foreground mb-1">入れるスタッフ</p>
+                    <div className="flex flex-wrap gap-1.5" data-testid="allowed-staff-badges">
+                      {allowedHelpers.map((h) => (
                         <Badge key={h.id} variant="secondary">
                           {h.name.family} {h.name.given}
+                          {preferredSet.has(h.id) && (
+                            <span
+                              className="ml-1 text-amber-600"
+                              data-testid={`allowed-staff-preferred-${h.id}`}
+                            >
+                              ★
+                            </span>
+                          )}
                         </Badge>
                       ))}
                     </div>

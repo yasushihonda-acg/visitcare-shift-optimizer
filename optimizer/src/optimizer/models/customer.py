@@ -12,6 +12,7 @@ class Customer(BaseModel):
     address: str
     location: GeoLocation
     ng_staff_ids: list[str] = []
+    allowed_staff_ids: list[str] = []
     preferred_staff_ids: list[str] = []
     weekly_services: dict[DayOfWeek, list[ServiceSlot]] = {}
     household_id: str | None = None

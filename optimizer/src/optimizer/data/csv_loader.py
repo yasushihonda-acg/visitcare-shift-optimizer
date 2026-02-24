@@ -59,12 +59,16 @@ def load_customers(data_dir: Path) -> list[Customer]:
 
     # constraints をグループ化
     ng_by_customer: dict[str, list[str]] = {}
+    allowed_by_customer: dict[str, list[str]] = {}
     preferred_by_customer: dict[str, list[str]] = {}
     for row in constraints_csv:
         cid = row["customer_id"]
         sid = row["staff_id"]
-        if row["constraint_type"] == "ng":
+        ctype = row["constraint_type"]
+        if ctype == "ng":
             ng_by_customer.setdefault(cid, []).append(sid)
+        elif ctype == "allowed":
+            allowed_by_customer.setdefault(cid, []).append(sid)
         else:
             preferred_by_customer.setdefault(cid, []).append(sid)
 
@@ -79,6 +83,7 @@ def load_customers(data_dir: Path) -> list[Customer]:
                 address=row["address"],
                 location=GeoLocation(lat=float(row["lat"]), lng=float(row["lng"])),
                 ng_staff_ids=ng_by_customer.get(cid, []),
+                allowed_staff_ids=allowed_by_customer.get(cid, []),
                 preferred_staff_ids=preferred_by_customer.get(cid, []),
                 weekly_services=services_by_customer.get(cid, {}),
                 household_id=row.get("household_id") or None,

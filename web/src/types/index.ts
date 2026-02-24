@@ -11,7 +11,7 @@ export type EmploymentType = 'full_time' | 'part_time';
 export type TransportationType = 'car' | 'bicycle' | 'walk';
 export type TrainingStatus = 'not_visited' | 'training' | 'independent';
 export type OrderStatus = 'pending' | 'assigned' | 'completed' | 'cancelled';
-export type StaffConstraintType = 'ng' | 'preferred';
+export type StaffConstraintType = 'ng' | 'allowed' | 'preferred';
 export type IrregularPatternType = 'biweekly' | 'monthly' | 'temporary_stop';
 export type Gender = 'male' | 'female';
 export type GenderRequirement = 'any' | 'female' | 'male';
@@ -69,6 +69,7 @@ export interface Customer {
   address: string;
   location: GeoLocation;
   ng_staff_ids: string[];
+  allowed_staff_ids: string[];
   preferred_staff_ids: string[];
   weekly_services: Partial<Record<DayOfWeek, ServiceSlot[]>>;
   irregular_patterns?: IrregularPattern[];

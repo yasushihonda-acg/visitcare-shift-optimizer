@@ -33,6 +33,7 @@ function makeCustomer(overrides: Partial<Customer> = {}): Customer {
     address: '東京都新宿区1-1-1',
     location: { lat: 35.6895, lng: 139.6917 },
     ng_staff_ids: [],
+    allowed_staff_ids: [],
     preferred_staff_ids: [],
     weekly_services: {},
     service_manager: '山田太郎',
@@ -121,13 +122,29 @@ describe('CustomerDetailSheet', () => {
     expect(screen.getByText('鈴木 一郎')).toBeInTheDocument();
   });
 
-  it('推奨スタッフのバッジが表示される', () => {
+  it('allowed_staff_ids に値があるとき「入れるスタッフ」セクションが表示される', () => {
     const helper = makeHelper('h-2', '高橋', '二郎');
     const helpers = new Map([['h-2', helper]]);
-    const customer = makeCustomer({ preferred_staff_ids: ['h-2'] });
+    const customer = makeCustomer({ allowed_staff_ids: ['h-2'] });
     render(<CustomerDetailSheet {...defaultProps} customer={customer} helpers={helpers} />);
-    expect(screen.getByTestId('preferred-staff-badges')).toBeInTheDocument();
+    expect(screen.getByTestId('allowed-staff-badges')).toBeInTheDocument();
     expect(screen.getByText('高橋 二郎')).toBeInTheDocument();
+  });
+
+  it('preferred_staff_ids に含まれるスタッフに推奨マークが表示される', () => {
+    const helper = makeHelper('h-3', '伊藤', '三郎');
+    const helpers = new Map([['h-3', helper]]);
+    const customer = makeCustomer({
+      allowed_staff_ids: ['h-3'],
+      preferred_staff_ids: ['h-3'],
+    });
+    render(<CustomerDetailSheet {...defaultProps} customer={customer} helpers={helpers} />);
+    expect(screen.getByTestId('allowed-staff-preferred-h-3')).toBeInTheDocument();
+  });
+
+  it('allowed_staff_ids が空のとき「入れるスタッフ」セクションが表示されない', () => {
+    render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} />);
+    expect(screen.queryByTestId('allowed-staff-badges')).not.toBeInTheDocument();
   });
 
   it('週間サービスが設定されている場合にテーブルが表示される', () => {

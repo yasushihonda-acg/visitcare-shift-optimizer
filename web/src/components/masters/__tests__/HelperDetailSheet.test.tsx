@@ -40,6 +40,7 @@ function makeCustomer(id: string, family: string, given: string): Customer {
     address: '東京都渋谷区1-1',
     location: { lat: 35.0, lng: 139.0 },
     ng_staff_ids: [],
+    allowed_staff_ids: [],
     preferred_staff_ids: [],
     weekly_services: {},
     service_manager: '担当者',

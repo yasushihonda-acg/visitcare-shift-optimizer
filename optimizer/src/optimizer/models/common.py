@@ -38,6 +38,7 @@ class TrainingStatus(str, Enum):
 
 class StaffConstraintType(str, Enum):
     NG = "ng"
+    ALLOWED = "allowed"
     PREFERRED = "preferred"
 
 
@@ -88,7 +89,7 @@ class IrregularPattern(BaseModel):
     active_weeks: list[int] | None = None
 
 
-StaffConstraintTypeLiteral = Literal["ng", "preferred"]
+StaffConstraintTypeLiteral = Literal["ng", "allowed", "preferred"]
 
 
 class ServiceTypeConfig(BaseModel):

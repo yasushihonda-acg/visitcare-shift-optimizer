@@ -94,6 +94,7 @@ def load_customers(db: firestore.Client) -> list[Customer]:
                     lng=location.get("lng", 0.0),
                 ),
                 ng_staff_ids=d.get("ng_staff_ids", []),
+                allowed_staff_ids=d.get("allowed_staff_ids", []),
                 preferred_staff_ids=d.get("preferred_staff_ids", []),
                 weekly_services=weekly_services,
                 household_id=d.get("household_id") or None,
@@ -308,7 +309,7 @@ def load_staff_unavailabilities(
 
 
 def load_staff_constraints(customers: list[Customer]) -> list[StaffConstraint]:
-    """Customer.ng_staff_ids / preferred_staff_ids → StaffConstraint リスト"""
+    """Customer.ng_staff_ids / allowed_staff_ids / preferred_staff_ids → StaffConstraint リスト"""
     constraints: list[StaffConstraint] = []
     for c in customers:
         for sid in c.ng_staff_ids:
@@ -317,6 +318,14 @@ def load_staff_constraints(customers: list[Customer]) -> list[StaffConstraint]:
                     customer_id=c.id,
                     staff_id=sid,
                     constraint_type=StaffConstraintType.NG,
+                )
+            )
+        for sid in c.allowed_staff_ids:
+            constraints.append(
+                StaffConstraint(
+                    customer_id=c.id,
+                    staff_id=sid,
+                    constraint_type=StaffConstraintType.ALLOWED,
                 )
             )
         for sid in c.preferred_staff_ids:

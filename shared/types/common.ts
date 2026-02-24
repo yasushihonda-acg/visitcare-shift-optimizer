@@ -44,7 +44,7 @@ export type OrderStatus = 'pending' | 'assigned' | 'completed' | 'cancelled';
 export type TravelTimeSource = 'dummy' | 'google_maps';
 
 /** スタッフ制約タイプ */
-export type StaffConstraintType = 'ng' | 'preferred';
+export type StaffConstraintType = 'ng' | 'allowed' | 'preferred';
 
 /** サービス枠（利用者の曜日別サービス定義） */
 export interface ServiceSlot {
