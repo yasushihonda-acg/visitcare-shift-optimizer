@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, CheckCircle2, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { timeToColumn, getServiceColor } from './constants';
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
@@ -33,6 +33,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
   const left = (startCol - 1) * slotWidth;
 
   const isFinalized = order.status === 'completed' || order.status === 'cancelled';
+  const isManuallyEdited = !isFinalized && order.manually_edited;
 
   const dragData: DragData = { orderId: order.id, sourceHelperId };
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -68,7 +69,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
         !isFinalized && 'hover:shadow-brand hover:brightness-105 hover:-translate-y-px hover:z-20',
         hasViolation && violationType === 'error' && 'ring-2 ring-red-500 ring-offset-1',
         hasViolation && violationType === 'warning' && 'ring-2 ring-yellow-500 ring-offset-1',
-        !hasViolation && !isFinalized && order.manually_edited && 'ring-2 ring-blue-500 ring-offset-1',
+        !hasViolation && isManuallyEdited && 'ring-2 ring-amber-400 ring-offset-1',
         isDragging && 'opacity-50 z-50 shadow-lg cursor-grabbing scale-105'
       )}
       style={style}
@@ -81,6 +82,13 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       {...attributes}
       {...listeners}
     >
+      {/* 手動編集パルスドット — 右上に点滅する注意バッジ */}
+      {isManuallyEdited && (
+        <span
+          className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-amber-400 ring-2 ring-white animate-pulse pointer-events-none z-10"
+          aria-hidden="true"
+        />
+      )}
       <span className="flex items-center gap-1">
         {order.status === 'completed' && <Check className="h-3 w-3 shrink-0" />}
         {order.status === 'cancelled' && <X className="h-3 w-3 shrink-0" />}
@@ -90,16 +98,20 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
             {order.assigned_staff_ids.length}/{staffCount}
           </span>
         )}
-        {!isFinalized && order.manually_edited && onConfirmManualEdit && (
-          <button
+        {isManuallyEdited && onConfirmManualEdit && (
+          <span
+            role="button"
+            tabIndex={0}
             data-testid={`confirm-edit-${order.id}`}
-            className="shrink-0 ml-auto -mr-1 p-0.5 rounded-full hover:bg-white/40 transition-colors"
+            className="shrink-0 ml-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500 hover:bg-green-400 active:bg-green-600 text-white text-[10px] font-bold shadow-sm transition-all duration-150 leading-none cursor-pointer"
             onClick={(e) => { e.stopPropagation(); onConfirmManualEdit(order.id); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onConfirmManualEdit(order.id); } }}
             onPointerDown={(e) => e.stopPropagation()}
             title="変更を確認済みにする"
           >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-          </button>
+            <Check className="h-3 w-3 shrink-0" />
+            確認
+          </span>
         )}
       </span>
     </button>
