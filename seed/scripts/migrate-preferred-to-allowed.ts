@@ -18,7 +18,6 @@
  *   customers コレクションの各ドキュメントから allowed_staff_ids を FieldValue.delete() で削除
  */
 
-import { FieldValue } from 'firebase-admin/firestore';
 import { getDB } from './utils/firestore-client.js';
 
 const isDryRun = process.argv.includes('--dry-run');
