@@ -82,7 +82,6 @@ test.describe('利用者マスタ 詳細シート', () => {
       page.locator('[data-testid="customer-detail-sheet"]'),
     ).toBeHidden();
   });
-});
 
   test('入れるスタッフを持つ利用者の詳細シートにスタッフ制約セクションが表示される', async ({ page }) => {
     await goToMasters(page, 'customers');
