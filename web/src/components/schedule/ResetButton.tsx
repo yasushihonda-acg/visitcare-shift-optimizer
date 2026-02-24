@@ -51,13 +51,14 @@ export function ResetButton({ onHistoryClear }: ResetButtonProps = {}) {
           variant="outline"
           size="sm"
           disabled={loading}
+          title="リセット"
         >
           {loading ? (
-            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin xl:mr-1.5" />
           ) : (
-            <RotateCcw className="mr-1.5 h-4 w-4" />
+            <RotateCcw className="h-4 w-4 xl:mr-1.5" />
           )}
-          リセット
+          <span className="hidden xl:inline">リセット</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

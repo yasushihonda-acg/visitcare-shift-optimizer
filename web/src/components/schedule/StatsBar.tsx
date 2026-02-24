@@ -37,7 +37,7 @@ export function StatsBar({ schedule, violations, diffMap }: StatsBarProps) {
   const diffCount = diffMap?.size ?? 0;
 
   return (
-    <div className="grid grid-cols-6 gap-3 px-4 py-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 px-4 py-3">
       {/* オーダー数 */}
       <div className="flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-brand-sm">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent">

@@ -42,9 +42,10 @@ export function ViewModeToggle() {
             className="rounded-r-none border-r-0"
             onClick={() => setGanttAxis('staff')}
             aria-pressed={ganttAxis === 'staff'}
+            title="スタッフ軸"
           >
             <Users className="size-4" />
-            スタッフ軸
+            <span className="hidden xl:inline">スタッフ軸</span>
           </Button>
           <Button
             data-testid="gantt-axis-customer"
@@ -53,9 +54,10 @@ export function ViewModeToggle() {
             className="rounded-l-none"
             onClick={() => setGanttAxis('customer')}
             aria-pressed={ganttAxis === 'customer'}
+            title="利用者軸"
           >
             <User className="size-4" />
-            利用者軸
+            <span className="hidden xl:inline">利用者軸</span>
           </Button>
         </div>
       )}
