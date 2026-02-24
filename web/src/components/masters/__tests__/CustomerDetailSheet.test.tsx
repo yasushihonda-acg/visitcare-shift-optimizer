@@ -33,6 +33,7 @@ function makeCustomer(overrides: Partial<Customer> = {}): Customer {
     address: '東京都新宿区1-1-1',
     location: { lat: 35.6895, lng: 139.6917 },
     ng_staff_ids: [],
+    allowed_staff_ids: [],
     preferred_staff_ids: [],
     weekly_services: {},
     service_manager: '山田太郎',

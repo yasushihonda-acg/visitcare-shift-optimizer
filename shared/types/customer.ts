@@ -15,6 +15,7 @@ export interface Customer {
   address: string;
   location: GeoLocation;
   ng_staff_ids: string[];
+  allowed_staff_ids: string[];
   preferred_staff_ids: string[];
   weekly_services: Partial<Record<DayOfWeek, ServiceSlot[]>>;
   household_id?: string;

@@ -56,8 +56,9 @@
 | name | `{ family: string, given: string }` | Yes | 利用者氏名 |
 | address | string | Yes | 住所 |
 | location | `{ lat: number, lng: number }` | Yes | 座標 |
-| ng_staff_ids | string[] | Yes | NGスタッフID一覧 |
-| preferred_staff_ids | string[] | Yes | 推奨スタッフID一覧 |
+| ng_staff_ids | string[] | Yes | NGスタッフID一覧（割り当て禁止・ハード制約） |
+| allowed_staff_ids | string[] | Yes | 入れるスタッフID一覧（空=全スタッフ対象、空でなければ白リスト外禁止・ハード制約） |
+| preferred_staff_ids | string[] | Yes | 推奨スタッフID一覧（allowed_staff_ids のサブセット・ソフト制約で優先） |
 | weekly_services | `Record<DayOfWeek, ServiceSlot[]>` | Yes | 曜日別サービス枠 |
 | household_id | string | No | 同一世帯ID（連続訪問用） |
 | irregular_patterns | IrregularPattern[] | No | 不定期パターン |
