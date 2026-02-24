@@ -57,12 +57,12 @@ describe('GanttBar - 完了/キャンセル表示', () => {
     expect(bar.querySelector('svg')).toBeTruthy();
   });
 
-  it('status: completed → manually_edited の青リングは表示されない', () => {
+  it('status: completed → manually_edited のアンバーリングは表示されない', () => {
     const order = makeOrder({ status: 'completed', manually_edited: true });
     render(<GanttBar order={order} sourceHelperId="h1" />);
 
     const bar = screen.getByTestId('gantt-bar-order-1');
-    expect(bar.className).not.toContain('ring-blue-500');
+    expect(bar.className).not.toContain('ring-amber-400');
   });
 
   it('status: assigned → 通常表示（半透明なし）', () => {
@@ -76,22 +76,22 @@ describe('GanttBar - 完了/キャンセル表示', () => {
 });
 
 describe('GanttBar - 手動編集リング表示', () => {
-  it('manually_edited: true → 青リングクラスが適用される', () => {
+  it('manually_edited: true → アンバーリングクラスが適用される', () => {
     const order = makeOrder({ manually_edited: true });
     render(<GanttBar order={order} sourceHelperId="h1" />);
 
     const bar = screen.getByTestId('gantt-bar-order-1');
-    expect(bar.className).toContain('ring-blue-500');
+    expect(bar.className).toContain('ring-amber-400');
     expect(bar.className).toContain('ring-2');
     expect(bar.className).toContain('ring-offset-1');
   });
 
-  it('manually_edited: false → 青リングクラスなし', () => {
+  it('manually_edited: false → アンバーリングクラスなし', () => {
     const order = makeOrder({ manually_edited: false });
     render(<GanttBar order={order} sourceHelperId="h1" />);
 
     const bar = screen.getByTestId('gantt-bar-order-1');
-    expect(bar.className).not.toContain('ring-blue-500');
+    expect(bar.className).not.toContain('ring-amber-400');
   });
 
   it('hasViolation + manually_edited → violationリング（赤）が優先される', () => {
@@ -107,7 +107,7 @@ describe('GanttBar - 手動編集リング表示', () => {
 
     const bar = screen.getByTestId('gantt-bar-order-1');
     expect(bar.className).toContain('ring-red-500');
-    expect(bar.className).not.toContain('ring-blue-500');
+    expect(bar.className).not.toContain('ring-amber-400');
   });
 
   it('hasViolation(warning) + manually_edited → violationリング（黄）が優先される', () => {
@@ -123,7 +123,7 @@ describe('GanttBar - 手動編集リング表示', () => {
 
     const bar = screen.getByTestId('gantt-bar-order-1');
     expect(bar.className).toContain('ring-yellow-500');
-    expect(bar.className).not.toContain('ring-blue-500');
+    expect(bar.className).not.toContain('ring-amber-400');
   });
 });
 
