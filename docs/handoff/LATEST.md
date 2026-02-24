@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-02-24（サービス種別マスタ全面置き換え完了: 8種 → 介護保険サービスコード105種）
+**最終更新**: 2026-02-24（ガントチャートに変更確認チェックボタン追加 PR #121 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -61,9 +61,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-02-23 ～ 2026-02-24）
 
+- **feat (2026-02-24)** ✅: ガントチャートに変更確認チェックボタンを追加（PR #121 マージ済み）
+  - D&Dでオーダー移動後の青リング（`manually_edited: true`）をリセットするチェックボタンをガントバー右端に追加
+  - `web/src/lib/firestore/updateOrder.ts`: `confirmManualEdit()` 関数追加
+  - `GanttBar.tsx` / `GanttRow.tsx` / `GanttChart.tsx` / `page.tsx`: props伝播とUIボタン追加
+  - テスト4件追加 → 全406件 pass
+  - completed/cancelledバーにはボタン非表示（ステータス制御）
+  - CI: in_progress（run #22334367734）
+
 - **test (2026-02-24)** ✅: E2Eテスト拡充（電話番号②列・ふりがな検索・あかさたなフィルター） — 58 → **64テスト**
   - `web/e2e/masters-customers.spec.ts` 追加: 電話番号②列表示・ふりがな検索・あかさたなフィルター・ふりがなソート E2Eテスト（6件）
-  - CI: in_progress（run #22318097996）
+  - CI: success（run #22328688815）
 
 - **fix (2026-02-24)** ✅: C010早朝スロットの競合でCIが落ちていた問題を修正 → Issue #120クローズ
   - `optimizer/tests/`: `test_order_count`・`test_seed_data_solves` を C010 の早朝スロット競合に合わせて修正
@@ -333,10 +341,11 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 最新テスト結果サマリー（2026-02-24）
 - **Optimizer**: 285件 pass ✅（CI GREEN 2026-02-24 run #22316943766）
-- **Web (Next.js)**: 403件 pass（確認済み 2026-02-24）
+- **Web (Next.js)**: 406件 pass（PR #121 4件追加、確認済み 2026-02-24）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
-- **E2E Tests (Playwright)**: **64テスト**（直近追加: 詳細シート7件・通知ダイアログ3件・電話番号②/ふりがな検索/あかさたな6件）in_progress（run #22318097996）
-- **CI/CD**: ✅ **最新main（fix: C010早朝スロットの競合でCIが落ちていた問題を修正）Optimizer/Web/Rules GREEN**（2026-02-24）
+- **E2E Tests (Playwright)**: **64テスト**（直近追加: 詳細シート7件・通知ダイアログ3件・電話番号②/ふりがな検索/あかさたな6件）
+- **CI/CD**: in_progress（run #22334367734、PR #121 main push）
+  - 直前の main push（Firestoreルールテスト追加）✅ CI GREEN（run #22328688815）
   - Issue #120（C010早朝スロット競合でtest_seed_data_solves Infeasible）→ **クローズ済み**
 
 ## 重要なドキュメント
@@ -389,14 +398,15 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 ## 次のアクション（優先度順）
 
 1. **Gmail API DWD 本番設定**: Google Workspace 管理コンソール → DWD でSAに `gmail.send` スコープ追加 + `/settings` ページまたは直接Firestoreで `settings/notification.sender_email` を設定（手動作業、コード外）。Issue #118 参照
-2. **E2Eテスト拡充**: ✅ 電話番号②・ふりがな検索・あかさたなフィルターのE2Eテスト追加済み（現在64テスト）。基本予定一覧詳細シートのE2Eテストは未追加
-3. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
-4. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
+2. **E2Eテスト拡充**: 基本予定一覧詳細シート（行クリック詳細シート）のE2Eテストが未追加
+3. **変更確認チェックボタン E2E動作確認**: PR #121 マニュアルテスト項目（D&D → 青リング確認 → チェックアイコンクリック → 解除確認）
+4. **次フェーズ方針決定**: Phase 6（モバイル対応）等を検討
+5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能に
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 1件
   - #118 Gmail API DWD: Google Workspace 管理者に DWD スコープ追加を依頼 [enhancement, P1]
-- **クローズ済み（直近）**: Issue #120（fix: 806b06e C010競合修正）、Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）、PR #117（通知設定管理・フレーキー修正）
+- **クローズ済み（直近）**: PR #121（変更確認チェックボタン）、Issue #120（fix: C010競合修正）、Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）、PR #117（通知設定管理・フレーキー修正）
 - **クローズ済み（既往）**: Issue #96（PR #102）、Issue #98 Phase 1（PR #103）、Phase 2（PR #104）、Phase 3（PR #105）
 
 ## 参考資料（ローカルExcel）
