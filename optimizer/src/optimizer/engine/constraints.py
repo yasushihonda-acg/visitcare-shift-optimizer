@@ -26,6 +26,7 @@ def add_all_hard_constraints(
     _add_qualification_constraint(prob, x, inp)
     _add_no_overlap_constraint(prob, x, inp)
     _add_ng_staff_constraint(prob, x, inp)
+    _add_allowed_staff_constraint(prob, x, inp)
     _add_gender_constraint(prob, x, inp)
     _add_availability_constraint(prob, x, inp)
     _add_unavailability_constraint(prob, x, inp)
@@ -104,6 +105,27 @@ def _add_ng_staff_constraint(
         for h in inp.helpers:
             if (o.customer_id, h.id) in ng_pairs:
                 prob += x[h.id, o.id] == 0, f"ng_{h.id}_{o.id}"
+
+
+def _add_allowed_staff_constraint(
+    prob: pulp.LpProblem,
+    x: dict[tuple[str, str], pulp.LpVariable],
+    inp: OptimizationInput,
+) -> None:
+    """I: 入れるスタッフ制約 — allowed_staff_ids が空でない場合、リスト外スタッフの割り当てを禁止"""
+    # 利用者ごとに allowed スタッフIDセットを構築
+    allowed_by_customer: dict[str, set[str]] = {}
+    for sc in inp.staff_constraints:
+        if sc.constraint_type == StaffConstraintType.ALLOWED:
+            allowed_by_customer.setdefault(sc.customer_id, set()).add(sc.staff_id)
+
+    for o in inp.orders:
+        if o.customer_id not in allowed_by_customer:
+            continue  # allowed 未設定 = 制限なし
+        allowed_ids = allowed_by_customer[o.customer_id]
+        for h in inp.helpers:
+            if h.id not in allowed_ids:
+                prob += x[h.id, o.id] == 0, f"allowed_{h.id}_{o.id}"
 
 
 def _add_gender_constraint(

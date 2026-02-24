@@ -22,6 +22,8 @@ interface StaffMultiSelectProps {
   onChange: (ids: string[]) => void;
   helpers: Map<string, Helper>;
   excludeIds?: string[];
+  /** true のとき、選択ボタンとダイアログのみ描画（Badge一覧を非表示にする） */
+  triggerOnly?: boolean;
 }
 
 export function StaffMultiSelect({
@@ -30,6 +32,7 @@ export function StaffMultiSelect({
   onChange,
   helpers,
   excludeIds = [],
+  triggerOnly = false,
 }: StaffMultiSelectProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -68,6 +71,80 @@ export function StaffMultiSelect({
         h.name.given.toLowerCase().includes(q)
     );
   }, [helpers, excludeIds, search]);
+
+  // triggerOnly モードでは選択ボタン + ダイアログのみ描画
+  if (triggerOnly) {
+    return (
+      <>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={openDialog}
+        >
+          <UserPlus className="mr-1 h-3 w-3" />
+          スタッフを選択
+        </Button>
+
+        <Dialog open={dialogOpen} onOpenChange={(v) => !v && setDialogOpen(false)}>
+          <DialogContent className="max-h-[70vh] max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{label}を選択</DialogTitle>
+            </DialogHeader>
+
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="名前で検索..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <div className="max-h-60 overflow-y-auto space-y-1">
+              {filteredHelpers.map((h) => (
+                <label
+                  key={h.id}
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted cursor-pointer"
+                >
+                  <Checkbox
+                    checked={draft.includes(h.id)}
+                    onCheckedChange={() => toggleStaff(h.id)}
+                  />
+                  <span className="text-sm">
+                    {h.name.family} {h.name.given}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {h.qualifications.join(', ') || '-'}
+                  </span>
+                </label>
+              ))}
+              {filteredHelpers.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-4">
+                  該当なし
+                </p>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+              >
+                キャンセル
+              </Button>
+              <Button type="button" onClick={confirm}>
+                確定（{draft.length}名）
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
 
   return (
     <div className="space-y-1.5">

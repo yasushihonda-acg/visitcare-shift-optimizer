@@ -5,6 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { APIProvider } from '@vis.gl/react-google-maps';
+import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { WeeklyServicesEditor } from './WeeklyServicesEditor';
 import { StaffMultiSelect } from './StaffMultiSelect';
 import { IrregularPatternEditor } from './IrregularPatternEditor';
@@ -395,22 +397,106 @@ export function CustomerEditDialog({
                 selected={field.value ?? []}
                 onChange={field.onChange}
                 helpers={helpers}
-                excludeIds={watch('preferred_staff_ids') ?? []}
+                excludeIds={watch('allowed_staff_ids') ?? []}
               />
             )}
           />
 
-          {/* 推奨スタッフ */}
+          {/* 入れるスタッフ */}
           <Controller
-            name="preferred_staff_ids"
+            name="allowed_staff_ids"
             control={control}
-            render={({ field }) => (
-              <StaffMultiSelect
-                label="推奨スタッフ"
-                selected={field.value ?? []}
-                onChange={field.onChange}
-                helpers={helpers}
-                excludeIds={watch('ng_staff_ids') ?? []}
+            render={({ field: allowedField }) => (
+              <Controller
+                name="preferred_staff_ids"
+                control={control}
+                render={({ field: preferredField }) => {
+                  const allowedIds: string[] = allowedField.value ?? [];
+                  const preferredIds: string[] = preferredField.value ?? [];
+
+                  const handleAllowedChange = (newAllowedIds: string[]) => {
+                    allowedField.onChange(newAllowedIds);
+                    // allowed から外したスタッフは preferred からも自動除外
+                    const newPreferredIds = preferredIds.filter((id) =>
+                      newAllowedIds.includes(id)
+                    );
+                    preferredField.onChange(newPreferredIds);
+                  };
+
+                  const removeAllowed = (id: string) => {
+                    const newAllowedIds = allowedIds.filter((x) => x !== id);
+                    allowedField.onChange(newAllowedIds);
+                    preferredField.onChange(preferredIds.filter((x) => x !== id));
+                  };
+
+                  const togglePreferred = (id: string) => {
+                    if (preferredIds.includes(id)) {
+                      preferredField.onChange(preferredIds.filter((x) => x !== id));
+                    } else {
+                      preferredField.onChange([...preferredIds, id]);
+                    }
+                  };
+
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">入れるスタッフ</Label>
+                        <StaffMultiSelect
+                          label="入れるスタッフ"
+                          selected={allowedIds}
+                          onChange={handleAllowedChange}
+                          helpers={helpers}
+                          excludeIds={watch('ng_staff_ids') ?? []}
+                          triggerOnly
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        ※ 未選択の場合は全スタッフが割り当て対象になります
+                      </p>
+                      {allowedIds.length > 0 && (
+                        <div className="rounded-md border divide-y">
+                          {allowedIds.map((id) => {
+                            const h = helpers.get(id);
+                            const isPreferred = preferredIds.includes(id);
+                            return (
+                              <div
+                                key={id}
+                                className="flex items-center gap-2 px-3 py-2"
+                              >
+                                <Checkbox
+                                  id={`preferred-${id}`}
+                                  checked={isPreferred}
+                                  onCheckedChange={() => togglePreferred(id)}
+                                />
+                                <label
+                                  htmlFor={`preferred-${id}`}
+                                  className="flex-1 text-sm cursor-pointer select-none"
+                                >
+                                  {h
+                                    ? `${h.name.family} ${h.name.given}`
+                                    : id}
+                                  {isPreferred && (
+                                    <span className="ml-2 text-xs text-amber-600 font-medium">
+                                      ★推奨
+                                    </span>
+                                  )}
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAllowed(id)}
+                                  className="rounded-full hover:bg-muted-foreground/20 p-0.5"
+                                  aria-label="削除"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }}
               />
             )}
           />
