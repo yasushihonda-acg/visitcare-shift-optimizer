@@ -84,6 +84,23 @@ test.describe('利用者マスタ 詳細シート', () => {
   });
 });
 
+  test('入れるスタッフを持つ利用者の詳細シートにスタッフ制約セクションが表示される', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    // 「山田 太郎」（C001: allowed_staff_ids あり）の行をクリック
+    const row = page.getByRole('row').filter({ hasText: /山田.*太郎/ }).first();
+    await expect(row).toBeVisible({ timeout: 10_000 });
+    await row.click();
+
+    const sheet = page.locator('[data-testid="customer-detail-sheet"]');
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+
+    // 「入れるスタッフ」バッジセクションが表示される
+    await expect(sheet.locator('[data-testid="allowed-staff-badges"]')).toBeVisible();
+  });
+});
+
 test.describe('ヘルパーマスタ 詳細シート', () => {
   test.describe.configure({ retries: 1, timeout: 30_000 });
 
