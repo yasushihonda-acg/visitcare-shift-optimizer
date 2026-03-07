@@ -111,6 +111,7 @@ export const helperSchema = z.object({
   // zodResolver は location: undefined を受け取り .optional() を通過する。
   location: geoLocationSchema.optional(),
   phone_number: z.string().optional(),
+  email: z.string().email('メールアドレスの形式が正しくありません').optional().or(z.literal('')),
 });
 
 export type HelperFormValues = z.infer<typeof helperSchema>;

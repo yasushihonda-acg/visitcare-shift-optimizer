@@ -116,6 +116,9 @@ export function HelperDetailSheet({
               {helper.phone_number && (
                 <InfoRow label="電話番号" value={helper.phone_number} />
               )}
+              {helper.email && (
+                <InfoRow label="メールアドレス" value={helper.email} />
+              )}
               {helper.address && <InfoRow label="住所" value={helper.address} />}
               <InfoRow
                 label="資格"
