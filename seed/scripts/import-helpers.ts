@@ -22,6 +22,7 @@ interface HelperRow {
   employee_number: string;
   address: string;
   phone_number: string;
+  email: string;
 }
 
 interface AvailabilityRow {
@@ -97,6 +98,7 @@ export async function importHelpers(): Promise<number> {
         ...(h.employee_number ? { employee_number: h.employee_number } : {}),
         ...(h.address ? { address: h.address } : {}),
         ...(h.phone_number ? { phone_number: h.phone_number } : {}),
+        ...(h.email ? { email: h.email } : {}),
         created_at: now,
         updated_at: now,
       },

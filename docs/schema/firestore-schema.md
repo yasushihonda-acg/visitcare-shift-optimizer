@@ -108,6 +108,7 @@
 | address | string | No | 住所（テキスト） |
 | location | `{ lat: number, lng: number }` | No | 座標（ジオコーディング） |
 | phone_number | string | No | 電話番号 |
+| email | string | No | メールアドレス（Google Chat DM催促で使用） |
 | created_at | Timestamp | Yes | 作成日時 |
 | updated_at | Timestamp | Yes | 更新日時 |
 
