@@ -566,7 +566,7 @@ def notify_unavailability_reminder(
     return NotificationResponse(emails_sent=sent, recipients=recipients)
 
 
-APP_URL = "https://visitcare-shift-optimizer.web.app"
+APP_URL = os.getenv("APP_URL", "https://visitcare-shift-optimizer.web.app")
 
 _CHAT_REMINDER_TEMPLATE = (
     "[VisitCare] 希望休提出のお願い\n\n"

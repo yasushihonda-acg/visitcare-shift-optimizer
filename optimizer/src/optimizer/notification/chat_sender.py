@@ -25,6 +25,9 @@ def _build_chat_service() -> Any | None:
 
         creds, _ = google.auth.default(scopes=_CHAT_SCOPES)
         return build("chat", "v1", credentials=creds)
+    except google.auth.exceptions.DefaultCredentialsError:
+        logger.error("Google 認証情報が設定されていません。ADC または SA キーを確認してください")
+        return None
     except Exception:
         logger.exception("Google Chat API サービスの構築に失敗しました")
         return None
@@ -41,7 +44,7 @@ def _find_dm_space(service: Any, user_email: str) -> str | None:
         ).execute()
         return dm.get("name")
     except Exception:
-        logger.warning("DM スペースが見つかりません: %s", user_email)
+        logger.exception("DM スペース取得で予期しないエラー: %s", user_email)
         return None
 
 
