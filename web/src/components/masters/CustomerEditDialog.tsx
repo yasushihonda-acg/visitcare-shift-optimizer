@@ -280,15 +280,7 @@ export function CustomerEditDialog({
             )}
           </div>
 
-          {/* 世帯ID */}
-          <div className="space-y-1">
-            <Label htmlFor="household_id">世帯ID（任意）</Label>
-            <Input
-              id="household_id"
-              {...register('household_id')}
-              placeholder="同一世帯がある場合"
-            />
-          </div>
+          {/* 同一世帯・同一施設は Phase C で選択UIを実装予定 */}
 
           {/* 備考 */}
           <div className="space-y-1">
@@ -556,7 +548,8 @@ function getDefaults(customer?: Customer): CustomerFormValues {
       weekly_services: {},
       service_manager: '',
       gender_requirement: 'any',
-      household_id: '',
+      same_household_customer_ids: [],
+      same_facility_customer_ids: [],
       notes: '',
       irregular_patterns: [],
       aozora_id: '',
@@ -579,7 +572,8 @@ function getDefaults(customer?: Customer): CustomerFormValues {
     weekly_services: customer.weekly_services,
     service_manager: customer.service_manager,
     gender_requirement: customer.gender_requirement ?? 'any',
-    household_id: customer.household_id ?? '',
+    same_household_customer_ids: customer.same_household_customer_ids ?? [],
+    same_facility_customer_ids: customer.same_facility_customer_ids ?? [],
     notes: customer.notes ?? '',
     irregular_patterns: customer.irregular_patterns ?? [],
     aozora_id: customer.aozora_id ?? '',

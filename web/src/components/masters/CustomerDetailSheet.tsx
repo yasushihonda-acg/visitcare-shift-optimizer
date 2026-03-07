@@ -131,8 +131,11 @@ export function CustomerDetailSheet({
                 label="性別要件"
                 value={GENDER_REQUIREMENT_LABELS[customer.gender_requirement ?? 'any'] ?? '指定なし'}
               />
-              {customer.household_id && (
-                <InfoRow label="世帯ID" value={customer.household_id} />
+              {customer.same_household_customer_ids?.length > 0 && (
+                <InfoRow label="同一世帯" value={customer.same_household_customer_ids.join(', ')} />
+              )}
+              {customer.same_facility_customer_ids?.length > 0 && (
+                <InfoRow label="同一施設" value={customer.same_facility_customer_ids.join(', ')} />
               )}
             </div>
           </section>

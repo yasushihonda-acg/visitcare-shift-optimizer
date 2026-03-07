@@ -30,6 +30,8 @@ function makeCustomer(overrides: Partial<Customer> & Pick<Customer, 'id'>): Cust
     ng_staff_ids: [],
     allowed_staff_ids: [],
     preferred_staff_ids: [],
+    same_household_customer_ids: [],
+    same_facility_customer_ids: [],
     weekly_services: {},
     service_manager: 'サ責A',
     created_at: new Date(),

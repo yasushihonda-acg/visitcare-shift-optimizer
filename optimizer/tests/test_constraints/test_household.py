@@ -20,11 +20,11 @@ def _h(id: str) -> Helper:
     )
 
 
-def _c(id: str, household: str | None = None) -> Customer:
+def _c(id: str, same_household: list[str] | None = None) -> Customer:
     return Customer(
         id=id, family_name="テスト", given_name=id, address="テスト",
         location=GeoLocation(lat=31.59, lng=130.55),
-        household_id=household,
+        same_household_customer_ids=same_household or [],
     )
 
 
@@ -32,7 +32,7 @@ class TestHouseholdConstraint:
     def test_linked_orders_same_helper(self) -> None:
         """リンクされたオーダー → 同一ヘルパーが担当"""
         inp = OptimizationInput(
-            customers=[_c("C1", "HH1"), _c("C2", "HH1")],
+            customers=[_c("C1", same_household=["C2"]), _c("C2", same_household=["C1"])],
             helpers=[_h("H1"), _h("H2")],
             orders=[
                 Order(

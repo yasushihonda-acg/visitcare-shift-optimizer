@@ -15,7 +15,8 @@ class Customer(BaseModel):
     allowed_staff_ids: list[str] = []
     preferred_staff_ids: list[str] = []
     weekly_services: dict[DayOfWeek, list[ServiceSlot]] = {}
-    household_id: str | None = None
+    same_household_customer_ids: list[str] = []
+    same_facility_customer_ids: list[str] = []
     irregular_patterns: list[IrregularPattern] = []
     service_manager: str = ""
     gender_requirement: GenderRequirement = GenderRequirement.ANY

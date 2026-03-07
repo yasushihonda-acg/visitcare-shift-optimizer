@@ -12,6 +12,8 @@ function validCustomer() {
     allowed_staff_ids: [],
     preferred_staff_ids: [],
     weekly_services: {},
+    same_household_customer_ids: [],
+    same_facility_customer_ids: [],
     service_manager: 'SM001',
   };
 }
@@ -50,7 +52,8 @@ describe('customerSchema', () => {
   it('オプションフィールド付きでパースできる', () => {
     const result = customerSchema.safeParse({
       ...validCustomer(),
-      household_id: 'HH001',
+      same_household_customer_ids: ['C002'],
+      same_facility_customer_ids: ['C003'],
       notes: '備考テスト',
       name: { family: '山田', given: '太郎', short: 'ヤマダ' },
     });

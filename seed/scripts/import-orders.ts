@@ -85,16 +85,44 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
   let orderNum = 1;
   const docs: { id: string; data: Record<string, unknown> }[] = [];
 
-  // 連続訪問のペアを追跡（household_idベース）
-  const householdOrders: Record<string, { id: string; start_time: string; end_time: string }[]> = {};
+  // 連続訪問のペアを追跡（同一住所グループベース）
+  const groupOrders: Record<string, { id: string; start_time: string; end_time: string }[]> = {};
 
-  // customers.csv から household_id を取得
-  const customers = parseCSV<{ id: string; household_id: string }>(
+  // customers.csv から同一住所グループを構築
+  const customers = parseCSV<{ id: string; household_id: string; address: string }>(
     resolve(DATA_DIR, 'customers.csv'),
   );
-  const customerHousehold = new Map(
-    customers.filter((c) => c.household_id).map((c) => [c.id, c.household_id]),
-  );
+  // household_id ベースのグループ
+  const hhGroups: Record<string, string[]> = {};
+  for (const c of customers) {
+    if (c.household_id) {
+      if (!hhGroups[c.household_id]) hhGroups[c.household_id] = [];
+      hhGroups[c.household_id].push(c.id);
+    }
+  }
+  // 住所ベースのグループ
+  const addrGroups: Record<string, string[]> = {};
+  for (const c of customers) {
+    const norm = c.address.trim();
+    if (!addrGroups[norm]) addrGroups[norm] = [];
+    addrGroups[norm].push(c.id);
+  }
+  // customer_id → group_key マッピング
+  const customerGroup = new Map<string, string>();
+  let gIdx = 0;
+  const visited = new Set<string>();
+  for (const members of Object.values(hhGroups)) {
+    if (members.length < 2) continue;
+    const gk = `G${gIdx++}`;
+    for (const mid of members) { customerGroup.set(mid, gk); visited.add(mid); }
+  }
+  for (const [, members] of Object.entries(addrGroups)) {
+    if (members.length < 2) continue;
+    const unvisited = members.filter((m) => !visited.has(m));
+    if (unvisited.length === 0 && members.every((m) => customerGroup.get(m) === customerGroup.get(members[0]))) continue;
+    const gk = customerGroup.get(members[0]) ?? `G${gIdx++}`;
+    for (const mid of members) { customerGroup.set(mid, gk); visited.add(mid); }
+  }
 
   for (const s of services) {
     const dayOffset = DAY_TO_OFFSET[s.day_of_week];
@@ -131,14 +159,14 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
 
     docs.push(doc);
 
-    // household_id による連続訪問リンク追跡（同日・同世帯でグループ化）
-    const householdId = customerHousehold.get(s.customer_id);
-    if (householdId) {
-      const key = `${householdId}-${s.day_of_week}`;
-      if (!householdOrders[key]) {
-        householdOrders[key] = [];
+    // 同一住所グループによる連続訪問リンク追跡（同日・同グループでグループ化）
+    const groupKey = customerGroup.get(s.customer_id);
+    if (groupKey) {
+      const key = `${groupKey}-${s.day_of_week}`;
+      if (!groupOrders[key]) {
+        groupOrders[key] = [];
       }
-      householdOrders[key].push({ id: orderId, start_time: s.start_time, end_time: s.end_time });
+      groupOrders[key].push({ id: orderId, start_time: s.start_time, end_time: s.end_time });
     }
   }
 
@@ -149,7 +177,7 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
     return h * 60 + m;
   };
 
-  for (const orders of Object.values(householdOrders)) {
+  for (const orders of Object.values(groupOrders)) {
     if (orders.length < 2) continue;
     const sorted = [...orders].sort((a, b) => a.start_time.localeCompare(b.start_time));
     for (let i = 0; i < sorted.length - 1; i++) {

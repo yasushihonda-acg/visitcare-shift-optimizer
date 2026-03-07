@@ -3,16 +3,30 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Firestoreモック
 const mockAddDoc = vi.fn();
 const mockUpdateDoc = vi.fn();
+const mockGetDoc = vi.fn();
 const mockServerTimestamp = vi.fn(() => 'MOCK_TIMESTAMP');
-const mockCollection = vi.fn(() => 'MOCK_COLLECTION_REF');
-const mockDoc = vi.fn(() => 'MOCK_DOC_REF');
+const mockCollection = vi.fn((..._args: any[]) => 'MOCK_COLLECTION_REF');
+const mockDoc = vi.fn((..._args: any[]) => 'MOCK_DOC_REF');
+const mockArrayUnion = vi.fn((...args: unknown[]) => ({ type: 'arrayUnion', args }));
+const mockArrayRemove = vi.fn((...args: unknown[]) => ({ type: 'arrayRemove', args }));
+const mockBatchUpdate = vi.fn();
+const mockBatchCommit = vi.fn().mockResolvedValue(undefined);
+const mockWriteBatch = vi.fn((..._args: any[]) => ({
+  update: mockBatchUpdate,
+  commit: mockBatchCommit,
+}));
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 vi.mock('firebase/firestore', () => ({
-  addDoc: (...args: unknown[]) => mockAddDoc(...args),
-  updateDoc: (...args: unknown[]) => mockUpdateDoc(...args),
+  addDoc: (...args: any[]) => mockAddDoc(...args),
+  updateDoc: (...args: any[]) => mockUpdateDoc(...args),
+  getDoc: (...args: any[]) => mockGetDoc(...args),
   serverTimestamp: () => mockServerTimestamp(),
-  collection: (...args: unknown[]) => mockCollection(...args),
-  doc: (...args: unknown[]) => mockDoc(...args),
+  collection: (...args: any[]) => mockCollection(...args),
+  doc: (...args: any[]) => mockDoc(...args),
+  arrayUnion: (...args: any[]) => mockArrayUnion(...args),
+  arrayRemove: (...args: any[]) => mockArrayRemove(...args),
+  writeBatch: (...args: any[]) => mockWriteBatch(...args),
 }));
 
 vi.mock('@/lib/firebase', () => ({
@@ -23,6 +37,11 @@ import { createCustomer, updateCustomer } from '../customers';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // デフォルト: getDocは空のドキュメントを返す
+  mockGetDoc.mockResolvedValue({
+    exists: () => false,
+    data: () => undefined,
+  });
 });
 
 function validCustomerInput() {
@@ -35,6 +54,8 @@ function validCustomerInput() {
     preferred_staff_ids: ['H001'],
     weekly_services: {},
     service_manager: 'SM001',
+    same_household_customer_ids: [],
+    same_facility_customer_ids: [],
   };
 }
 
@@ -73,6 +94,16 @@ describe('createCustomer', () => {
     expect(writtenData.address).toBe(input.address);
     expect(writtenData.preferred_staff_ids).toEqual(['H001']);
   });
+
+  it('同一世帯メンバーがある場合、双方向同期でbatch更新される', async () => {
+    mockAddDoc.mockResolvedValueOnce({ id: 'new-id' });
+    const input = { ...validCustomerInput(), same_household_customer_ids: ['C002'] };
+
+    await createCustomer(input as never);
+    expect(mockWriteBatch).toHaveBeenCalled();
+    expect(mockBatchUpdate).toHaveBeenCalled();
+    expect(mockBatchCommit).toHaveBeenCalled();
+  });
 });
 
 describe('updateCustomer', () => {
@@ -105,5 +136,18 @@ describe('updateCustomer', () => {
     const writtenData = mockUpdateDoc.mock.calls[0][1];
     expect(writtenData.notes).toBe('テスト備考');
     expect(writtenData.address).toBeUndefined();
+  });
+
+  it('同一世帯メンバー変更時に双方向同期が行われる', async () => {
+    mockGetDoc.mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ same_household_customer_ids: ['C002'], same_facility_customer_ids: [] }),
+    });
+    mockUpdateDoc.mockResolvedValueOnce(undefined);
+
+    await updateCustomer('C001', { same_household_customer_ids: ['C003'] });
+    // C002からC001を削除、C003にC001を追加
+    expect(mockWriteBatch).toHaveBeenCalled();
+    expect(mockBatchCommit).toHaveBeenCalled();
   });
 });
