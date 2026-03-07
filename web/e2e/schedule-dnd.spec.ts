@@ -158,7 +158,19 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
+    // staff_count>1 のオーダーは複数行に同一testidで表示されるため、
+    // 単独バーの行を優先的に選択して strict mode violation を回避
+    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
+    const rowCount = await ganttRows.count();
+    let firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
+    for (let i = 0; i < rowCount; i++) {
+      const row = ganttRows.nth(i);
+      const bars = row.locator('[data-testid^="gantt-bar-"]');
+      if (await bars.count() === 1) {
+        firstBar = bars.first();
+        break;
+      }
+    }
     const barTestId = await firstBar.getAttribute('data-testid');
     const orderId = barTestId?.replace('gantt-bar-', '');
 
@@ -273,7 +285,21 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
+    // staff_count>1 のオーダーは複数行に同一testidで表示されるため、
+    // 単独バーの行を優先的に選択して strict mode violation を回避
+    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
+    const rowCount = await ganttRows.count();
+    let targetRow = ganttRows.first();
+    let firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
+    for (let i = 0; i < rowCount; i++) {
+      const row = ganttRows.nth(i);
+      const bars = row.locator('[data-testid^="gantt-bar-"]');
+      if (await bars.count() === 1) {
+        targetRow = row;
+        firstBar = bars.first();
+        break;
+      }
+    }
     const barTestId = await firstBar.getAttribute('data-testid');
 
     const box = await firstBar.boundingBox();
@@ -287,9 +313,9 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     // ドラッグキャンセル
     await page.keyboard.press('Escape');
 
-    // 元の位置にバーが残っている
+    // 元の位置にバーが残っている（行内でスコープして重複testidを回避）
     if (barTestId) {
-      const bar = page.locator(`[data-testid="${barTestId}"]`);
+      const bar = targetRow.locator(`[data-testid="${barTestId}"]`);
       await expect(bar).toBeVisible();
       // opacity が元に戻っている（opacity-50クラスが外れる）
       await expect(bar).not.toHaveCSS('opacity', '0.5');
