@@ -339,6 +339,39 @@ class TestNotifyEndpoints:
         assert response.status_code == 200
         assert response.json()["emails_sent"] == 1
 
+    def test_unavailability_reminder_missing_id(self) -> None:
+        """helpers_not_submitted に id が欠落 → 422"""
+        response = client.post(
+            "/notify/unavailability-reminder",
+            json={
+                "target_week_start": "2026-03-02",
+                "helpers_not_submitted": [{"name": "佐藤 一郎"}],
+            },
+        )
+        assert response.status_code == 422
+
+    def test_unavailability_reminder_missing_name(self) -> None:
+        """helpers_not_submitted に name が欠落 → 422"""
+        response = client.post(
+            "/notify/unavailability-reminder",
+            json={
+                "target_week_start": "2026-03-02",
+                "helpers_not_submitted": [{"id": "h1"}],
+            },
+        )
+        assert response.status_code == 422
+
+    def test_unavailability_reminder_invalid_type(self) -> None:
+        """helpers_not_submitted に非オブジェクト → 422"""
+        response = client.post(
+            "/notify/unavailability-reminder",
+            json={
+                "target_week_start": "2026-03-02",
+                "helpers_not_submitted": [123],
+            },
+        )
+        assert response.status_code == 422
+
     @patch("optimizer.api.routes.send_chat_dms")
     def test_chat_reminder_success(self, mock_send: MagicMock) -> None:
         """POST /notify/chat-reminder → 200"""
