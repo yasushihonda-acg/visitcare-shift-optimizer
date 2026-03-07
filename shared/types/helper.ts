@@ -28,6 +28,7 @@ export interface Helper {
   address?: string;
   location?: GeoLocation;
   phone_number?: string;
+  email?: string;
   created_at: Timestamp;
   updated_at: Timestamp;
 }

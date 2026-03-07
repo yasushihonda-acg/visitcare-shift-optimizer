@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Search, ChevronLeft, ChevronRight, Mail, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Search, ChevronLeft, ChevronRight, Mail, MessageSquare, Loader2 } from 'lucide-react';
 import { format, addDays, addWeeks, subWeeks, startOfWeek, differenceInCalendarDays } from 'date-fns';
 import { useHelpers } from '@/hooks/useHelpers';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { notifyUnavailabilityReminder, OptimizeApiError } from '@/lib/api/optimizer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ChatReminderDialog } from '@/components/unavailability/ChatReminderDialog';
 import {
   Table,
   TableBody,
@@ -36,6 +37,7 @@ export default function UnavailabilityPage() {
   const [editTarget, setEditTarget] = useState<StaffUnavailability | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reminderSending, setReminderSending] = useState(false);
+  const [chatDialogOpen, setChatDialogOpen] = useState(false);
 
   const loading = helpersLoading || unavailLoading;
 
@@ -123,23 +125,37 @@ export default function UnavailabilityPage() {
         <h2 className="text-lg font-bold">希望休管理</h2>
         <div className="flex items-center gap-2">
           {canEditUnavailability && helpersNotSubmitted.length > 0 && (
-            <Button
-              onClick={handleSendReminder}
-              size="sm"
-              variant="outline"
-              disabled={reminderSending}
-              title={`${helpersNotSubmitted.length}名に催促メールを送信`}
-            >
-              {reminderSending ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              ) : (
-                <Mail className="mr-1 h-4 w-4" />
-              )}
-              催促メール
-              <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground">
-                {helpersNotSubmitted.length}
-              </span>
-            </Button>
+            <>
+              <Button
+                onClick={() => setChatDialogOpen(true)}
+                size="sm"
+                variant="outline"
+                title={`${helpersNotSubmitted.length}名にChat催促を送信`}
+              >
+                <MessageSquare className="mr-1 h-4 w-4" />
+                Chat催促
+                <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground">
+                  {helpersNotSubmitted.length}
+                </span>
+              </Button>
+              <Button
+                onClick={handleSendReminder}
+                size="sm"
+                variant="outline"
+                disabled={reminderSending}
+                title={`${helpersNotSubmitted.length}名に催促メールを送信`}
+              >
+                {reminderSending ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="mr-1 h-4 w-4" />
+                )}
+                催促メール
+                <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground">
+                  {helpersNotSubmitted.length}
+                </span>
+              </Button>
+            </>
           )}
           {(canEditUnavailability || isHelper) && (
             <Button onClick={openNew} size="sm">
@@ -256,6 +272,19 @@ export default function UnavailabilityPage() {
         unavailability={editTarget}
         helpers={helpers}
         weekStart={weekStart}
+      />
+
+      <ChatReminderDialog
+        open={chatDialogOpen}
+        onClose={() => setChatDialogOpen(false)}
+        weekStart={format(weekStart, 'yyyy-MM-dd')}
+        helpers={helpers}
+        unsubmittedStaffIds={submittedStaffIds.size > 0
+          ? new Set(
+              Array.from(helpers.keys()).filter((id) => !submittedStaffIds.has(id))
+            )
+          : new Set(helpers.keys())
+        }
       />
     </div>
   );

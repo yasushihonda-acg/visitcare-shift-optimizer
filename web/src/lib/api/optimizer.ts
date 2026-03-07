@@ -296,3 +296,45 @@ export async function notifyUnavailabilityReminder(params: {
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// Google Chat DM 催促
+// ---------------------------------------------------------------------------
+
+export interface ChatReminderTarget {
+  staff_id: string;
+  name: string;
+  email: string;
+}
+
+export interface ChatReminderResultItem {
+  staff_id: string;
+  email: string;
+  success: boolean;
+}
+
+export interface ChatReminderResponse {
+  messages_sent: number;
+  total_targets: number;
+  results: ChatReminderResultItem[];
+}
+
+export async function sendChatReminder(params: {
+  target_week_start: string;
+  targets: ChatReminderTarget[];
+  message?: string;
+}): Promise<ChatReminderResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/notify/chat-reminder`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}

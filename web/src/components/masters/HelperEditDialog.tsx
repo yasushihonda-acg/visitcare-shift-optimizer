@@ -201,6 +201,18 @@ export function HelperEditDialog({
                   placeholder="099-xxx-xxxx"
                 />
               </div>
+              <div className="space-y-1">
+                <Label htmlFor="email">メールアドレス（任意）</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register('email')}
+                  placeholder="example@aozora-cg.com"
+                />
+                {errors.email && (
+                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -498,6 +510,7 @@ function getDefaults(helper?: Helper): HelperFormValues {
       employee_number: '',
       address: '',
       phone_number: '',
+      email: '',
     };
   }
   return {
@@ -515,5 +528,6 @@ function getDefaults(helper?: Helper): HelperFormValues {
     employee_number: helper.employee_number ?? '',
     address: helper.address ?? '',
     phone_number: helper.phone_number ?? '',
+    email: helper.email ?? '',
   };
 }

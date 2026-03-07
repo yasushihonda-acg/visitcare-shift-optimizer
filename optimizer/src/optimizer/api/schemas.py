@@ -168,3 +168,42 @@ class UnavailabilityReminderRequest(BaseModel):
         ...,
         description="未提出ヘルパーのリスト [{id, name}]",
     )
+
+
+# ---------------------------------------------------------------------------
+# Google Chat DM 催促
+# ---------------------------------------------------------------------------
+
+class ChatReminderTarget(BaseModel):
+    staff_id: str = Field(..., description="スタッフID")
+    name: str = Field(..., description="スタッフ名（表示用）")
+    email: str = Field(..., description="Google Workspace メールアドレス")
+
+
+class ChatReminderRequest(BaseModel):
+    target_week_start: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="催促対象週の開始日 YYYY-MM-DD",
+    )
+    targets: list[ChatReminderTarget] = Field(
+        ...,
+        min_length=1,
+        description="送信対象スタッフのリスト",
+    )
+    message: str | None = Field(
+        default=None,
+        description="カスタムメッセージ（省略時はデフォルトテンプレート使用）",
+    )
+
+
+class ChatReminderResultItem(BaseModel):
+    staff_id: str
+    email: str
+    success: bool
+
+
+class ChatReminderResponse(BaseModel):
+    messages_sent: int = Field(description="送信成功件数")
+    total_targets: int = Field(description="送信対象件数")
+    results: list[ChatReminderResultItem]

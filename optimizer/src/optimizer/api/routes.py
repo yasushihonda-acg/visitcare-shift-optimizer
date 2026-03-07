@@ -59,6 +59,9 @@ from optimizer.api.schemas import (
     ShiftChangedNotifyRequest,
     ShiftConfirmedNotifyRequest,
     UnavailabilityReminderRequest,
+    ChatReminderRequest,
+    ChatReminderResponse,
+    ChatReminderResultItem,
 )
 from optimizer.data.firestore_loader import (
     get_firestore_client,
@@ -75,6 +78,7 @@ from optimizer.data.firestore_writer import (
 )
 from optimizer.engine.solver import SoftWeights, diagnose_infeasibility, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
+from optimizer.notification.chat_sender import send_chat_dms
 from optimizer.notification.recipients import list_manager_emails
 from optimizer.notification.sender import send_email
 from optimizer.notification.templates import (
@@ -560,3 +564,55 @@ def notify_unavailability_reminder(
         len(req.helpers_not_submitted),
     )
     return NotificationResponse(emails_sent=sent, recipients=recipients)
+
+
+APP_URL = "https://visitcare-shift-optimizer.web.app"
+
+_CHAT_REMINDER_TEMPLATE = (
+    "[VisitCare] 希望休提出のお願い\n\n"
+    "{target_week}週 の希望休がまだ提出されていません。\n"
+    "お手数ですが、以下のリンクから提出をお願いします。\n\n"
+    "{app_url}/masters/unavailability"
+)
+
+
+@router.post(
+    "/notify/chat-reminder",
+    response_model=ChatReminderResponse,
+    responses={500: {"model": ErrorResponse}},
+)
+def notify_chat_reminder(
+    req: ChatReminderRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> ChatReminderResponse:
+    """希望休催促を Google Chat DM で個別送信する"""
+    message_text = req.message or _CHAT_REMINDER_TEMPLATE.format(
+        target_week=req.target_week_start,
+        app_url=APP_URL,
+    )
+
+    emails = [t.email for t in req.targets]
+    sent_count, raw_results = send_chat_dms(emails, message_text)
+
+    # raw_results を staff_id 付きに変換
+    email_to_staff = {t.email: t.staff_id for t in req.targets}
+    results = [
+        ChatReminderResultItem(
+            staff_id=email_to_staff.get(r["email"], ""),
+            email=str(r["email"]),
+            success=bool(r["success"]),
+        )
+        for r in raw_results
+    ]
+
+    logger.info(
+        "Chat DM 催促送信: sent=%d/%d",
+        sent_count,
+        len(req.targets),
+    )
+
+    return ChatReminderResponse(
+        messages_sent=sent_count,
+        total_targets=len(req.targets),
+        results=results,
+    )
