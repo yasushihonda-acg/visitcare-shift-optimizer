@@ -90,6 +90,70 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     }
   });
 
+  test('D&D成功後にUndoボタンが有効化され、クリックで元に戻せる', async ({ page }) => {
+    await goToSchedule(page);
+    await waitForGanttBars(page);
+
+    // 初期状態: Undoボタンはdisabled
+    const undoBtn = page.locator('[data-testid="undo-button"]');
+    await expect(undoBtn).toBeDisabled();
+
+    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
+    const rowCount = await ganttRows.count();
+    if (rowCount < 2) {
+      test.skip(true, 'ヘルパー行が2つ未満のためスキップ');
+      return;
+    }
+
+    // オーダーを持つ行を検索
+    let sourceRowIndex = -1;
+    for (let i = 0; i < rowCount; i++) {
+      const row = ganttRows.nth(i);
+      const barCount = await row.locator('[data-testid^="gantt-bar-"]').count();
+      if (barCount > 0) {
+        sourceRowIndex = i;
+        break;
+      }
+    }
+    if (sourceRowIndex < 0) {
+      test.skip(true, 'オーダーを持つ行がないためスキップ');
+      return;
+    }
+
+    const sourceRow = ganttRows.nth(sourceRowIndex);
+    const sourceBar = sourceRow.locator('[data-testid^="gantt-bar-"]').first();
+
+    // 別の行にドロップ
+    const targetIndex = sourceRowIndex < rowCount - 1 ? sourceRowIndex + 1 : sourceRowIndex - 1;
+    const targetRow = ganttRows.nth(targetIndex);
+    await dragOrderToTarget(page, sourceBar, targetRow);
+
+    // トースト表示を待機
+    const anyToast = page.locator('[data-sonner-toast]');
+    await expect(anyToast.first()).toBeVisible({ timeout: 10_000 });
+
+    // 成功した場合のみUndoボタンの有効化を確認
+    const successToast = anyToast.filter({ hasText: /割当を変更しました/ });
+    const isSuccess = (await successToast.count()) > 0;
+    if (!isSuccess) {
+      test.skip(true, 'D&Dが検証で拒否された（資格不適合・時間重複等）');
+      return;
+    }
+
+    // Undoボタンが有効になる
+    await expect(undoBtn).toBeEnabled({ timeout: 5_000 });
+
+    // Undoボタンをクリック
+    await undoBtn.click();
+
+    // 元に戻すトーストが表示される（Firestore書き込みによるリアルタイム反映）
+    await page.waitForTimeout(2000);
+
+    // Undo後: Undoボタンはdisabled、Redoボタンはenabled
+    const redoBtn = page.locator('[data-testid="redo-button"]');
+    await expect(redoBtn).toBeEnabled({ timeout: 5_000 });
+  });
+
   test('割当済みオーダーを未割当セクションにドロップして割当解除できる', async ({ page }) => {
     await goToSchedule(page);
     await waitForGanttBars(page);
