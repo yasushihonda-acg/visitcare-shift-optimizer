@@ -42,7 +42,8 @@ export function ChatReminderDialog({
         const aUnsub = unsubmittedStaffIds.has(a.id) ? 0 : 1;
         const bUnsub = unsubmittedStaffIds.has(b.id) ? 0 : 1;
         if (aUnsub !== bUnsub) return aUnsub - bUnsub;
-        return a.name.family.localeCompare(b.name.family, 'ja');
+        return a.name.family.localeCompare(b.name.family, 'ja') ||
+          a.name.given.localeCompare(b.name.given, 'ja');
       });
   }, [helpers, unsubmittedStaffIds]);
 

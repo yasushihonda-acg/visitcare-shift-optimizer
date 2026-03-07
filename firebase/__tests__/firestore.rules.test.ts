@@ -20,7 +20,7 @@ beforeAll(async () => {
     firestore: {
       rules: fs.readFileSync(RULES_PATH, 'utf8'),
       host: 'localhost',
-      port: 8080,
+      port: parseInt(process.env.FIRESTORE_EMULATOR_PORT ?? '8080', 10),
     },
   });
 });
@@ -451,6 +451,16 @@ describe('認証済みユーザー - helpers create', () => {
     const { employment_type: _, ...noEmploymentType } = validHelperData;
     await assertFails(
       setDoc(doc(authed.firestore(), 'helpers', 'helper-bad'), noEmploymentType)
+    );
+  });
+
+  it('emailフィールド付きで新規作成できる', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'helpers', 'helper-with-email'), {
+        ...validHelperData,
+        email: 'test@example.com',
+      })
     );
   });
 });

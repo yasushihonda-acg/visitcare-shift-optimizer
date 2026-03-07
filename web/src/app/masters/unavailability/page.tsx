@@ -279,12 +279,9 @@ export default function UnavailabilityPage() {
         onClose={() => setChatDialogOpen(false)}
         weekStart={format(weekStart, 'yyyy-MM-dd')}
         helpers={helpers}
-        unsubmittedStaffIds={submittedStaffIds.size > 0
-          ? new Set(
-              Array.from(helpers.keys()).filter((id) => !submittedStaffIds.has(id))
-            )
-          : new Set(helpers.keys())
-        }
+        unsubmittedStaffIds={new Set(
+          Array.from(helpers.keys()).filter((id) => !submittedStaffIds.has(id))
+        )}
       />
     </div>
   );

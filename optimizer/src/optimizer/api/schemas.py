@@ -1,6 +1,6 @@
 """APIリクエスト/レスポンススキーマ"""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class OptimizeRequest(BaseModel):
@@ -177,7 +177,7 @@ class UnavailabilityReminderRequest(BaseModel):
 class ChatReminderTarget(BaseModel):
     staff_id: str = Field(..., description="スタッフID")
     name: str = Field(..., description="スタッフ名（表示用）")
-    email: str = Field(..., description="Google Workspace メールアドレス")
+    email: EmailStr = Field(..., description="Google Workspace メールアドレス")
 
 
 class ChatReminderRequest(BaseModel):
