@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-07（household_id廃止 → same_household/facility_customer_ids移行 PR #134 マージ済み）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行）実装済み・マージ済み
+**最終更新**: 2026-03-07（利用者編集UIに同一世帯・同一施設メンバー選択MultiSelect追加 PR #136 マージ済み）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -77,6 +77,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
     - Zodスキーマ重複排除 + 自己参照フィルタリング
   - テスト: Optimizer 294件 / Web 461件 / CI全4ジョブGREEN
   - Phase C（利用者編集UIの世帯・施設選択）は後続PRで対応
+
+- **feat (2026-03-07)** ✅: 利用者編集UIに同一世帯・同一施設メンバー選択MultiSelectを追加（PR #136 マージ済み）
+  - `CustomerEditDialog.tsx`: 「同一世帯メンバー」「同一施設メンバー」それぞれにMultiSelect UIを追加
+  - `same_household_customer_ids` / `same_facility_customer_ids` を双方向同期で保存
+  - 自己参照フィルタリング（自分自身を選択肢に表示しない）
+  - CI: main push後 in_progress（run #22800783714、2026-03-07T14:25Z）
 
 ## 直近の実装（2026-02-25）
 
@@ -417,7 +423,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Web (Next.js)**: **461件 pass** ✅（customers原子性10件 + schemas dedup 4件 + 既存更新）
 - **Firestore Rules**: 106件 pass（PR #117 settings 13件追加）
 - **E2E Tests (Playwright)**: **64テスト** pass
-- **CI/CD**: ✅ GREEN（PR #134 全4ジョブ pass、2026-03-07）
+- **CI/CD**: PR #136 main push CI in_progress（run #22800783714、PR branch CI success）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -468,21 +474,21 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## 次のアクション（優先度順）
 
-1. **Phase C: 利用者編集UIの世帯・施設選択**: `CustomerEditDialog` に同一世帯・同一施設メンバーの選択UI（MultiSelect）を追加
-2. **Issue #132: 希望休管理の催促チャット（個人Googleチャット：DM）を実装** [P1]
-3. **allowed_staff_ids の本番運用確認**: 本番 Firestore で意図しない Infeasible が発生しないか確認。必要なら `seed/scripts/rollback-allowed-staff.ts` でロールバック
-4. **E2Eテスト拡充**: 以下が未追加
+1. **Issue #132: 希望休管理の催促チャット（個人Googleチャット：DM）を実装** [P1]
+2. **allowed_staff_ids の本番運用確認**: 本番 Firestore で意図しない Infeasible が発生しないか確認。必要なら `seed/scripts/rollback-allowed-staff.ts` でロールバック
+3. **E2Eテスト拡充**: 以下が未追加
    - 基本予定一覧詳細シート（行クリック詳細シート）E2E
    - 変更確認チェックボタン（アンバーリング→緑確認ボタン→解除）E2E
    - Undo/Redo ボタン操作（Cmd+Z / Cmd+Shift+Z）E2E
    - allowed_staff_ids 事前チェックダイアログ E2E
+   - 同一世帯・同一施設MultiSelect E2E
 4. **次フェーズ方針決定**: Phase 6（モバイル対応・PWA化・オフライン対応）等を検討
 5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 1件
   - #132 希望休管理の催促チャット（個人Googleチャット：DM）を実装 [enhancement, P1]
-- **クローズ済み（直近）**: PR #134（household_id廃止→same_household/facility移行、Closes #133）、PR #131（allowed_staff_ids ホワイトリスト + 事前チェック）、PR #124（iPad横向きレスポンシブ）、PR #123（Undo/Redo + Infeasibleバグ修正）
+- **クローズ済み（直近）**: PR #136（利用者編集UI同一世帯/施設MultiSelect）、PR #134（household_id廃止→same_household/facility移行、Closes #133）、PR #131（allowed_staff_ids ホワイトリスト + 事前チェック）、PR #124（iPad横向きレスポンシブ）、PR #123（Undo/Redo + Infeasibleバグ修正）
 - **クローズ済み（既往）**: Issue #118（Gmail DWD）、Issue #125（型定義）、Issue #126（Python制約）、Issue #127（UI）、Issue #120（C010競合修正）、Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）
 
 ## 参考資料（ローカルExcel）
