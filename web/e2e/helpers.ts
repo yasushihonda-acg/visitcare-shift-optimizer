@@ -72,6 +72,27 @@ export async function waitForGanttBars(page: Page) {
 }
 
 /**
+ * staff_count > 1 のオーダーが複数ガント行に同一 data-testid で表示されるため、
+ * 単独バーの行を優先的に選択して strict mode violation を回避する。
+ * 見つからない場合は最初のバーにフォールバック。
+ * @returns { bar, row } — 選択されたバーとその親行
+ */
+export async function findSingleBarInRow(page: Page) {
+  const ganttRows = page.locator('[data-testid^="gantt-row-"]');
+  const rowCount = await ganttRows.count();
+  for (let i = 0; i < rowCount; i++) {
+    const row = ganttRows.nth(i);
+    const bars = row.locator('[data-testid^="gantt-bar-"]');
+    if (await bars.count() === 1) {
+      return { bar: bars.first(), row };
+    }
+  }
+  // フォールバック: 最初のバーとその行
+  const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
+  return { bar: firstBar, row: ganttRows.first() };
+}
+
+/**
  * 低レベルmouse制御でD&Dを実行する。
  * @dnd-kit PointerSensor (distance: 5px) を確実にトリガーするため、
  * 中間点を経由し、dragover発火のためdrop位置へ2回moveする。
@@ -87,6 +108,7 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   await source.scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
 
+  // スクロール後に bounding box を再取得（スクロールで座標が変わるため）
   const dragBox = await source.boundingBox();
   const dropBox = await target.boundingBox();
   if (!dragBox || !dropBox) throw new Error('Could not get bounding box for drag source or target');
@@ -94,8 +116,6 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   // overflow-visible バーの隣接テキスト遮蔽を回避するため、ソースは左端付近を使用
   const startX = dragBox.x + 5;
   const startY = dragBox.y + dragBox.height / 2;
-  const endX = dropBox.x + dropBox.width / 2;
-  const endY = dropBox.y + dropBox.height / 2;
 
   // overflow-visible バーの重なりによる intercept を回避するため座標ベースで移動
   await page.mouse.move(startX, startY);
@@ -104,6 +124,17 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   await page.waitForTimeout(100);
   // distance: 5px を確実に超えるため中間点を経由
   await page.mouse.move(startX + 10, startY + 10, { steps: 5 });
+
+  // ドラッグ開始後にターゲットを再スクロール → 座標再取得
+  // （ソースとターゲットが離れている場合、最初のスクロールでターゲットがビューポート外に出る）
+  await target.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+  const freshDropBox = await target.boundingBox();
+  if (!freshDropBox) throw new Error('Could not get bounding box for drop target after scroll');
+
+  const endX = freshDropBox.x + freshDropBox.width / 2;
+  const endY = freshDropBox.y + freshDropBox.height / 2;
+
   await page.mouse.move(endX, endY, { steps: 20 });
   // dragover発火用に再度move
   await page.mouse.move(endX, endY);
