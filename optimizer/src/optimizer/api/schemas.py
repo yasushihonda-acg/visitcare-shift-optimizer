@@ -158,15 +158,20 @@ class ShiftChangedNotifyRequest(BaseModel):
     changes: list[ShiftChangeDetail] = Field(..., min_length=1)
 
 
+class HelperNotSubmitted(BaseModel):
+    id: str = Field(..., description="スタッフID")
+    name: str = Field(..., description="スタッフ名（表示用）")
+
+
 class UnavailabilityReminderRequest(BaseModel):
     target_week_start: str = Field(
         ...,
         pattern=r"^\d{4}-\d{2}-\d{2}$",
         description="催促対象週の開始日 YYYY-MM-DD",
     )
-    helpers_not_submitted: list[dict] = Field(
+    helpers_not_submitted: list[HelperNotSubmitted] = Field(
         ...,
-        description="未提出ヘルパーのリスト [{id, name}]",
+        description="未提出ヘルパーのリスト",
     )
 
 

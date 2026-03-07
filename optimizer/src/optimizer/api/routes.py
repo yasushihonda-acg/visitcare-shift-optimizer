@@ -554,7 +554,7 @@ def notify_unavailability_reminder(
     recipients = list_manager_emails()
     subject, html = render_unavailability_reminder(
         target_week_start=req.target_week_start,
-        helpers_not_submitted=req.helpers_not_submitted,
+        helpers_not_submitted=[h.model_dump() for h in req.helpers_not_submitted],
     )
     sender_email = _get_sender_email()
     sent = send_email(recipients, subject, html, sender_email=sender_email)

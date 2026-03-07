@@ -136,7 +136,7 @@ $style
 
 def render_unavailability_reminder(
     target_week_start: str,
-    helpers_not_submitted: list[dict],
+    helpers_not_submitted: list[dict[str, str]],
 ) -> tuple[str, str]:
     """(subject, html_content) を返す"""
     items = "".join(f"<li>{h['name']}</li>" for h in helpers_not_submitted)
