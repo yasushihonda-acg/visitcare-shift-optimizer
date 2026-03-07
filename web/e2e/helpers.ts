@@ -77,17 +77,25 @@ export async function waitForGanttBars(page: Page) {
  * 見つからない場合は最初のバーにフォールバック。
  * @returns { bar, row } — 選択されたバーとその親行
  */
-export async function findSingleBarInRow(page: Page) {
+export async function findSingleBarInRow(page: Page): Promise<{ bar: Locator; row: Locator }> {
   const ganttRows = page.locator('[data-testid^="gantt-row-"]');
-  const rowCount = await ganttRows.count();
-  for (let i = 0; i < rowCount; i++) {
-    const row = ganttRows.nth(i);
-    const bars = row.locator('[data-testid^="gantt-bar-"]');
-    if (await bars.count() === 1) {
-      return { bar: bars.first(), row };
+
+  // 全行のバー数を一括取得（N回の非同期呼び出し → 1回のevaluateに削減）
+  const singleBarIndex = await page.evaluate(() => {
+    const rows = document.querySelectorAll('[data-testid^="gantt-row-"]');
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].querySelectorAll('[data-testid^="gantt-bar-"]').length === 1) return i;
     }
+    return -1;
+  });
+
+  if (singleBarIndex >= 0) {
+    const row = ganttRows.nth(singleBarIndex);
+    return { bar: row.locator('[data-testid^="gantt-bar-"]').first(), row };
   }
-  // フォールバック: 最初のバーとその行
+
+  // フォールバック: 最初のバーとその行（strict mode violation のリスクあり）
+  console.warn('findSingleBarInRow: no single-bar row found, falling back to first bar');
   const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
   return { bar: firstBar, row: ganttRows.first() };
 }
@@ -140,8 +148,7 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   // dragover発火用に再度move
   await page.mouse.move(endX, endY);
   await page.mouse.up();
-  // 非同期のhandleDragEnd（Firestore書き込み）完了を待つ
-  await page.waitForTimeout(1000);
+  // Firestore書き込み完了の待機は呼び出し元のトースト確認に委ねる
 }
 
 /**
