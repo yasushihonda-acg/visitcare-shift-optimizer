@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { WeeklyServicesEditor } from './WeeklyServicesEditor';
 import { StaffMultiSelect } from './StaffMultiSelect';
+import { CustomerMultiSelect } from './CustomerMultiSelect';
 import { IrregularPatternEditor } from './IrregularPatternEditor';
 import { CustomerLocationPicker } from './CustomerLocationPicker';
 import {
@@ -33,6 +34,7 @@ import { customerSchema, type CustomerFormValues } from '@/lib/validation/schema
 import { createCustomer, updateCustomer } from '@/lib/firestore/customers';
 import { geocodeAddress } from '@/lib/geocoding';
 import { useHelpers } from '@/hooks/useHelpers';
+import { useCustomers } from '@/hooks/useCustomers';
 import type { Customer } from '@/types';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -50,6 +52,7 @@ export function CustomerEditDialog({
 }: CustomerEditDialogProps) {
   const isNew = !customer;
   const { helpers } = useHelpers();
+  const { customers } = useCustomers();
   const [isGeocoding, setIsGeocoding] = useState(false);
 
   const {
@@ -280,7 +283,35 @@ export function CustomerEditDialog({
             )}
           </div>
 
-          {/* 同一世帯・同一施設は Phase C で選択UIを実装予定 */}
+          {/* 同一世帯 */}
+          <Controller
+            name="same_household_customer_ids"
+            control={control}
+            render={({ field }) => (
+              <CustomerMultiSelect
+                label="同一世帯"
+                selected={field.value ?? []}
+                onChange={field.onChange}
+                customers={customers}
+                excludeIds={customer ? [customer.id] : []}
+              />
+            )}
+          />
+
+          {/* 同一施設 */}
+          <Controller
+            name="same_facility_customer_ids"
+            control={control}
+            render={({ field }) => (
+              <CustomerMultiSelect
+                label="同一施設"
+                selected={field.value ?? []}
+                onChange={field.onChange}
+                customers={customers}
+                excludeIds={customer ? [customer.id] : []}
+              />
+            )}
+          />
 
           {/* 備考 */}
           <div className="space-y-1">
