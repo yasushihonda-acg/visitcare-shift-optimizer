@@ -34,7 +34,8 @@ class TestCustomer:
         assert c.ng_staff_ids == []
         assert c.preferred_staff_ids == []
         assert c.weekly_services == {}
-        assert c.household_id is None
+        assert c.same_household_customer_ids == []
+        assert c.same_facility_customer_ids == []
 
     def test_with_weekly_services(self) -> None:
         c = Customer(
@@ -65,10 +66,10 @@ class TestCustomer:
             location=GeoLocation(lat=31.59, lng=130.55),
             ng_staff_ids=["H006", "H014"],
             preferred_staff_ids=["H001"],
-            household_id="H001",
+            same_household_customer_ids=["C002"],
         )
         assert c.ng_staff_ids == ["H006", "H014"]
-        assert c.household_id == "H001"
+        assert c.same_household_customer_ids == ["C002"]
 
 
 class TestHelper:

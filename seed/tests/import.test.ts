@@ -115,13 +115,13 @@ describe('Firestore import integration', () => {
     expect(data.source).toBe('dummy');
   });
 
-  it('should have household pairs linked in customers', async () => {
+  it('should have same_household pairs linked in customers', async () => {
     const db = getFirestore();
     const c001 = (await db.collection('customers').doc('C001').get()).data()!;
     const c002 = (await db.collection('customers').doc('C002').get()).data()!;
 
-    expect(c001.household_id).toBe('H001');
-    expect(c002.household_id).toBe('H001');
+    expect(c001.same_household_customer_ids).toContain('C002');
+    expect(c002.same_household_customer_ids).toContain('C001');
     expect(c001.location.lat).toBe(c002.location.lat);
     expect(c001.location.lng).toBe(c002.location.lng);
   });

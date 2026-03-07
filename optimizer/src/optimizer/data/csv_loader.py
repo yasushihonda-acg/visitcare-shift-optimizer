@@ -72,9 +72,31 @@ def load_customers(data_dir: Path) -> list[Customer]:
         else:
             preferred_by_customer.setdefault(cid, []).append(sid)
 
+    # household_id → same_household_customer_ids 変換用マッピング
+    hh_groups: dict[str, list[str]] = {}
+    for row in customers_csv:
+        hh_id = row.get("household_id") or ""
+        if hh_id:
+            hh_groups.setdefault(hh_id, []).append(row["id"])
+
+    # 住所ベースの同一施設グループ構築
+    from optimizer.data.normalize_address import normalize_address
+
+    addr_groups: dict[str, list[str]] = {}
+    for row in customers_csv:
+        norm = normalize_address(row["address"])
+        addr_groups.setdefault(norm, []).append(row["id"])
+
     customers = []
     for row in customers_csv:
         cid = row["id"]
+        hh_id = row.get("household_id") or ""
+        # 同一世帯: 同じhousehold_idの他メンバー
+        same_hh = [mid for mid in hh_groups.get(hh_id, []) if mid != cid] if hh_id else []
+        # 同一施設: 同じ正規化住所の他メンバー
+        norm_addr = normalize_address(row["address"])
+        same_fac = [mid for mid in addr_groups.get(norm_addr, []) if mid != cid]
+
         customers.append(
             Customer(
                 id=cid,
@@ -86,7 +108,8 @@ def load_customers(data_dir: Path) -> list[Customer]:
                 allowed_staff_ids=allowed_by_customer.get(cid, []),
                 preferred_staff_ids=preferred_by_customer.get(cid, []),
                 weekly_services=services_by_customer.get(cid, {}),
-                household_id=row.get("household_id") or None,
+                same_household_customer_ids=same_hh,
+                same_facility_customer_ids=same_fac,
                 service_manager=row.get("service_manager", ""),
                 notes=row.get("notes") or None,
             )
@@ -138,7 +161,7 @@ def load_helpers(data_dir: Path) -> list[Helper]:
 def generate_orders(customers: list[Customer], week_start: date) -> list[Order]:
     """Customer.weekly_services から対象週のOrder一覧を生成
 
-    同一世帯（household_id）の利用者について、同日・連続時間帯の
+    同一住所グループ（世帯・施設）の利用者について、同日・連続時間帯の
     オーダーには linked_order_id を設定する。
     """
     orders: list[Order] = []

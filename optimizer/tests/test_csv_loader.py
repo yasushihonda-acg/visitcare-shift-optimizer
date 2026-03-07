@@ -25,7 +25,7 @@ class TestLoadCustomers:
         c001 = next(c for c in customers if c.id == "C001")
         assert c001.family_name == "山田"
         assert c001.location.lat > 31.0
-        assert c001.household_id == "H001"
+        assert "C002" in c001.same_household_customer_ids
 
     def test_weekly_services_loaded(self, seed_data_dir: Path) -> None:
         customers = load_customers(seed_data_dir)
@@ -141,7 +141,7 @@ class TestGenerateOrdersLinkedOrders:
         """世帯ペアでない利用者はlinked_order_idがNone"""
         customers = load_customers(seed_data_dir)
         orders = generate_orders(customers, date(2025, 1, 6))
-        # C003(中村正雄)はhousehold_idなし
+        # C003(中村正雄)はグループなし
         c003_orders = [o for o in orders if o.customer_id == "C003"]
         for o in c003_orders:
             assert o.linked_order_id is None

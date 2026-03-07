@@ -58,8 +58,20 @@ def _orders_overlap(o1: Order, o2: Order) -> bool:
 def _build_travel_time_lookup(
     inp: OptimizationInput,
 ) -> dict[tuple[str, str], float]:
-    """(from_id, to_id) → 移動時間（分）のルックアップ"""
-    return {(tt.from_id, tt.to_id): tt.travel_time_minutes for tt in inp.travel_times}
+    """(from_id, to_id) → 移動時間（分）のルックアップ
+
+    同一世帯・同一施設の利用者ペアは移動時間0にオーバーライドする。
+    """
+    lookup = {(tt.from_id, tt.to_id): tt.travel_time_minutes for tt in inp.travel_times}
+
+    # 同一世帯/施設グループを構築し、グループ内ペアの移動時間を0にする
+    for c in inp.customers:
+        related = set(c.same_household_customer_ids) | set(c.same_facility_customer_ids)
+        for other_id in related:
+            lookup[(c.id, other_id)] = 0.0
+            lookup[(other_id, c.id)] = 0.0
+
+    return lookup
 
 
 def _compute_feasible_pairs(inp: OptimizationInput) -> set[tuple[str, str]]:

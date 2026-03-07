@@ -60,7 +60,8 @@
 | allowed_staff_ids | string[] | Yes | 入れるスタッフID一覧（空=全スタッフ対象、空でなければ白リスト外禁止・ハード制約） |
 | preferred_staff_ids | string[] | Yes | 推奨スタッフID一覧（allowed_staff_ids のサブセット・ソフト制約で優先） |
 | weekly_services | `Record<DayOfWeek, ServiceSlot[]>` | Yes | 曜日別サービス枠 |
-| household_id | string | No | 同一世帯ID（連続訪問用） |
+| same_household_customer_ids | string[] | Yes | 同一世帯の利用者ID一覧（双方向同期） |
+| same_facility_customer_ids | string[] | Yes | 同一施設の利用者ID一覧（住所自動判定＋手動修正） |
 | irregular_patterns | IrregularPattern[] | No | 不定期パターン |
 | service_manager | string | Yes | 担当サ責名 |
 | gender_requirement | `'any' \| 'female' \| 'male'` | No | スタッフ性別要件（省略時は `any`） |

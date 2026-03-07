@@ -115,7 +115,8 @@ class TestLoadCustomers:
                         }
                     ],
                 },
-                "household_id": "H001",
+                "same_household_customer_ids": ["C002"],
+                "same_facility_customer_ids": [],
                 "service_manager": "管理者A",
                 "notes": "テストメモ",
             },
@@ -130,7 +131,7 @@ class TestLoadCustomers:
         assert c.family_name == "山田"
         assert c.given_name == "太郎"
         assert c.address == "鹿児島市中央町1-1"
-        assert c.household_id == "H001"
+        assert c.same_household_customer_ids == ["C002"]
         assert c.service_manager == "管理者A"
         assert c.notes == "テストメモ"
 
@@ -921,7 +922,10 @@ class TestHouseholdLinkInFirestoreLoader:
     """load_optimization_input が household リンクを動的生成することを確認"""
 
     def _make_customer_doc(
-        self, cid: str, household_id: str | None = None
+        self,
+        cid: str,
+        same_household: list[str] | None = None,
+        same_facility: list[str] | None = None,
     ) -> MagicMock:
         data: dict = {
             "name": {"family": "山田", "given": "太郎"},
@@ -931,9 +935,9 @@ class TestHouseholdLinkInFirestoreLoader:
             "preferred_staff_ids": [],
             "weekly_services": {},
             "service_manager": "",
+            "same_household_customer_ids": same_household or [],
+            "same_facility_customer_ids": same_facility or [],
         }
-        if household_id:
-            data["household_id"] = household_id
         return _mock_doc(cid, data)
 
     def _make_order_doc(
@@ -960,8 +964,8 @@ class TestHouseholdLinkInFirestoreLoader:
     def test_household_link_generated_dynamically(self) -> None:
         """Firestoreにlinked_order_idがなくても動的リンクが生成される"""
         customer_docs = [
-            self._make_customer_doc("C001", household_id="HH01"),
-            self._make_customer_doc("C002", household_id="HH01"),
+            self._make_customer_doc("C001", same_household=["C002"]),
+            self._make_customer_doc("C002", same_household=["C001"]),
         ]
         helper_doc = _mock_doc(
             "H001",
@@ -1001,8 +1005,8 @@ class TestHouseholdLinkInFirestoreLoader:
     def test_no_link_when_gap_exceeds_30min(self) -> None:
         """隙間が30分超のオーダーはリンクされない"""
         customer_docs = [
-            self._make_customer_doc("C001", household_id="HH01"),
-            self._make_customer_doc("C002", household_id="HH01"),
+            self._make_customer_doc("C001", same_household=["C002"]),
+            self._make_customer_doc("C002", same_household=["C001"]),
         ]
         helper_doc = _mock_doc(
             "H001",

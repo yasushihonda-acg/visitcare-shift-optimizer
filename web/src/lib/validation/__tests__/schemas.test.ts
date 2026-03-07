@@ -12,6 +12,8 @@ function validCustomer() {
     allowed_staff_ids: [],
     preferred_staff_ids: [],
     weekly_services: {},
+    same_household_customer_ids: [],
+    same_facility_customer_ids: [],
     service_manager: 'SM001',
   };
 }
@@ -50,7 +52,8 @@ describe('customerSchema', () => {
   it('オプションフィールド付きでパースできる', () => {
     const result = customerSchema.safeParse({
       ...validCustomer(),
-      household_id: 'HH001',
+      same_household_customer_ids: ['C002'],
+      same_facility_customer_ids: ['C003'],
       notes: '備考テスト',
       name: { family: '山田', given: '太郎', short: 'ヤマダ' },
     });
@@ -339,6 +342,33 @@ describe('customerSchema', () => {
       ],
     };
     expect(customerSchema.safeParse(data).success).toBe(false);
+  });
+
+  // ---- same_household/facility 重複排除 ----
+
+  it('重複IDが排除される（same_household_customer_ids）', () => {
+    const input = { ...validCustomer(), same_household_customer_ids: ['C001', 'C002', 'C001'] };
+    const result = customerSchema.parse(input);
+    expect(result.same_household_customer_ids).toEqual(['C001', 'C002']);
+  });
+
+  it('重複IDが排除される（same_facility_customer_ids）', () => {
+    const input = { ...validCustomer(), same_facility_customer_ids: ['C001', 'C001'] };
+    const result = customerSchema.parse(input);
+    expect(result.same_facility_customer_ids).toEqual(['C001']);
+  });
+
+  it('空配列はそのまま通過する', () => {
+    const input = { ...validCustomer(), same_household_customer_ids: [], same_facility_customer_ids: [] };
+    const result = customerSchema.parse(input);
+    expect(result.same_household_customer_ids).toEqual([]);
+    expect(result.same_facility_customer_ids).toEqual([]);
+  });
+
+  it('重複なしの配列はそのまま通過する', () => {
+    const input = { ...validCustomer(), same_household_customer_ids: ['C001', 'C002', 'C003'] };
+    const result = customerSchema.parse(input);
+    expect(result.same_household_customer_ids).toEqual(['C001', 'C002', 'C003']);
   });
 
   // ---- 外部連携ID ----

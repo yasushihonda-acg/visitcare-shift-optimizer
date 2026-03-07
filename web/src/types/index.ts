@@ -73,7 +73,8 @@ export interface Customer {
   preferred_staff_ids: string[];
   weekly_services: Partial<Record<DayOfWeek, ServiceSlot[]>>;
   irregular_patterns?: IrregularPattern[];
-  household_id?: string;
+  same_household_customer_ids: string[];
+  same_facility_customer_ids: string[];
   service_manager: string;
   gender_requirement?: GenderRequirement;
   kaiso_id?: string;

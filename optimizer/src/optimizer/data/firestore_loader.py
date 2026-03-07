@@ -97,7 +97,8 @@ def load_customers(db: firestore.Client) -> list[Customer]:
                 allowed_staff_ids=d.get("allowed_staff_ids", []),
                 preferred_staff_ids=d.get("preferred_staff_ids", []),
                 weekly_services=weekly_services,
-                household_id=d.get("household_id") or None,
+                same_household_customer_ids=d.get("same_household_customer_ids", []),
+                same_facility_customer_ids=d.get("same_facility_customer_ids", []),
                 irregular_patterns=[
                     IrregularPattern(**p)
                     for p in d.get("irregular_patterns", [])

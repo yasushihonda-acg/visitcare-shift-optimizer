@@ -35,6 +35,8 @@ function makeCustomer(overrides: Partial<Customer> = {}): Customer {
     ng_staff_ids: [],
     allowed_staff_ids: [],
     preferred_staff_ids: [],
+    same_household_customer_ids: [],
+    same_facility_customer_ids: [],
     weekly_services: {},
     service_manager: '山田太郎',
     gender_requirement: 'any',

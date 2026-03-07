@@ -2,6 +2,7 @@ import { resolve } from 'path';
 import { Timestamp } from 'firebase-admin/firestore';
 import { parseCSV } from './utils/csv-parser.js';
 import { batchWrite, getDB } from './utils/firestore-client.js';
+import { normalizeAddress } from './utils/normalize-address.js';
 
 const DATA_DIR = resolve(import.meta.dirname, '../data');
 
@@ -58,7 +59,31 @@ export async function importCustomers(): Promise<number> {
 
   const now = Timestamp.now();
 
+  // household_id → same_household_customer_ids 変換
+  const hhGroups: Record<string, string[]> = {};
+  for (const c of customers) {
+    if (c.household_id) {
+      if (!hhGroups[c.household_id]) hhGroups[c.household_id] = [];
+      hhGroups[c.household_id].push(c.id);
+    }
+  }
+
+  // 住所ベースの同一施設グループ構築
+  const addrGroups: Record<string, string[]> = {};
+  for (const c of customers) {
+    const norm = normalizeAddress(c.address);
+    if (!addrGroups[norm]) addrGroups[norm] = [];
+    addrGroups[norm].push(c.id);
+  }
+
   const docs = customers.map((c) => {
+    // 同一世帯: 同じhousehold_idの他メンバー
+    const sameHousehold = c.household_id
+      ? (hhGroups[c.household_id] || []).filter((id) => id !== c.id)
+      : [];
+    // 同一施設: 同じ住所の他メンバー
+    const normAddr = normalizeAddress(c.address);
+    const sameFacility = (addrGroups[normAddr] || []).filter((id) => id !== c.id);
     // 曜日別サービス枠を構築
     const customerServices = services.filter((s) => s.customer_id === c.id);
     const weeklyServices: Record<string, Array<{
@@ -118,7 +143,8 @@ export async function importCustomers(): Promise<number> {
         allowed_staff_ids: allowedStaffIds,
         preferred_staff_ids: preferredStaffIds,
         weekly_services: weeklyServices,
-        ...(c.household_id ? { household_id: c.household_id } : {}),
+        same_household_customer_ids: sameHousehold,
+        same_facility_customer_ids: sameFacility,
         ...(patterns.length > 0 ? { irregular_patterns: patterns } : {}),
         service_manager: c.service_manager,
         ...(c.notes ? { notes: c.notes } : {}),

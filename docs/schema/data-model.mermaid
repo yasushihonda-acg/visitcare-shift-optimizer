@@ -13,7 +13,8 @@ erDiagram
         array ng_staff_ids "FK helpers"
         array preferred_staff_ids "FK helpers"
         map weekly_services "DayOfWeek -> ServiceSlot[]"
-        string household_id "optional - linked household"
+        array same_household_customer_ids "FK customers - same household"
+        array same_facility_customer_ids "FK customers - same facility (auto by address)"
         string service_manager
         timestamp created_at
         timestamp updated_at
