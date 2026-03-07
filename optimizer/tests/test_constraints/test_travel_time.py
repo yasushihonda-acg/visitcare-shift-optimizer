@@ -95,3 +95,69 @@ class TestTravelTimeConstraint:
         assert result.status == "Optimal"
         assert result.assignments[0].staff_ids == ["H1"]
         assert result.assignments[1].staff_ids == ["H1"]
+
+    def test_same_household_zero_travel_time(self) -> None:
+        """同一世帯の利用者 → 移動時間0として扱われ、間隔0でも同一ヘルパー可"""
+        inp = OptimizationInput(
+            customers=[
+                Customer(
+                    id="C1", family_name="テスト", given_name="A", address="テスト",
+                    location=GeoLocation(lat=31.59, lng=130.55),
+                    same_household_customer_ids=["C2"],
+                ),
+                Customer(
+                    id="C2", family_name="テスト", given_name="B", address="テスト",
+                    location=GeoLocation(lat=32.00, lng=131.00),
+                    same_household_customer_ids=["C1"],
+                ),
+            ],
+            helpers=[_h("H1")],
+            orders=[
+                _o("O1", "C1", "09:00", "10:00"),
+                _o("O2", "C2", "10:00", "11:00"),  # 間隔0分
+            ],
+            travel_times=[
+                TravelTime(from_id="C1", to_id="C2", travel_time_minutes=30.0),
+                TravelTime(from_id="C2", to_id="C1", travel_time_minutes=30.0),
+            ],
+            staff_unavailabilities=[], staff_constraints=[],
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        o1_staff = next(a for a in result.assignments if a.order_id == "O1").staff_ids
+        o2_staff = next(a for a in result.assignments if a.order_id == "O2").staff_ids
+        assert o1_staff == ["H1"]
+        assert o2_staff == ["H1"]
+
+    def test_same_facility_zero_travel_time(self) -> None:
+        """同一施設の利用者 → 移動時間0として扱われ、間隔0でも同一ヘルパー可"""
+        inp = OptimizationInput(
+            customers=[
+                Customer(
+                    id="C1", family_name="テスト", given_name="A", address="テスト",
+                    location=GeoLocation(lat=31.59, lng=130.55),
+                    same_facility_customer_ids=["C2"],
+                ),
+                Customer(
+                    id="C2", family_name="テスト", given_name="B", address="テスト",
+                    location=GeoLocation(lat=32.00, lng=131.00),
+                    same_facility_customer_ids=["C1"],
+                ),
+            ],
+            helpers=[_h("H1")],
+            orders=[
+                _o("O1", "C1", "09:00", "10:00"),
+                _o("O2", "C2", "10:00", "11:00"),
+            ],
+            travel_times=[
+                TravelTime(from_id="C1", to_id="C2", travel_time_minutes=30.0),
+                TravelTime(from_id="C2", to_id="C1", travel_time_minutes=30.0),
+            ],
+            staff_unavailabilities=[], staff_constraints=[],
+        )
+        result = solve(inp)
+        assert result.status == "Optimal"
+        o1_staff = next(a for a in result.assignments if a.order_id == "O1").staff_ids
+        o2_staff = next(a for a in result.assignments if a.order_id == "O2").staff_ids
+        assert o1_staff == ["H1"]
+        assert o2_staff == ["H1"]
