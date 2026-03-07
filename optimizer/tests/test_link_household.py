@@ -186,6 +186,24 @@ class TestLinkHouseholdOrders:
         assert o1.linked_order_id == "ORD0002"
         assert o2.linked_order_id == "ORD0001"
 
+    def test_chain_household_facility_same_group(self) -> None:
+        """chain: C1--household--C2--facility--C3 が同一グループになる"""
+        customers = [
+            _make_customer("C001", same_household=["C002"]),
+            _make_customer("C002", same_household=["C001"], same_facility=["C003"]),
+            _make_customer("C003", same_facility=["C002"]),
+        ]
+        o1 = _make_order("ORD0001", "C001", "09:00", "10:00")
+        o2 = _make_order("ORD0002", "C002", "10:00", "11:00")
+        o3 = _make_order("ORD0003", "C003", "11:00", "12:00")
+
+        link_household_orders([o1, o2, o3], customers)
+
+        # 全員が同一グループなので、3連続チェーンリンクされる
+        assert o1.linked_order_id == "ORD0002"
+        assert o2.linked_order_id == "ORD0003"
+        assert o3.linked_order_id == "ORD0002"
+
     def test_mixed_household_and_facility(self) -> None:
         """世帯と施設の両方で関連がある場合、全員が同一グループとしてリンクされる"""
         customers = [

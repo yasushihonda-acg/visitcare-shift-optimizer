@@ -2,6 +2,7 @@ import { resolve } from 'path';
 import { Timestamp } from 'firebase-admin/firestore';
 import { parseCSV } from './utils/csv-parser.js';
 import { batchWrite, getDB } from './utils/firestore-client.js';
+import { normalizeAddress } from './utils/normalize-address.js';
 
 const DATA_DIR = resolve(import.meta.dirname, '../data');
 
@@ -70,7 +71,7 @@ export async function importCustomers(): Promise<number> {
   // 住所ベースの同一施設グループ構築
   const addrGroups: Record<string, string[]> = {};
   for (const c of customers) {
-    const norm = c.address.trim();
+    const norm = normalizeAddress(c.address);
     if (!addrGroups[norm]) addrGroups[norm] = [];
     addrGroups[norm].push(c.id);
   }
@@ -81,7 +82,7 @@ export async function importCustomers(): Promise<number> {
       ? (hhGroups[c.household_id] || []).filter((id) => id !== c.id)
       : [];
     // 同一施設: 同じ住所の他メンバー
-    const normAddr = c.address.trim();
+    const normAddr = normalizeAddress(c.address);
     const sameFacility = (addrGroups[normAddr] || []).filter((id) => id !== c.id);
     // 曜日別サービス枠を構築
     const customerServices = services.filter((s) => s.customer_id === c.id);

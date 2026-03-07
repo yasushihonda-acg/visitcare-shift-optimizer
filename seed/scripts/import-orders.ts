@@ -2,6 +2,7 @@ import { resolve } from 'path';
 import { Timestamp } from 'firebase-admin/firestore';
 import { parseCSV } from './utils/csv-parser.js';
 import { batchWrite, getDB } from './utils/firestore-client.js';
+import { normalizeAddress } from './utils/normalize-address.js';
 
 const DATA_DIR = resolve(import.meta.dirname, '../data');
 
@@ -103,7 +104,7 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
   // 住所ベースのグループ
   const addrGroups: Record<string, string[]> = {};
   for (const c of customers) {
-    const norm = c.address.trim();
+    const norm = normalizeAddress(c.address);
     if (!addrGroups[norm]) addrGroups[norm] = [];
     addrGroups[norm].push(c.id);
   }

@@ -20,30 +20,50 @@ def link_household_orders(
         gap_minutes: 連続と見なす最大間隔（分）。デフォルト30分。
     """
     # 同一住所グループを構築: customer_id → group_key
-    # same_household と same_facility の和集合でグループ化
+    # same_household と same_facility の和集合でグループ化（Union-Find）
     customer_map = {c.id: c for c in customers}
-    customer_to_group: dict[str, str] = {}
 
-    visited: set[str] = set()
+    # Union-Find
+    parent: dict[str, str] = {}
+
+    def find(x: str) -> str:
+        while parent.get(x, x) != x:
+            parent[x] = parent.get(parent[x], parent[x])  # path compression
+            x = parent[x]
+        return x
+
+    def union(a: str, b: str) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    # 全customer間の関係をunion
+    for c in customers:
+        for mid in c.same_household_customer_ids:
+            if mid in customer_map:
+                union(c.id, mid)
+        for mid in c.same_facility_customer_ids:
+            if mid in customer_map:
+                union(c.id, mid)
+
+    # 連結成分からグループ構築
+    customer_to_group: dict[str, str] = {}
+    root_to_group: dict[str, str] = {}
     group_idx = 0
     for c in customers:
-        if c.id in visited:
-            continue
-        # この利用者のグループメンバー（世帯+施設の和集合）
-        members = set(c.same_household_customer_ids) | set(c.same_facility_customer_ids)
-        if not members:
-            continue
-        members.add(c.id)
-        # 既存のグループに属していないメンバーだけで新グループ作成
-        unvisited = members - visited
-        if not unvisited:
-            continue
-        group_key = f"G{group_idx}"
-        group_idx += 1
-        for mid in members:
-            if mid in customer_map:
-                customer_to_group[mid] = group_key
-                visited.add(mid)
+        root = find(c.id)
+        if root not in root_to_group:
+            root_to_group[root] = f"G{group_idx}"
+            group_idx += 1
+        customer_to_group[c.id] = root_to_group[root]
+
+    # 孤立ノード（グループサイズ1）を除外
+    from collections import Counter
+
+    group_counts = Counter(customer_to_group.values())
+    customer_to_group = {
+        cid: gk for cid, gk in customer_to_group.items() if group_counts[gk] > 1
+    }
 
     if not customer_to_group:
         return
