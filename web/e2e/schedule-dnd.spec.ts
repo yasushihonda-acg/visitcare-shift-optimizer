@@ -209,22 +209,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    // オーダーを持つ行を検索
-    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
-    const rowCount = await ganttRows.count();
-    let sourceBar: ReturnType<typeof ganttRows.first> | null = null;
-    for (let i = 0; i < rowCount; i++) {
-      const row = ganttRows.nth(i);
-      const barCount = await row.locator('[data-testid^="gantt-bar-"]').count();
-      if (barCount > 0) {
-        sourceBar = row.locator('[data-testid^="gantt-bar-"]').first();
-        break;
-      }
-    }
-    if (!sourceBar) {
-      test.skip(true, 'オーダーを持つ行がないためスキップ');
-      return;
-    }
+    const { bar: sourceBar } = await findSingleBarInRow(page);
 
     // 右方向（遅い時間）に約100px移動（10分×数スロット分）
     await dragOrderHorizontally(page, sourceBar, 100);
@@ -253,8 +238,8 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     // トーストが出ないことを確認（500ms待機）
     await page.waitForTimeout(500);
     const toastCount = await page.locator('[data-sonner-toast]').count();
-    // キャンセル時はトーストなし（または直前の操作のトーストのみ）
-    expect(toastCount).toBeLessThanOrEqual(0);
+    // キャンセル時はトーストなし
+    expect(toastCount).toBe(0);
   });
 
   test('ドラッグ中にEscapeキーで元の位置に戻る', async ({ page }) => {

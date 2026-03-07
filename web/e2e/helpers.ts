@@ -110,8 +110,7 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
 
   // スクロール後に bounding box を再取得（スクロールで座標が変わるため）
   const dragBox = await source.boundingBox();
-  const dropBox = await target.boundingBox();
-  if (!dragBox || !dropBox) throw new Error('Could not get bounding box for drag source or target');
+  if (!dragBox) throw new Error('Could not get bounding box for drag source');
 
   // overflow-visible バーの隣接テキスト遮蔽を回避するため、ソースは左端付近を使用
   const startX = dragBox.x + 5;
@@ -127,6 +126,8 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
 
   // ドラッグ開始後にターゲットを再スクロール → 座標再取得
   // （ソースとターゲットが離れている場合、最初のスクロールでターゲットがビューポート外に出る）
+  // NOTE: mousedown中のscrollIntoViewIfNeededはdnd-kitの座標deltaをずらすリスクがある。
+  // ビューポート1280x1200 + steps:20の移動で現状は緩和されているが、将来的にはビューポート拡大で対処を検討。
   await target.scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
   const freshDropBox = await target.boundingBox();
