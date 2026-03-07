@@ -159,6 +159,19 @@ test.describe('スケジュール画面インタラクション', () => {
     await expect(page.locator('[data-testid="gantt-axis-customer"]')).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('Undo/Redoボタンが表示され、初期状態でdisabled', async ({ page }) => {
+    await goToSchedule(page);
+    await waitForGanttBars(page);
+
+    const undoBtn = page.locator('[data-testid="undo-button"]');
+    const redoBtn = page.locator('[data-testid="redo-button"]');
+
+    await expect(undoBtn).toBeVisible();
+    await expect(redoBtn).toBeVisible();
+    await expect(undoBtn).toBeDisabled();
+    await expect(redoBtn).toBeDisabled();
+  });
+
   test('「変更通知」ボタンが表示される（変更なし時はdisabled）', async ({ page }) => {
     await goToSchedule(page);
     await waitForGanttBars(page);
