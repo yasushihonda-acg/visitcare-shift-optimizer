@@ -61,6 +61,13 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-03-08）
 
+- **test (#147, 2026-03-08)** ✅: 基本予定一覧ページ（WeeklySchedulePage）コンポーネントテスト追加
+  - 9件: ページタイトル・空状態・利用者名表示・週間サービススロット・合計数・検索フィルタ・0件検索・詳細シート開閉・staff_countバッジ
+- **test (#146, 2026-03-08)** ✅: OptimizeButton allowed_staff_ids事前チェックダイアログのコンポーネントテスト追加
+  - 7件: 警告なし→直接最適化・警告あり→事前警告ダイアログ・利用者名/曜日/時間帯表示・allowedヘルパー名表示・戻って修正・警告無視して実行・複数警告リスト
+- **test (#145, 2026-03-08)** ✅: Undo/Redo E2Eテスト + スケジュールインタラクションE2Eテスト追加
+  - E2E: Undo/Redo初期disabled状態確認 + D&D成功後Undo→Redo フロー確認
+  - 変更確認チェックボタン・同一世帯/施設MultiSelectは既存テストで十分と判断（追加不要）
 - **test (#144, 2026-03-08)** ✅: HelperNotSubmitted バリデーション拒否テスト追加
   - id欠落・name欠落・非オブジェクト型の3ケースで422拒否を検証
 - **fix (#143, 2026-03-08)** ✅: UnavailabilityReminderRequest.helpers_not_submitted を型付きモデルに変更
@@ -245,11 +252,11 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
 
 ## 最新テスト結果サマリー（2026-03-08）
-- **Optimizer**: 297件 pass ✅（+3: HelperNotSubmittedバリデーション拒否テスト）
-- **Web (Next.js)**: **461件 pass** ✅
-- **Firestore Rules**: 107件 pass（+1: emailフィールド付きhelper作成テスト）
-- **E2E Tests (Playwright)**: **64テスト** pass
-- **CI/CD**: PR #144 CI全4ジョブGREEN
+- **Optimizer**: 297件 pass ✅
+- **Web (Next.js)**: **490件 pass** ✅（+29: OptimizeButton事前チェック7件 + WeeklySchedulePage 9件 + E2Eテスト拡充関連）
+- **Firestore Rules**: 107件 pass
+- **E2E Tests (Playwright)**: **66テスト** pass（+2: Undo/Redo初期状態 + D&D→Undo→Redoフロー）
+- **CI/CD**: PR #147 CI全4ジョブGREEN
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
