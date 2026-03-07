@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { goToSchedule, waitForGanttBars, dragOrderToTarget, dragOrderHorizontally, waitForToast } from './helpers';
+import { goToSchedule, waitForGanttBars, dragOrderToTarget, dragOrderHorizontally, waitForToast, findSingleBarInRow } from './helpers';
 
 test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
   // D&Dテストはフレーキーになりやすいため、リトライ + タイムアウト延長
@@ -11,19 +11,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    // overflow-visible による隣接バーのテキスト遮蔽を回避するため、
-    // 単独バーの行を優先的に選択する
-    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
-    const rowCount = await ganttRows.count();
-    let targetBar = page.locator('[data-testid^="gantt-bar-"]').first();
-    for (let i = 0; i < rowCount; i++) {
-      const row = ganttRows.nth(i);
-      const bars = row.locator('[data-testid^="gantt-bar-"]');
-      if (await bars.count() === 1) {
-        targetBar = bars.first();
-        break;
-      }
-    }
+    const { bar: targetBar } = await findSingleBarInRow(page);
 
     const box = await targetBar.boundingBox();
     if (!box) throw new Error('Could not get bounding box');
@@ -158,19 +146,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    // staff_count>1 のオーダーは複数行に同一testidで表示されるため、
-    // 単独バーの行を優先的に選択して strict mode violation を回避
-    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
-    const rowCount = await ganttRows.count();
-    let firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
-    for (let i = 0; i < rowCount; i++) {
-      const row = ganttRows.nth(i);
-      const bars = row.locator('[data-testid^="gantt-bar-"]');
-      if (await bars.count() === 1) {
-        firstBar = bars.first();
-        break;
-      }
-    }
+    const { bar: firstBar } = await findSingleBarInRow(page);
     const barTestId = await firstBar.getAttribute('data-testid');
     const orderId = barTestId?.replace('gantt-bar-', '');
 
@@ -233,22 +209,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    // オーダーを持つ行を検索
-    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
-    const rowCount = await ganttRows.count();
-    let sourceBar: ReturnType<typeof ganttRows.first> | null = null;
-    for (let i = 0; i < rowCount; i++) {
-      const row = ganttRows.nth(i);
-      const barCount = await row.locator('[data-testid^="gantt-bar-"]').count();
-      if (barCount > 0) {
-        sourceBar = row.locator('[data-testid^="gantt-bar-"]').first();
-        break;
-      }
-    }
-    if (!sourceBar) {
-      test.skip(true, 'オーダーを持つ行がないためスキップ');
-      return;
-    }
+    const { bar: sourceBar } = await findSingleBarInRow(page);
 
     // 右方向（遅い時間）に約100px移動（10分×数スロット分）
     await dragOrderHorizontally(page, sourceBar, 100);
@@ -262,7 +223,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
+    const { bar: firstBar } = await findSingleBarInRow(page);
     const box = await firstBar.boundingBox();
     if (!box) throw new Error('Could not get bounding box');
 
@@ -277,29 +238,15 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     // トーストが出ないことを確認（500ms待機）
     await page.waitForTimeout(500);
     const toastCount = await page.locator('[data-sonner-toast]').count();
-    // キャンセル時はトーストなし（または直前の操作のトーストのみ）
-    expect(toastCount).toBeLessThanOrEqual(0);
+    // キャンセル時はトーストなし
+    expect(toastCount).toBe(0);
   });
 
   test('ドラッグ中にEscapeキーで元の位置に戻る', async ({ page }) => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
-    // staff_count>1 のオーダーは複数行に同一testidで表示されるため、
-    // 単独バーの行を優先的に選択して strict mode violation を回避
-    const ganttRows = page.locator('[data-testid^="gantt-row-"]');
-    const rowCount = await ganttRows.count();
-    let targetRow = ganttRows.first();
-    let firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
-    for (let i = 0; i < rowCount; i++) {
-      const row = ganttRows.nth(i);
-      const bars = row.locator('[data-testid^="gantt-bar-"]');
-      if (await bars.count() === 1) {
-        targetRow = row;
-        firstBar = bars.first();
-        break;
-      }
-    }
+    const { bar: firstBar, row: targetRow } = await findSingleBarInRow(page);
     const barTestId = await firstBar.getAttribute('data-testid');
 
     const box = await firstBar.boundingBox();
