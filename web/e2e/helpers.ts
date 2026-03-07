@@ -94,10 +94,12 @@ export async function findSingleBarInRow(page: Page): Promise<{ bar: Locator; ro
     return { bar: row.locator('[data-testid^="gantt-bar-"]').first(), row };
   }
 
-  // フォールバック: 最初のバーとその行（strict mode violation のリスクあり）
+  // フォールバック: 最初のバーとその実際の親行を返す
   console.warn('findSingleBarInRow: no single-bar row found, falling back to first bar');
   const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
-  return { bar: firstBar, row: ganttRows.first() };
+  // barの実際の親gantt-rowを取得（barとrowの不整合を防止）
+  const parentRow = firstBar.locator('xpath=ancestor::*[starts-with(@data-testid,"gantt-row-")]').first();
+  return { bar: firstBar, row: parentRow };
 }
 
 /**
