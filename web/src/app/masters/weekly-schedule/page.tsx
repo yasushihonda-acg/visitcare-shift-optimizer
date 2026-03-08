@@ -61,20 +61,22 @@ export default function WeeklySchedulePage() {
   const { serviceTypes } = useServiceTypes();
   const { canEditCustomers } = useAuthRole();
   const [search, setSearch] = useState('');
-  const [detailTarget, setDetailTarget] = useState<Customer | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Customer | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const detailCustomer = detailId ? customers.get(detailId) ?? null : null;
+
   const openDetail = (customer: Customer) => {
-    setDetailTarget(customer);
+    setDetailId(customer.id);
     setDetailOpen(true);
   };
 
   const handleDetailEdit = () => {
     setDetailOpen(false);
-    if (detailTarget) {
-      setEditTarget(detailTarget);
+    if (detailCustomer) {
+      setEditTarget(detailCustomer);
       setDialogOpen(true);
     }
   };
@@ -202,7 +204,7 @@ export default function WeeklySchedulePage() {
       </div>
 
       <CustomerDetailSheet
-        customer={detailTarget}
+        customer={detailCustomer}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         onEdit={handleDetailEdit}

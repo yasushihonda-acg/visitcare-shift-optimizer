@@ -37,8 +37,10 @@ export default function HelpersPage() {
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<Helper | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [detailTarget, setDetailTarget] = useState<Helper | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  const detailHelper = detailId ? helpers.get(detailId) ?? null : null;
 
   const filtered = useMemo(() => {
     const list = Array.from(helpers.values());
@@ -63,13 +65,13 @@ export default function HelpersPage() {
   };
 
   const openDetail = (helper: Helper) => {
-    setDetailTarget(helper);
+    setDetailId(helper.id);
     setDetailOpen(true);
   };
 
   const handleDetailEdit = () => {
     setDetailOpen(false);
-    if (detailTarget) openEdit(detailTarget);
+    if (detailHelper) openEdit(detailHelper);
   };
 
   if (loading) {
@@ -193,7 +195,7 @@ export default function HelpersPage() {
       </p>
 
       <HelperDetailSheet
-        helper={detailTarget}
+        helper={detailHelper}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         onEdit={handleDetailEdit}
