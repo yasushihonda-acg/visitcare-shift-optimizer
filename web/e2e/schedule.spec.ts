@@ -39,11 +39,11 @@ test.describe('スケジュール画面', () => {
 
   test('ヘッダーのドロップダウンメニューが開ける', async ({ page }) => {
     await goToSchedule(page);
-    // Settings アイコンボタン（ヘッダー内の最後のボタン）
+    // メニューボタン（ヘッダー内の最後のボタン）
     const menuTrigger = page.locator('header button').last();
     await menuTrigger.click();
-    await expect(page.getByText('利用者マスタ')).toBeVisible();
-    await expect(page.getByText('ヘルパーマスタ')).toBeVisible();
+    await expect(page.getByText('利用者')).toBeVisible();
+    await expect(page.getByText('ヘルパー')).toBeVisible();
     await expect(page.getByText('実行履歴')).toBeVisible();
   });
 

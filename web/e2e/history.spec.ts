@@ -8,9 +8,9 @@ test.describe('最適化履歴画面', () => {
     await expect(page.getByText('最適化実行履歴')).toBeVisible();
   });
 
-  test('戻るボタンでスケジュール画面に遷移できる', async ({ page }) => {
+  test('パンくずのホームリンクでスケジュール画面に遷移できる', async ({ page }) => {
     await goToHistory(page);
-    await page.getByRole('link', { name: /戻る/ }).click();
+    await page.getByRole('link', { name: 'ホーム' }).click();
     await expect(page).toHaveURL('/');
   });
 
