@@ -45,6 +45,7 @@ interface HelperDetailSheetProps {
   open: boolean;
   onClose: () => void;
   onEdit: () => void;
+  canEdit: boolean;
   customers: Map<string, Customer>;
 }
 
@@ -70,6 +71,7 @@ export function HelperDetailSheet({
   open,
   onClose,
   onEdit,
+  canEdit,
   customers,
 }: HelperDetailSheetProps) {
   if (!helper) return null;
@@ -90,16 +92,18 @@ export function HelperDetailSheet({
         <SheetHeader className="sticky top-0 bg-background z-10 border-b">
           <div className="flex items-start justify-between gap-2">
             <SheetTitle className="text-lg">{fullName}</SheetTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onEdit}
-              data-testid="helper-detail-edit-button"
-              className="shrink-0"
-            >
-              <Pencil className="mr-1 h-3.5 w-3.5" />
-              編集
-            </Button>
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onEdit}
+                data-testid="helper-detail-edit-button"
+                className="shrink-0"
+              >
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                編集
+              </Button>
+            )}
           </div>
         </SheetHeader>
 

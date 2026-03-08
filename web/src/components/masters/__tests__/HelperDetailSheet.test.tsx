@@ -55,6 +55,7 @@ const defaultProps = {
   open: true,
   onClose: vi.fn(),
   onEdit: vi.fn(),
+  canEdit: true,
   customers: new Map<string, Customer>(),
 };
 
@@ -152,6 +153,16 @@ describe('HelperDetailSheet', () => {
     render(<HelperDetailSheet {...defaultProps} helper={makeHelper()} onEdit={onEdit} />);
     fireEvent.click(screen.getByTestId('helper-detail-edit-button'));
     expect(onEdit).toHaveBeenCalledOnce();
+  });
+
+  it('canEdit=false のとき編集ボタンが表示されない', () => {
+    render(<HelperDetailSheet {...defaultProps} helper={makeHelper()} canEdit={false} />);
+    expect(screen.queryByTestId('helper-detail-edit-button')).not.toBeInTheDocument();
+  });
+
+  it('canEdit=true のとき編集ボタンが表示される', () => {
+    render(<HelperDetailSheet {...defaultProps} helper={makeHelper()} canEdit={true} />);
+    expect(screen.getByTestId('helper-detail-edit-button')).toBeInTheDocument();
   });
 
   it('短縮名がある場合に表示される', () => {
