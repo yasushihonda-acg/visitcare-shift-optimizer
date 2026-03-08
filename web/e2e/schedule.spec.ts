@@ -42,9 +42,9 @@ test.describe('スケジュール画面', () => {
     // メニューボタン（ヘッダー内の最後のボタン）
     const menuTrigger = page.locator('header button').last();
     await menuTrigger.click();
-    await expect(page.getByText('利用者')).toBeVisible();
-    await expect(page.getByText('ヘルパー')).toBeVisible();
-    await expect(page.getByText('実行履歴')).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '利用者' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'ヘルパー' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '実行履歴' })).toBeVisible();
   });
 
   test('メニューから履歴画面へ遷移できる', async ({ page }) => {

@@ -10,7 +10,9 @@ test.describe('最適化履歴画面', () => {
 
   test('パンくずのホームリンクでスケジュール画面に遷移できる', async ({ page }) => {
     await goToHistory(page);
-    await page.getByRole('link', { name: 'ホーム' }).click();
+    const homeLink = page.getByRole('link', { name: 'ホーム' });
+    await expect(homeLink).toBeVisible({ timeout: 10_000 });
+    await homeLink.click();
     await expect(page).toHaveURL('/');
   });
 
