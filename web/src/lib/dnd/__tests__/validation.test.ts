@@ -126,7 +126,7 @@ describe('validateDrop', () => {
       input.order = makeOrder({ service_type: 'daily_living' });
       input.helpers.set('helper-b', makeHelper({ can_physical_care: false }));
       const serviceTypes = new Map<string, ServiceTypeDoc>([
-        ['daily_living', { id: 'daily_living', code: 'daily_living', label: '生活援助', short_label: '生活', requires_physical_care_cert: true, sort_order: 2, created_at: new Date(), updated_at: new Date() }],
+        ['daily_living', { id: 'daily_living', code: 'daily_living', category: '訪問介護', label: '生活援助', duration: '', care_level: '', units: 0, short_label: '生活', requires_physical_care_cert: true, sort_order: 2, created_at: new Date(), updated_at: new Date() }],
       ]);
 
       const result = validateDrop({ ...input, serviceTypes });
@@ -141,7 +141,7 @@ describe('validateDrop', () => {
       // physical_care はデフォルトでは資格必要だが、serviceTypes で上書き
       input.helpers.set('helper-b', makeHelper({ can_physical_care: false }));
       const serviceTypes = new Map<string, ServiceTypeDoc>([
-        ['physical_care', { id: 'physical_care', code: 'physical_care', label: '身体介護', short_label: '身体', requires_physical_care_cert: false, sort_order: 1, created_at: new Date(), updated_at: new Date() }],
+        ['physical_care', { id: 'physical_care', code: 'physical_care', category: '訪問介護', label: '身体介護', duration: '', care_level: '', units: 0, short_label: '身体', requires_physical_care_cert: false, sort_order: 1, created_at: new Date(), updated_at: new Date() }],
       ]);
 
       const result = validateDrop({ ...input, serviceTypes });
