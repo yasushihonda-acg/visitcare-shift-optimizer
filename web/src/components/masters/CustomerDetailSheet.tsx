@@ -9,30 +9,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useServiceTypes } from '@/hooks/useServiceTypes';
-import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
-import type { Customer, Helper } from '@/types';
-
-const GENDER_REQUIREMENT_LABELS: Record<string, string> = {
-  any: '指定なし',
-  female: '女性のみ',
-  male: '男性のみ',
-};
-
-const IRREGULAR_PATTERN_LABELS: Record<string, string> = {
-  biweekly: '隔週',
-  monthly: '月次',
-  temporary_stop: '一時停止',
-};
+import type { CustomerDetailViewModel } from './customerDetailViewModel';
 
 interface CustomerDetailSheetProps {
-  customer: Customer | null;
+  vm: CustomerDetailViewModel | null;
   open: boolean;
   onClose: () => void;
   onEdit: () => void;
   canEdit: boolean;
-  helpers: Map<string, Helper>;
-  customers: Map<string, Customer>;
 }
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -53,43 +37,13 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function CustomerDetailSheet({
-  customer,
+  vm,
   open,
   onClose,
   onEdit,
   canEdit,
-  helpers,
-  customers,
 }: CustomerDetailSheetProps) {
-  const { serviceTypes } = useServiceTypes();
-
-  if (!customer) return null;
-
-  const fullName = `${customer.name.family} ${customer.name.given}`;
-  const fullKana =
-    customer.name.family_kana || customer.name.given_kana
-      ? `${customer.name.family_kana ?? ''} ${customer.name.given_kana ?? ''}`.trim()
-      : null;
-  const ngHelpers = customer.ng_staff_ids.map((id) => helpers.get(id)).filter(Boolean) as Helper[];
-  const allowedHelpers = (customer.allowed_staff_ids ?? [])
-    .map((id) => helpers.get(id))
-    .filter(Boolean) as Helper[];
-  const preferredSet = new Set(customer.preferred_staff_ids);
-
-  const householdIds = (customer.same_household_customer_ids ?? []).filter((id) => id !== customer.id);
-  const facilityIds = (customer.same_facility_customer_ids ?? []).filter((id) => id !== customer.id);
-
-  const hasContact =
-    customer.home_care_office ||
-    customer.care_manager_name ||
-    customer.consultation_support_office ||
-    customer.support_specialist_name;
-
-  const hasExternalIds = !!customer.aozora_id;
-
-  const hasWeeklyServices = DAY_OF_WEEK_ORDER.some(
-    (d) => customer.weekly_services[d] && customer.weekly_services[d]!.length > 0
-  );
+  if (!vm) return null;
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -97,9 +51,9 @@ export function CustomerDetailSheet({
         <SheetHeader className="sticky top-0 bg-background z-10 border-b">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <SheetTitle className="text-lg">{fullName}</SheetTitle>
-              {fullKana && (
-                <p className="text-sm text-muted-foreground">{fullKana}</p>
+              <SheetTitle className="text-lg">{vm.fullName}</SheetTitle>
+              {vm.fullKana && (
+                <p className="text-sm text-muted-foreground">{vm.fullKana}</p>
               )}
             </div>
             {canEdit && (
@@ -122,54 +76,45 @@ export function CustomerDetailSheet({
           <section>
             <SectionHeader>基本情報</SectionHeader>
             <div className="space-y-2 rounded-lg border bg-accent/30 p-3">
-              {customer.name.short && (
-                <InfoRow label="短縮名" value={customer.name.short} />
+              {vm.shortName && (
+                <InfoRow label="短縮名" value={vm.shortName} />
               )}
-              <InfoRow label="住所" value={customer.address} />
-              <InfoRow label="サ責" value={customer.service_manager} />
-              {customer.phone_number && (
-                <InfoRow label="電話番号①" value={customer.phone_number} />
+              <InfoRow label="住所" value={vm.address} />
+              <InfoRow label="サ責" value={vm.serviceManager} />
+              {vm.phoneNumber && (
+                <InfoRow label="電話番号①" value={vm.phoneNumber} />
               )}
-              {customer.phone_number2 && (
-                <InfoRow label="電話番号②" value={customer.phone_number2} />
+              {vm.phoneNumber2 && (
+                <InfoRow label="電話番号②" value={vm.phoneNumber2} />
               )}
-              {customer.phone_note && (
-                <InfoRow label="電話備考" value={customer.phone_note} />
+              {vm.phoneNote && (
+                <InfoRow label="電話備考" value={vm.phoneNote} />
               )}
-              <InfoRow
-                label="性別要件"
-                value={GENDER_REQUIREMENT_LABELS[customer.gender_requirement ?? 'any'] ?? '指定なし'}
-              />
-              {householdIds.length > 0 && (
+              <InfoRow label="性別要件" value={vm.genderRequirementLabel} />
+              {vm.householdMembers.length > 0 && (
                 <InfoRow
                   label="同一世帯"
                   value={
                     <div className="flex flex-wrap gap-1.5">
-                      {householdIds.map((id) => {
-                        const c = customers.get(id);
-                        return (
-                          <Badge key={id} variant="outline">
-                            {c ? `${c.name.family} ${c.name.given}` : id}
-                          </Badge>
-                        );
-                      })}
+                      {vm.householdMembers.map((m) => (
+                        <Badge key={m.id} variant="outline">
+                          {m.name}
+                        </Badge>
+                      ))}
                     </div>
                   }
                 />
               )}
-              {facilityIds.length > 0 && (
+              {vm.facilityMembers.length > 0 && (
                 <InfoRow
                   label="同一施設"
                   value={
                     <div className="flex flex-wrap gap-1.5">
-                      {facilityIds.map((id) => {
-                        const c = customers.get(id);
-                        return (
-                          <Badge key={id} variant="outline">
-                            {c ? `${c.name.family} ${c.name.given}` : id}
-                          </Badge>
-                        );
-                      })}
+                      {vm.facilityMembers.map((m) => (
+                        <Badge key={m.id} variant="outline">
+                          {m.name}
+                        </Badge>
+                      ))}
                     </div>
                   }
                 />
@@ -178,54 +123,54 @@ export function CustomerDetailSheet({
           </section>
 
           {/* 2. 連絡先・関連機関（値ありのみ） */}
-          {hasContact && (
+          {vm.hasContact && (
             <section>
               <SectionHeader>連絡先・関連機関</SectionHeader>
               <div className="space-y-2 rounded-lg border bg-accent/30 p-3">
-                {customer.home_care_office && (
-                  <InfoRow label="担当居宅" value={customer.home_care_office} />
+                {vm.homeCareOffice && (
+                  <InfoRow label="担当居宅" value={vm.homeCareOffice} />
                 )}
-                {customer.care_manager_name && (
-                  <InfoRow label="ケアマネ" value={customer.care_manager_name} />
+                {vm.careManagerName && (
+                  <InfoRow label="ケアマネ" value={vm.careManagerName} />
                 )}
-                {customer.consultation_support_office && (
-                  <InfoRow label="相談支援事業所" value={customer.consultation_support_office} />
+                {vm.consultationSupportOffice && (
+                  <InfoRow label="相談支援事業所" value={vm.consultationSupportOffice} />
                 )}
-                {customer.support_specialist_name && (
-                  <InfoRow label="相談支援専門員" value={customer.support_specialist_name} />
+                {vm.supportSpecialistName && (
+                  <InfoRow label="相談支援専門員" value={vm.supportSpecialistName} />
                 )}
               </div>
             </section>
           )}
 
           {/* 3. NG/入れるスタッフ */}
-          {(ngHelpers.length > 0 || allowedHelpers.length > 0) && (
+          {(vm.ngStaff.length > 0 || vm.allowedStaff.length > 0) && (
             <section>
               <SectionHeader>NG / 入れるスタッフ</SectionHeader>
               <div className="space-y-2">
-                {ngHelpers.length > 0 && (
+                {vm.ngStaff.length > 0 && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">NG</p>
                     <div className="flex flex-wrap gap-1.5" data-testid="ng-staff-badges">
-                      {ngHelpers.map((h) => (
-                        <Badge key={h.id} variant="destructive">
-                          {h.name.family} {h.name.given}
+                      {vm.ngStaff.map((s) => (
+                        <Badge key={s.id} variant="destructive">
+                          {s.name}
                         </Badge>
                       ))}
                     </div>
                   </div>
                 )}
-                {allowedHelpers.length > 0 && (
+                {vm.allowedStaff.length > 0 && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">入れるスタッフ</p>
                     <div className="flex flex-wrap gap-1.5" data-testid="allowed-staff-badges">
-                      {allowedHelpers.map((h) => (
-                        <Badge key={h.id} variant="secondary">
-                          {h.name.family} {h.name.given}
-                          {preferredSet.has(h.id) && (
+                      {vm.allowedStaff.map((s) => (
+                        <Badge key={s.id} variant="secondary">
+                          {s.name}
+                          {s.isPreferred && (
                             <span
                               className="ml-1 text-amber-600"
-                              data-testid={`allowed-staff-preferred-${h.id}`}
+                              data-testid={`allowed-staff-preferred-${s.id}`}
                             >
                               ★
                             </span>
@@ -240,7 +185,7 @@ export function CustomerDetailSheet({
           )}
 
           {/* 4. 週間サービス */}
-          {hasWeeklyServices && (
+          {vm.hasWeeklyServices && (
             <section>
               <SectionHeader>週間サービス</SectionHeader>
               <div className="overflow-x-auto rounded-lg border">
@@ -254,29 +199,23 @@ export function CustomerDetailSheet({
                     </tr>
                   </thead>
                   <tbody>
-                    {DAY_OF_WEEK_ORDER.flatMap((day) => {
-                      const slots = customer.weekly_services[day];
-                      if (!slots || slots.length === 0) return [];
-                      return slots.map((slot, idx) => (
-                        <tr key={`${day}-${idx}`} className="border-b last:border-0">
+                    {vm.weeklyServices.flatMap((row) =>
+                      row.slots.map((slot, idx) => (
+                        <tr key={`${row.day}-${idx}`} className="border-b last:border-0">
                           {idx === 0 && (
                             <td
                               className="p-2 font-medium"
-                              rowSpan={slots.length}
+                              rowSpan={row.slots.length}
                             >
-                              {DAY_OF_WEEK_LABELS[day]}
+                              {row.dayLabel}
                             </td>
                           )}
-                          <td className="p-2">
-                            {slot.start_time} - {slot.end_time}
-                          </td>
-                          <td className="p-2">
-                            {serviceTypes.get(slot.service_type)?.label ?? slot.service_type}
-                          </td>
-                          <td className="p-2 text-right">{slot.staff_count}名</td>
+                          <td className="p-2">{slot.time}</td>
+                          <td className="p-2">{slot.serviceLabel}</td>
+                          <td className="p-2 text-right">{slot.staffCount}名</td>
                         </tr>
-                      ));
-                    })}
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -284,20 +223,20 @@ export function CustomerDetailSheet({
           )}
 
           {/* 5. 不定期パターン（非空時のみ） */}
-          {customer.irregular_patterns && customer.irregular_patterns.length > 0 && (
+          {vm.irregularPatterns.length > 0 && (
             <section>
               <SectionHeader>不定期パターン</SectionHeader>
               <div className="space-y-1.5">
-                {customer.irregular_patterns.map((p, i) => (
+                {vm.irregularPatterns.map((p, i) => (
                   <div key={i} className="flex items-start gap-2 text-sm">
                     <Badge variant="outline" className="shrink-0">
-                      {IRREGULAR_PATTERN_LABELS[p.type] ?? p.type}
+                      {p.typeLabel}
                     </Badge>
                     <div>
                       <span className="text-muted-foreground">{p.description}</span>
-                      {p.active_weeks && p.active_weeks.length > 0 && (
+                      {p.activeWeeks && p.activeWeeks.length > 0 && (
                         <span className="ml-1.5 text-xs text-muted-foreground">
-                          （第{p.active_weeks.join('・')}週）
+                          （第{p.activeWeeks.join('・')}週）
                         </span>
                       )}
                     </div>
@@ -308,19 +247,19 @@ export function CustomerDetailSheet({
           )}
 
           {/* 6. 備考（値ありのみ） */}
-          {customer.notes && (
+          {vm.notes && (
             <section>
               <SectionHeader>備考</SectionHeader>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{customer.notes}</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{vm.notes}</p>
             </section>
           )}
 
           {/* 7. 外部連携ID */}
-          {hasExternalIds && (
+          {vm.hasExternalIds && (
             <section>
               <SectionHeader>外部連携ID</SectionHeader>
               <div className="space-y-2 rounded-lg border bg-accent/30 p-3">
-                <InfoRow label="あおぞらID" value={customer.aozora_id!} />
+                {vm.aozoraId && <InfoRow label="あおぞらID" value={vm.aozoraId} />}
               </div>
             </section>
           )}
@@ -331,11 +270,11 @@ export function CustomerDetailSheet({
             <div className="space-y-2 text-xs text-muted-foreground">
               <div className="flex gap-2">
                 <span className="w-24 shrink-0">作成日時</span>
-                <span>{customer.created_at.toLocaleString('ja-JP')}</span>
+                <span>{vm.createdAt.toLocaleString('ja-JP')}</span>
               </div>
               <div className="flex gap-2">
                 <span className="w-24 shrink-0">更新日時</span>
-                <span>{customer.updated_at.toLocaleString('ja-JP')}</span>
+                <span>{vm.updatedAt.toLocaleString('ja-JP')}</span>
               </div>
             </div>
           </section>
