@@ -68,6 +68,7 @@ const defaultProps = {
   open: true,
   onClose: vi.fn(),
   onEdit: vi.fn(),
+  canEdit: true,
   helpers: new Map<string, Helper>(),
   customers: new Map<string, Customer>(),
 };
@@ -274,11 +275,6 @@ describe('CustomerDetailSheet', () => {
 
   it('canEdit=true のとき編集ボタンが表示される', () => {
     render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} canEdit={true} />);
-    expect(screen.getByTestId('customer-detail-edit-button')).toBeInTheDocument();
-  });
-
-  it('canEdit 未指定（デフォルト）のとき編集ボタンが表示される', () => {
-    render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} />);
     expect(screen.getByTestId('customer-detail-edit-button')).toBeInTheDocument();
   });
 
