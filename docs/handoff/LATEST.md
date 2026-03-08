@@ -61,11 +61,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-03-08 CustomerDetailSheet改善）
 
+- **fix (#186, 2026-03-08)** ✅: HelperDetailSheetの編集ボタンを権限に応じて非表示にする
+  - PR #180と同パターンの横展開修正。`canEdit: boolean` propを必須で追加（fail-closed設計）
+  - `helpers/page.tsx` で `canEditHelpers` を渡す。テスト2件追加 → 16件全パス
+- **fix (#182, 2026-03-08)** ✅: canEdit propを必須化してfail-closed設計に変更
+  - Codexレビュー High指摘対応: `canEdit?: boolean`（デフォルトtrue）→ `canEdit: boolean`（必須）
+  - 権限系propは呼び出し元が明示的に渡す設計に変更
 - **fix (#180, 2026-03-08)** ✅: CustomerDetailSheetの編集ボタンを権限に応じて非表示にする
-  - `canEdit?: boolean` propを追加（デフォルト`true`で後方互換性維持）
+  - `canEdit: boolean` propを追加（必須、fail-closed設計）
   - `customers/page.tsx` / `weekly-schedule/page.tsx` で `canEditCustomers` を渡す
-  - 閲覧専用ユーザーに編集ボタンが表示されていたセキュリティバグ修正（Issue #178）
-  - テスト3件追加（canEdit=false/true/未指定）→ 31件全パス
+  - 閲覧専用ユーザーに編集ボタンが表示されていたセキュリティバグ修正（Closes #178）
+  - テスト2件追加（canEdit=false/true）→ 30件全パス
 - **fix (#179, 2026-03-08)** ✅: 自己参照フィルタをフィルタ後配列で条件判定 + テスト補完
   - `householdIds` / `facilityIds` をフィルタ後に変数化し、条件チェック・レンダリング両方で使用
   - 自己IDのみの場合に空セクションが表示されるバグ修正
