@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-08（週切替リセットテスト PR #161 マージ済み）
+**最終更新**: 2026-03-08（E2Eセレクタ修正 PR #168 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -59,9 +59,24 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-03-08 テスト拡充）
+## 直近の実装（2026-03-08 ナビゲーション改善 + E2E修正）
 
-- **test (#161, 2026-03-08)** ✅: useOrders / useStaffUnavailability 週切替リセットテスト追加（CI in_progress run #22816170444）
+- **fix (#168, 2026-03-08)** ✅: E2Eテストセレクタ修正
+  - `schedule.spec.ts`: `getByText('利用者')` → `getByRole('menuitem')` で ViewModeToggle との曖昧マッチ解消
+  - `history.spec.ts`: パンくずリンク表示待機追加
+  - `AppBreadcrumb.tsx`: `trailingSlash: true` による `usePathname()` 末尾スラッシュ正規化
+- **fix (#167, 2026-03-08)** ✅: PR #166 UI変更に伴うE2Eテスト同期修正
+  - `getByText('利用者マスタ')` → `'利用者'` 等ラベル短縮の反映
+  - 「戻る」ボタン削除 → パンくず「ホーム」リンクへのテスト更新
+- **feat (#166, 2026-03-08)** ✅: メニュー・ナビゲーション改善（#163 #164 #165）
+  - マスタタブ 3→5 統一（基本予定・希望休を追加）
+  - AppBreadcrumb コンポーネント新規追加（history/report/settings/masters）
+  - ヘッダーメニュー: 現在地ハイライト、アイコン→Menu、ホームリンク追加
+- **test (#162, 2026-03-08)** ✅: `findSingleBarInRow` 正常パス・フォールバックパスのテスト追加
+  - `web/e2e/helpers.spec.ts` に 3 件追加（+62行）
+  - `page.setContent()` で DOM 構造を直接構築し Emulator 不要で高速検証
+  - PR #150 で修正した bar/row 不整合バグの回帰防止テスト
+- **test (#161, 2026-03-08)** ✅: useOrders / useStaffUnavailability 週切替リセットテスト追加（CI GREEN run #22816170444）
   - 週切替時の state 初期化（前週データ残留防止）を検証するテストを追加
 - **chore (#160, 2026-03-08)** ✅: checker.ts の `getStaffCount` 重複解消 + LATEST.md テスト件数更新
 - **test (#159, 2026-03-08)** ✅: useScheduleData の loading 状態テスト追加（travelTimesLoading 含む）
@@ -301,8 +316,8 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Optimizer**: 297件 pass ✅
 - **Web (Next.js)**: **529件 pass** ✅（+8: useScheduleData loading 7件 + useOrders/useStaffUnavailability週切替リセット7件 — PR #159〜#161）
 - **Firestore Rules**: 107件 pass
-- **E2E Tests (Playwright)**: **66テスト** pass（+2: Undo/Redo初期状態 + D&D→Undo→Redoフロー）
-- **CI/CD**: PR #161 CI in_progress（run #22816170444）
+- **E2E Tests (Playwright)**: **69テスト** pass（+3: findSingleBarInRow 正常パス/フォールバックパス — PR #162）
+- **CI/CD**: PR #162 CI in_progress（run #22816375809）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
