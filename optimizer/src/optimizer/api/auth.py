@@ -79,9 +79,6 @@ async def require_manager_or_above(request: Request) -> dict | None:
         return None
 
     role = decoded.get("role")
-    if role is None:
-        return decoded
-
     if role not in ("admin", "service_manager"):
         raise HTTPException(status_code=403, detail="権限がありません")
     return decoded

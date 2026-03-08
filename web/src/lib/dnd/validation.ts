@@ -9,6 +9,12 @@ function timeToMinutes(time: string): number {
   return h * 60 + m;
 }
 
+function isSameDate(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+}
+
 interface ValidateDropInput {
   order: Order;
   targetHelperId: string;
@@ -83,10 +89,11 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
     }
   }
 
-  // 希望休
+  // 希望休（オーダーと同じ日付のスロットのみ判定）
   const staffUnavail = unavailability.filter((u) => u.staff_id === targetHelperId);
   for (const u of staffUnavail) {
     for (const slot of u.unavailable_slots) {
+      if (!isSameDate(slot.date, order.date)) continue;
       if (slot.all_day) {
         return { allowed: false, reason: `${helper.name.family} は希望休（終日）です` };
       }

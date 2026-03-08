@@ -153,6 +153,55 @@ describe('checkConstraints', () => {
     expect(violations.some((v) => v.type === 'unavailability')).toBe(true);
   });
 
+  it('別日の希望休（終日）はオーダー日に影響しない', () => {
+    const helpers = new Map([['H001', makeHelper()]]);
+    const customers = new Map([['C001', makeCustomer()]]);
+    // オーダーは1/6（月）、希望休は1/7（火）
+    const unavailability: StaffUnavailability[] = [{
+      id: 'U002',
+      staff_id: 'H001',
+      week_start_date: new Date('2025-01-06'),
+      unavailable_slots: [{ date: new Date('2025-01-07'), all_day: true }],
+      submitted_at: new Date(),
+    }];
+    const result = checkConstraints({
+      orders: [makeOrder({ date: new Date('2025-01-06') })],
+      helpers,
+      customers,
+      unavailability,
+      day: 'monday',
+    });
+    const violations = result.get('O001') ?? [];
+    expect(violations.some((v) => v.type === 'unavailability')).toBe(false);
+  });
+
+  it('別日の希望休（時間帯）はオーダー日に影響しない', () => {
+    const helpers = new Map([['H001', makeHelper()]]);
+    const customers = new Map([['C001', makeCustomer()]]);
+    // オーダーは1/6（月）09:00-10:00、希望休は1/7（火）09:00-12:00
+    const unavailability: StaffUnavailability[] = [{
+      id: 'U003',
+      staff_id: 'H001',
+      week_start_date: new Date('2025-01-06'),
+      unavailable_slots: [{
+        date: new Date('2025-01-07'),
+        all_day: false,
+        start_time: '09:00',
+        end_time: '12:00',
+      }],
+      submitted_at: new Date(),
+    }];
+    const result = checkConstraints({
+      orders: [makeOrder({ date: new Date('2025-01-06') })],
+      helpers,
+      customers,
+      unavailability,
+      day: 'monday',
+    });
+    const violations = result.get('O001') ?? [];
+    expect(violations.some((v) => v.type === 'unavailability')).toBe(false);
+  });
+
   it('serviceTypes の requires_physical_care_cert=true → 資格なしで違反', () => {
     const helpers = new Map([['H001', makeHelper({ can_physical_care: false })]]);
     const customers = new Map([['C001', makeCustomer()]]);

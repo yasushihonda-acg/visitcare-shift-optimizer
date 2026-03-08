@@ -165,8 +165,8 @@ class TestRequireManagerOrAbove:
             assert resp.status_code == 403
             assert "権限がありません" in resp.json()["detail"]
 
-    def test_no_role_allowed(self) -> None:
-        """roleなし（Custom Claims未設定）で200（デモ互換）"""
+    def test_no_role_denied(self) -> None:
+        """roleなし（Custom Claims未設定）は403拒否"""
         decoded = {"uid": "no-role-1", "email": "user@example.com"}
         with patch("optimizer.api.auth.ALLOW_UNAUTHENTICATED", False), \
              patch("optimizer.api.auth._get_firebase_app"), \
@@ -179,7 +179,7 @@ class TestRequireManagerOrAbove:
 
             client = TestClient(app)
             resp = client.get("/test", headers={"Authorization": "Bearer t"})
-            assert resp.status_code == 200
+            assert resp.status_code == 403
 
     def test_unauthenticated_mode_skips(self) -> None:
         """ALLOW_UNAUTHENTICATED=trueでスキップ"""
