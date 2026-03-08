@@ -30,6 +30,7 @@ interface CustomerDetailSheetProps {
   open: boolean;
   onClose: () => void;
   onEdit: () => void;
+  canEdit?: boolean;
   helpers: Map<string, Helper>;
   customers: Map<string, Customer>;
 }
@@ -56,6 +57,7 @@ export function CustomerDetailSheet({
   open,
   onClose,
   onEdit,
+  canEdit = true,
   helpers,
   customers,
 }: CustomerDetailSheetProps) {
@@ -100,16 +102,18 @@ export function CustomerDetailSheet({
                 <p className="text-sm text-muted-foreground">{fullKana}</p>
               )}
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onEdit}
-              data-testid="customer-detail-edit-button"
-              className="shrink-0"
-            >
-              <Pencil className="mr-1 h-3.5 w-3.5" />
-              編集
-            </Button>
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onEdit}
+                data-testid="customer-detail-edit-button"
+                className="shrink-0"
+              >
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                編集
+              </Button>
+            )}
           </div>
         </SheetHeader>
 
