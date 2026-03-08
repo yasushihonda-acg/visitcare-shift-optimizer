@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useHelpers } from '@/hooks/useHelpers';
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,18 +19,7 @@ import {
 import { CustomerDetailSheet } from '@/components/masters/CustomerDetailSheet';
 import { CustomerEditDialog } from '@/components/masters/CustomerEditDialog';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
-import type { Customer, ServiceSlot } from '@/types';
-
-const SERVICE_LABELS: Record<string, string> = {
-  physical_care: '身体',
-  daily_living: '生活',
-  mixed: '混合',
-  prevention: '予防',
-  private: '自費',
-  disability: '障がい',
-  transport_support: '移送',
-  severe_visiting: '重訪',
-};
+import type { Customer, ServiceSlot, ServiceTypeDoc } from '@/types';
 
 const SERVICE_BADGE_STYLES: Record<string, string> = {
   physical_care: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -42,8 +32,8 @@ const SERVICE_BADGE_STYLES: Record<string, string> = {
   severe_visiting: 'bg-orange-50 text-orange-700 border-orange-200',
 };
 
-function ServiceSlotChip({ slot }: { slot: ServiceSlot }) {
-  const label = SERVICE_LABELS[slot.service_type] ?? slot.service_type;
+function ServiceSlotChip({ slot, serviceTypes }: { slot: ServiceSlot; serviceTypes: Map<string, ServiceTypeDoc> }) {
+  const label = serviceTypes.get(slot.service_type)?.short_label ?? slot.service_type;
   const style = SERVICE_BADGE_STYLES[slot.service_type] ?? '';
   return (
     <div className="flex flex-col gap-0.5 text-[10px] leading-tight">
@@ -68,6 +58,7 @@ function totalWeeklySlots(customer: Customer): number {
 export default function WeeklySchedulePage() {
   const { customers, loading } = useCustomers();
   const { helpers } = useHelpers();
+  const { serviceTypes } = useServiceTypes();
   const { canEditCustomers } = useAuthRole();
   const [search, setSearch] = useState('');
   const [detailTarget, setDetailTarget] = useState<Customer | null>(null);
@@ -188,7 +179,7 @@ export default function WeeklySchedulePage() {
                           ) : (
                             <div className="flex flex-col gap-1.5 items-center">
                               {slots.map((slot, i) => (
-                                <ServiceSlotChip key={i} slot={slot} />
+                                <ServiceSlotChip key={i} slot={slot} serviceTypes={serviceTypes} />
                               ))}
                             </div>
                           )}
