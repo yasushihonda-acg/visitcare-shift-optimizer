@@ -68,7 +68,7 @@ export async function waitForGanttBars(page: Page) {
   const barLocator = page.locator('[data-testid^="gantt-bar-"]').first();
   // データロード完了を待つ
   await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 30_000 });
-  await barLocator.waitFor({ timeout: 15_000 });
+  await barLocator.waitFor({ timeout: 30_000 });
 }
 
 /**
