@@ -110,6 +110,26 @@ test.describe('利用者マスタ 詳細シート', () => {
     await expect(sheet.getByText('山田 花子').first()).toBeVisible();
   });
 
+  test('同一施設メンバーが詳細シートに表示される', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    // C001（山田太郎, AZ-001）を検索 — C002と同一住所のため同一施設グループ
+    const searchInput = page.getByPlaceholder('あおぞらID・名前・ふりがな・住所・ケアマネで検索...');
+    await searchInput.fill('AZ-001');
+    await page.waitForTimeout(500);
+
+    const row = page.getByRole('row').filter({ hasText: '山田' });
+    await row.first().click();
+
+    const sheet = page.locator('[data-testid="customer-detail-sheet"]');
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+
+    // 同一施設セクションにC002（山田花子）が表示される
+    await expect(sheet.getByText('同一施設')).toBeVisible();
+    await expect(sheet.getByText('山田 花子').first()).toBeVisible();
+  });
+
   test('週間サービスが詳細シートに表示される', async ({ page }) => {
     await goToMasters(page, 'customers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
