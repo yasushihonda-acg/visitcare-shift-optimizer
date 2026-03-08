@@ -106,16 +106,27 @@ export function checkConstraints(input: CheckInput): ViolationMap {
         }
       }
 
-      // 研修状態
+      // 研修状態（複数人体制なら同行可能のため warning に降格）
       const trainingStatus = helper.customer_training_status[order.customer_id];
+      const staffCount = getStaffCount(order, customer, input.day);
       if (trainingStatus === 'not_visited') {
-        addViolation({
-          orderId: order.id,
-          staffId,
-          type: 'training',
-          severity: 'error',
-          message: `${helper.name.family} は未訪問（研修未開始）`,
-        });
+        if (staffCount > 1) {
+          addViolation({
+            orderId: order.id,
+            staffId,
+            type: 'training',
+            severity: 'warning',
+            message: `${helper.name.family} は未訪問（複数人体制のため同行可能）`,
+          });
+        } else {
+          addViolation({
+            orderId: order.id,
+            staffId,
+            type: 'training',
+            severity: 'error',
+            message: `${helper.name.family} は未訪問（研修未開始）`,
+          });
+        }
       } else if (trainingStatus === 'training') {
         addViolation({
           orderId: order.id,

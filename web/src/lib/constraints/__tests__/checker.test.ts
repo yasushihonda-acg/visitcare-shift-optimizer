@@ -340,6 +340,25 @@ describe('checkConstraints', () => {
       const violations = result.get('O001') ?? [];
       expect(violations.some((v) => v.type === 'training')).toBe(false);
     });
+
+    it('not_visited + staff_count>1（複数人体制）→ warning（error ではない）', () => {
+      const helpers = new Map([
+        ['H001', makeHelper({ id: 'H001', customer_training_status: { C001: 'not_visited' } })],
+        ['H002', makeHelper({ id: 'H002', name: { family: '鈴木', given: '次郎' } })],
+      ]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder({ assigned_staff_ids: ['H001', 'H002'], staff_count: 2 })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      const trainingViolations = violations.filter((v) => v.type === 'training' && v.staffId === 'H001');
+      expect(trainingViolations.length).toBe(1);
+      expect(trainingViolations[0].severity).toBe('warning');
+    });
   });
 
   describe('staff_count 違反', () => {
