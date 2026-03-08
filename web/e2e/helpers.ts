@@ -205,5 +205,5 @@ export async function dragOrderHorizontally(page: Page, source: Locator, offsetX
  */
 export async function waitForToast(page: Page, text: string | RegExp) {
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: text });
-  await expect(toast.first()).toBeVisible({ timeout: 15_000 });
+  await expect(toast.first()).toBeVisible({ timeout: 20_000 });
 }

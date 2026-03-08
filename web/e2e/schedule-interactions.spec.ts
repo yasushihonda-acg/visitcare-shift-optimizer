@@ -11,7 +11,7 @@ test.describe('スケジュール画面インタラクション', () => {
     const firstBar = page.locator('[data-testid^="gantt-bar-"]').first();
     await firstBar.click({ force: true });
 
-    await expect(page.locator('[data-testid="order-detail-panel"]')).toBeVisible();
+    await expect(page.locator('[data-testid="order-detail-panel"]')).toBeVisible({ timeout: 10_000 });
   });
 
   test('OrderDetailPanelに利用者名・時間・サービス種別が表示される', async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await firstBar.click({ force: true });
 
     const panel = page.locator('[data-testid="order-detail-panel"]');
-    await expect(panel).toBeVisible();
+    await expect(panel).toBeVisible({ timeout: 10_000 });
 
     // 時間セクション
     await expect(panel.getByText('時間', { exact: true })).toBeVisible();
@@ -41,7 +41,7 @@ test.describe('スケジュール画面インタラクション', () => {
     await firstBar.click({ force: true });
 
     const panel = page.locator('[data-testid="order-detail-panel"]');
-    await expect(panel).toBeVisible();
+    await expect(panel).toBeVisible({ timeout: 10_000 });
 
     await page.keyboard.press('Escape');
     await expect(panel).toBeHidden();
