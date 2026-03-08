@@ -4,15 +4,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockAddDoc = vi.fn();
 const mockUpdateDoc = vi.fn();
 const mockServerTimestamp = vi.fn(() => 'MOCK_TIMESTAMP');
-const mockCollection = vi.fn(() => 'MOCK_COLLECTION_REF');
-const mockDoc = vi.fn(() => 'MOCK_DOC_REF');
+const mockCollection = vi.fn((..._args: any[]) => 'MOCK_COLLECTION_REF');
+const mockDoc = vi.fn((..._args: any[]) => 'MOCK_DOC_REF');
 
 vi.mock('firebase/firestore', () => ({
-  addDoc: (...args: unknown[]) => mockAddDoc(...args),
-  updateDoc: (...args: unknown[]) => mockUpdateDoc(...args),
+  addDoc: (...args: any[]) => mockAddDoc(...args),
+  updateDoc: (...args: any[]) => mockUpdateDoc(...args),
   serverTimestamp: () => mockServerTimestamp(),
-  collection: (...args: unknown[]) => mockCollection(...args),
-  doc: (...args: unknown[]) => mockDoc(...args),
+  collection: (...args: any[]) => mockCollection(...args),
+  doc: (...args: any[]) => mockDoc(...args),
 }));
 
 vi.mock('@/lib/firebase', () => ({

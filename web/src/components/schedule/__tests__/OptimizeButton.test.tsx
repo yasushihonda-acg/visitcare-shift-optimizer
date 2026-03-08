@@ -5,7 +5,7 @@ import type { AllowedStaffWarning } from '@/lib/validation/allowed-staff-check';
 
 // ── モック ──────────────────────────────────────────────────────
 
-const mockCheckAllowedStaff = vi.fn<[], AllowedStaffWarning[]>();
+const mockCheckAllowedStaff = vi.fn<() => AllowedStaffWarning[]>();
 vi.mock('@/lib/validation/allowed-staff-check', () => ({
   checkAllowedStaff: (...args: unknown[]) => mockCheckAllowedStaff(),
 }));

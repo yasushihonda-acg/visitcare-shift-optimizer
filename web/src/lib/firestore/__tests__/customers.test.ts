@@ -39,7 +39,7 @@ vi.mock('firebase/firestore', () => ({
   arrayUnion: (...args: any[]) => mockArrayUnion(...args),
   arrayRemove: (...args: any[]) => mockArrayRemove(...args),
   writeBatch: (...args: any[]) => mockWriteBatch(...args),
-  runTransaction: (...args: any[]) => mockRunTransaction(...args),
+  runTransaction: (...args: any[]) => mockRunTransaction(...(args as [any, any])),
 }));
 
 vi.mock('@/lib/firebase', () => ({
