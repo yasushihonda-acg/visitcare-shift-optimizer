@@ -354,27 +354,27 @@ describe('認証済みユーザー - customers create', () => {
     );
   });
 
-  it('allowed_staff_ids がない場合は拒否される', async () => {
+  it('allowed_staff_ids がなくても許可される（既存データ互換）', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     const { allowed_staff_ids: _, ...noAllowed } = validCustomerData;
-    await assertFails(
-      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noAllowed)
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-no-allowed'), noAllowed)
     );
   });
 
-  it('same_household_customer_ids がない場合は拒否される', async () => {
+  it('same_household_customer_ids がなくても許可される（既存データ互換）', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     const { same_household_customer_ids: _, ...noHousehold } = validCustomerData;
-    await assertFails(
-      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noHousehold)
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-no-household'), noHousehold)
     );
   });
 
-  it('same_facility_customer_ids がない場合は拒否される', async () => {
+  it('same_facility_customer_ids がなくても許可される（既存データ互換）', async () => {
     const authed = testEnv.authenticatedContext('user-1');
     const { same_facility_customer_ids: _, ...noFacility } = validCustomerData;
-    await assertFails(
-      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noFacility)
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-no-facility'), noFacility)
     );
   });
 
