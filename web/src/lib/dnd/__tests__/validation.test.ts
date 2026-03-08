@@ -202,6 +202,43 @@ describe('validateDrop', () => {
       const result = validateDrop(input);
       expect(result.allowed).toBe(false);
     });
+
+    it('別日の希望休（終日）はオーダー日に影響しない → 許可', () => {
+      const input = baseInput();
+      // オーダーは2/9（月）、希望休は2/10（火）
+      input.order = makeOrder({ date: new Date('2026-02-09') });
+      input.unavailability = [{
+        id: 'unavail-3',
+        staff_id: 'helper-b',
+        week_start_date: new Date('2026-02-09'),
+        unavailable_slots: [{ date: new Date('2026-02-10'), all_day: true }],
+        submitted_at: new Date(),
+      }];
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+    });
+
+    it('別日の希望休（時間帯）はオーダー日に影響しない → 許可', () => {
+      const input = baseInput();
+      // オーダーは2/9（月）09:00-10:00、希望休は2/10（火）09:00-12:00
+      input.order = makeOrder({ date: new Date('2026-02-09') });
+      input.unavailability = [{
+        id: 'unavail-4',
+        staff_id: 'helper-b',
+        week_start_date: new Date('2026-02-09'),
+        unavailable_slots: [{
+          date: new Date('2026-02-10'),
+          all_day: false,
+          start_time: '09:00',
+          end_time: '12:00',
+        }],
+        submitted_at: new Date(),
+      }];
+
+      const result = validateDrop(input);
+      expect(result.allowed).toBe(true);
+    });
   });
 
   describe('warning制約（ドロップ許可+警告）', () => {

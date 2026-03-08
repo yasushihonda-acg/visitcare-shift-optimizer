@@ -8,6 +8,12 @@ function timeToMinutes(time: string): number {
   return h * 60 + m;
 }
 
+function isSameDate(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+}
+
 export type ViolationSeverity = 'error' | 'warning';
 
 export interface Violation {
@@ -161,10 +167,11 @@ export function checkConstraints(input: CheckInput): ViolationMap {
         }
       }
 
-      // 希望休
+      // 希望休（オーダーと同じ日付のスロットのみ判定）
       const staffUnavail = input.unavailability.filter((u) => u.staff_id === staffId);
       for (const u of staffUnavail) {
         for (const slot of u.unavailable_slots) {
+          if (!isSameDate(slot.date, order.date)) continue;
           if (slot.all_day) {
             addViolation({
               orderId: order.id,

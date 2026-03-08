@@ -12,6 +12,10 @@ export function useStaffUnavailability(weekStart: Date) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    setUnavailability([]);
+    setLoading(true);
+    setError(null);
+
     const weekStartTs = Timestamp.fromDate(weekStart);
     const q = query(
       collection(getDb(), 'staff_unavailability'),
