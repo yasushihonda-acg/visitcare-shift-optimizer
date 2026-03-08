@@ -72,6 +72,9 @@ service cloud.firestore {
         && data.location.lng is number
         && data.ng_staff_ids is list
         && data.preferred_staff_ids is list
+        && (!('allowed_staff_ids' in data) || data.allowed_staff_ids is list)
+        && (!('same_household_customer_ids' in data) || data.same_household_customer_ids is list)
+        && (!('same_facility_customer_ids' in data) || data.same_facility_customer_ids is list)
         && data.weekly_services is map
         && data.service_manager is string;
     }
