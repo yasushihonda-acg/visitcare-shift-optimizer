@@ -31,6 +31,7 @@ interface CustomerDetailSheetProps {
   onClose: () => void;
   onEdit: () => void;
   helpers: Map<string, Helper>;
+  customers: Map<string, Customer>;
 }
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -56,6 +57,7 @@ export function CustomerDetailSheet({
   onClose,
   onEdit,
   helpers,
+  customers,
 }: CustomerDetailSheetProps) {
   const { serviceTypes } = useServiceTypes();
 
@@ -132,10 +134,38 @@ export function CustomerDetailSheet({
                 value={GENDER_REQUIREMENT_LABELS[customer.gender_requirement ?? 'any'] ?? '指定なし'}
               />
               {customer.same_household_customer_ids?.length > 0 && (
-                <InfoRow label="同一世帯" value={customer.same_household_customer_ids.join(', ')} />
+                <InfoRow
+                  label="同一世帯"
+                  value={
+                    <div className="flex flex-wrap gap-1.5">
+                      {customer.same_household_customer_ids.map((id) => {
+                        const c = customers.get(id);
+                        return (
+                          <Badge key={id} variant="outline">
+                            {c ? `${c.name.family} ${c.name.given}` : id}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  }
+                />
               )}
               {customer.same_facility_customer_ids?.length > 0 && (
-                <InfoRow label="同一施設" value={customer.same_facility_customer_ids.join(', ')} />
+                <InfoRow
+                  label="同一施設"
+                  value={
+                    <div className="flex flex-wrap gap-1.5">
+                      {customer.same_facility_customer_ids.map((id) => {
+                        const c = customers.get(id);
+                        return (
+                          <Badge key={id} variant="outline">
+                            {c ? `${c.name.family} ${c.name.given}` : id}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  }
+                />
               )}
             </div>
           </section>
