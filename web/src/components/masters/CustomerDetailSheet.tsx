@@ -30,7 +30,7 @@ interface CustomerDetailSheetProps {
   open: boolean;
   onClose: () => void;
   onEdit: () => void;
-  canEdit?: boolean;
+  canEdit: boolean;
   helpers: Map<string, Helper>;
   customers: Map<string, Customer>;
 }
@@ -57,7 +57,7 @@ export function CustomerDetailSheet({
   open,
   onClose,
   onEdit,
-  canEdit = true,
+  canEdit,
   helpers,
   customers,
 }: CustomerDetailSheetProps) {
