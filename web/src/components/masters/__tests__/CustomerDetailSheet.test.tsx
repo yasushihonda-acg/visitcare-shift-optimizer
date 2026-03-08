@@ -177,14 +177,34 @@ describe('CustomerDetailSheet', () => {
     expect(screen.getByText('中村 五郎')).toBeInTheDocument();
   });
 
-  it('同一世帯・同一施設に自己IDが含まれる場合はフィルタされる', () => {
+  it('同一世帯に自己IDが含まれる場合はフィルタされる', () => {
     const self = makeCustomer({ id: 'cust-1', same_household_customer_ids: ['cust-1', 'C002'] });
     render(<CustomerDetailSheet {...defaultProps} customer={self} />);
     expect(screen.getByText('同一世帯')).toBeInTheDocument();
     expect(screen.getByText('C002')).toBeInTheDocument();
-    // 自分自身のIDはBadgeに表示されない
     const badges = screen.getByText('C002').parentElement;
     expect(badges?.textContent).not.toContain('cust-1');
+  });
+
+  it('同一施設に自己IDが含まれる場合はフィルタされる', () => {
+    const self = makeCustomer({ id: 'cust-1', same_facility_customer_ids: ['cust-1', 'C010'] });
+    render(<CustomerDetailSheet {...defaultProps} customer={self} />);
+    expect(screen.getByText('同一施設')).toBeInTheDocument();
+    expect(screen.getByText('C010')).toBeInTheDocument();
+    const badges = screen.getByText('C010').parentElement;
+    expect(badges?.textContent).not.toContain('cust-1');
+  });
+
+  it('同一世帯が自己IDのみの場合はセクション非表示', () => {
+    const self = makeCustomer({ id: 'cust-1', same_household_customer_ids: ['cust-1'] });
+    render(<CustomerDetailSheet {...defaultProps} customer={self} />);
+    expect(screen.queryByText('同一世帯')).not.toBeInTheDocument();
+  });
+
+  it('同一施設が自己IDのみの場合はセクション非表示', () => {
+    const self = makeCustomer({ id: 'cust-1', same_facility_customer_ids: ['cust-1'] });
+    render(<CustomerDetailSheet {...defaultProps} customer={self} />);
+    expect(screen.queryByText('同一施設')).not.toBeInTheDocument();
   });
 
   it('同一世帯・同一施設が空のとき表示されない', () => {
