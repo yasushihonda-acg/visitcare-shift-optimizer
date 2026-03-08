@@ -64,10 +64,10 @@ vi.mock('@/components/ui/sheet', () => ({
   SheetTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }));
 
-// CustomerDetailSheet / CustomerEditDialog は今回テスト対象外
+// CustomerDetailSheet / CustomerEditDialog はシンプルモックで表示テスト
 vi.mock('@/components/masters/CustomerDetailSheet', () => ({
-  CustomerDetailSheet: ({ open, customer }: { open: boolean; customer: unknown }) =>
-    open ? <div data-testid="detail-sheet">{customer ? 'detail' : ''}</div> : null,
+  CustomerDetailSheet: ({ open, customer }: { open: boolean; customer: Customer | null }) =>
+    open ? <div data-testid="detail-sheet">{customer ? `detail:${customer.name.family}` : 'no-customer'}</div> : null,
 }));
 
 vi.mock('@/components/masters/CustomerEditDialog', () => ({
@@ -218,6 +218,39 @@ describe('基本予定一覧ページ', () => {
     render(<WeeklySchedulePage />);
 
     expect(screen.getByText('unknown_type')).toBeInTheDocument();
+  });
+
+  it('詳細表示中にデータ更新されると最新値が反映される', () => {
+    mockCustomers.set('c1', makeCustomer('c1', '山田', '太郎'));
+
+    const { rerender } = render(<WeeklySchedulePage />);
+
+    // 行クリックで詳細を開く
+    fireEvent.click(screen.getByText('山田 太郎'));
+    expect(screen.getByText('detail:山田')).toBeInTheDocument();
+
+    // backing Map を更新（Firestoreリアルタイム更新を模擬）
+    mockCustomers.set('c1', makeCustomer('c1', '鈴木', '太郎'));
+    rerender(<WeeklySchedulePage />);
+
+    // 最新の名前が反映される
+    expect(screen.getByText('detail:鈴木')).toBeInTheDocument();
+  });
+
+  it('選択中のレコードがMapから消えたらdetailにno-customerが表示される', () => {
+    mockCustomers.set('c1', makeCustomer('c1', '山田', '太郎'));
+
+    const { rerender } = render(<WeeklySchedulePage />);
+
+    fireEvent.click(screen.getByText('山田 太郎'));
+    expect(screen.getByText('detail:山田')).toBeInTheDocument();
+
+    // レコードが削除される
+    mockCustomers.delete('c1');
+    rerender(<WeeklySchedulePage />);
+
+    // customer=null でも detailId が残っているため open=true, customer=null
+    expect(screen.getByText('no-customer')).toBeInTheDocument();
   });
 
   it('staff_count > 1 のとき人数バッジが表示される', () => {

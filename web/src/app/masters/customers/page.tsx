@@ -50,8 +50,10 @@ export default function CustomersPage() {
   const [kanaRow, setKanaRow] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Customer | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [detailTarget, setDetailTarget] = useState<Customer | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+
+  const detailCustomer = detailId ? customers.get(detailId) ?? null : null;
+  const detailOpen = detailId !== null;
 
   const filtered = useMemo(() => {
     const list = Array.from(customers.values());
@@ -111,13 +113,12 @@ export default function CustomersPage() {
   };
 
   const openDetail = (customer: Customer) => {
-    setDetailTarget(customer);
-    setDetailOpen(true);
+    setDetailId(customer.id);
   };
 
   const handleDetailEdit = () => {
-    setDetailOpen(false);
-    if (detailTarget) openEdit(detailTarget);
+    setDetailId(null);
+    if (detailCustomer) openEdit(detailCustomer);
   };
 
   const serviceDayCount = (customer: Customer) =>
@@ -322,9 +323,9 @@ export default function CustomersPage() {
       </p>
 
       <CustomerDetailSheet
-        customer={detailTarget}
+        customer={detailCustomer}
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        onClose={() => setDetailId(null)}
         onEdit={handleDetailEdit}
         canEdit={canEditCustomers}
         helpers={helpers}
