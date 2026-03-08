@@ -138,7 +138,9 @@ export function CustomerDetailSheet({
                   label="同一世帯"
                   value={
                     <div className="flex flex-wrap gap-1.5">
-                      {customer.same_household_customer_ids.map((id) => {
+                      {customer.same_household_customer_ids
+                        .filter((id) => id !== customer.id)
+                        .map((id) => {
                         const c = customers.get(id);
                         return (
                           <Badge key={id} variant="outline">
@@ -155,7 +157,9 @@ export function CustomerDetailSheet({
                   label="同一施設"
                   value={
                     <div className="flex flex-wrap gap-1.5">
-                      {customer.same_facility_customer_ids.map((id) => {
+                      {customer.same_facility_customer_ids
+                        .filter((id) => id !== customer.id)
+                        .map((id) => {
                         const c = customers.get(id);
                         return (
                           <Badge key={id} variant="outline">
