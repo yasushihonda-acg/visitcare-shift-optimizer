@@ -52,7 +52,7 @@ test.describe('スケジュール画面', () => {
     // ドロップダウンメニューを開く
     const menuTrigger = page.locator('header button').last();
     await menuTrigger.click();
-    await page.getByText('実行履歴').click();
+    await page.getByRole('menuitem', { name: '実行履歴' }).click();
     await expect(page).toHaveURL(/\/history/);
   });
 });

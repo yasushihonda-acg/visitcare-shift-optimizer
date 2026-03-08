@@ -150,15 +150,23 @@ test.describe('利用者マスタ 検索・フィルター機能', () => {
 });
 
 test.describe('マスタ管理タブナビゲーション', () => {
-  test('利用者→ヘルパー→希望休のタブ切替が動作する', async ({ page }) => {
+  test('全5タブの切替が動作する', async ({ page }) => {
     await goToMasters(page, 'customers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
 
-    // ヘルパータブをクリック（TabsTrigger内のLink）
+    // ヘルパータブ
     await page.getByRole('tab', { name: /ヘルパー/ }).click();
     await expect(page).toHaveURL(/\/masters\/helpers/);
 
-    // 希望休タブをクリック
+    // サービス種別タブ
+    await page.getByRole('tab', { name: /サービス種別/ }).click();
+    await expect(page).toHaveURL(/\/masters\/service-types/);
+
+    // 基本予定タブ
+    await page.getByRole('tab', { name: /基本予定/ }).click();
+    await expect(page).toHaveURL(/\/masters\/weekly-schedule/);
+
+    // 希望休タブ
     await page.getByRole('tab', { name: /希望休/ }).click();
     await expect(page).toHaveURL(/\/masters\/unavailability/);
   });
