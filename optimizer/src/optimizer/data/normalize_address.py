@@ -15,7 +15,7 @@ def normalize_address(address: str) -> str:
     s = unicodedata.normalize("NFKC", address)
 
     # ハイフン系文字の統一
-    s = re.sub(r"[‐―ー‒–—﹣－]", "-", s)
+    s = re.sub(r"[‐―ー‒–—﹣－−]", "-", s)
 
     # 連続空白を1つに統合 + トリム
     s = re.sub(r"\s+", " ", s).strip()

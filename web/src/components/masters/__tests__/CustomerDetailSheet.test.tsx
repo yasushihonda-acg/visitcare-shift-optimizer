@@ -144,6 +144,26 @@ describe('CustomerDetailSheet', () => {
     expect(screen.getByTestId('allowed-staff-preferred-h-3')).toBeInTheDocument();
   });
 
+  it('同一世帯メンバーが設定されている場合にIDが表示される', () => {
+    const customer = makeCustomer({ same_household_customer_ids: ['C002', 'C003'] });
+    render(<CustomerDetailSheet {...defaultProps} customer={customer} />);
+    expect(screen.getByText('同一世帯')).toBeInTheDocument();
+    expect(screen.getByText('C002, C003')).toBeInTheDocument();
+  });
+
+  it('同一施設メンバーが設定されている場合にIDが表示される', () => {
+    const customer = makeCustomer({ same_facility_customer_ids: ['C010'] });
+    render(<CustomerDetailSheet {...defaultProps} customer={customer} />);
+    expect(screen.getByText('同一施設')).toBeInTheDocument();
+    expect(screen.getByText('C010')).toBeInTheDocument();
+  });
+
+  it('同一世帯・同一施設が空のとき表示されない', () => {
+    render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} />);
+    expect(screen.queryByText('同一世帯')).not.toBeInTheDocument();
+    expect(screen.queryByText('同一施設')).not.toBeInTheDocument();
+  });
+
   it('allowed_staff_ids が空のとき「入れるスタッフ」セクションが表示されない', () => {
     render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} />);
     expect(screen.queryByTestId('allowed-staff-badges')).not.toBeInTheDocument();
