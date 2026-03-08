@@ -29,7 +29,9 @@ const BREADCRUMB_MAP: Record<string, BreadcrumbEntry> = {
 };
 
 export function AppBreadcrumb() {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  // trailingSlash: true の場合 /history/ → /history に正規化
+  const pathname = rawPathname?.replace(/\/$/, '') || null;
   const entry = pathname ? BREADCRUMB_MAP[pathname] : undefined;
 
   if (!entry) return null;
