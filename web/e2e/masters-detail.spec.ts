@@ -67,6 +67,69 @@ test.describe('利用者マスタ 詳細シート', () => {
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
   });
 
+  test('NGスタッフのバッジが詳細シートに表示される', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    // C004（小林よし子, AZ-004）を検索
+    const searchInput = page.getByPlaceholder('あおぞらID・名前・ふりがな・住所・ケアマネで検索...');
+    await searchInput.fill('AZ-004');
+    await page.waitForTimeout(500);
+
+    // C004の行をクリック
+    const row = page.getByRole('row').filter({ hasText: '小林' });
+    await row.first().click();
+
+    const sheet = page.locator('[data-testid="customer-detail-sheet"]');
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+
+    // NGスタッフバッジが表示される（H006: 伊藤翔太, H014: 井上和也）
+    const ngBadges = sheet.locator('[data-testid="ng-staff-badges"]');
+    await expect(ngBadges).toBeVisible();
+    await expect(ngBadges.getByText('伊藤 翔太')).toBeVisible();
+  });
+
+  test('同一世帯メンバーが詳細シートに表示される', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    // C001（山田太郎, AZ-001）を検索
+    const searchInput = page.getByPlaceholder('あおぞらID・名前・ふりがな・住所・ケアマネで検索...');
+    await searchInput.fill('AZ-001');
+    await page.waitForTimeout(500);
+
+    const row = page.getByRole('row').filter({ hasText: '山田' });
+    await row.first().click();
+
+    const sheet = page.locator('[data-testid="customer-detail-sheet"]');
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+
+    // 同一世帯セクションにC002（山田花子）が表示される
+    // C001とC002は同一住所のため同一施設にも表示され、2要素にマッチする → first()で回避
+    await expect(sheet.getByText('同一世帯')).toBeVisible();
+    await expect(sheet.getByText('山田 花子').first()).toBeVisible();
+  });
+
+  test('週間サービスが詳細シートに表示される', async ({ page }) => {
+    await goToMasters(page, 'customers');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
+
+    // C001（山田太郎, AZ-001）を検索
+    const searchInput = page.getByPlaceholder('あおぞらID・名前・ふりがな・住所・ケアマネで検索...');
+    await searchInput.fill('AZ-001');
+    await page.waitForTimeout(500);
+
+    const row = page.getByRole('row').filter({ hasText: '山田' });
+    await row.first().click();
+
+    const sheet = page.locator('[data-testid="customer-detail-sheet"]');
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+
+    // 週間サービスセクションと曜日ラベルが表示される（C001は月/水/金にサービスあり）
+    await expect(sheet.getByText('週間サービス')).toBeVisible();
+    await expect(sheet.getByText('月')).toBeVisible();
+  });
+
   test('行のPencilボタンは詳細シートを経由せず直接EditDialogを開く', async ({ page }) => {
     await goToMasters(page, 'customers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });

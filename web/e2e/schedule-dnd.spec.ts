@@ -79,7 +79,7 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     }
   });
 
-  test('D&D成功後にUndoボタンが有効化され、クリックで元に戻せる', async ({ page }) => {
+  test('D&D成功後にUndo/Redoで操作を元に戻し・やり直しできる', async ({ page }) => {
     await goToSchedule(page);
     await waitForGanttBars(page);
 
@@ -141,6 +141,15 @@ test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
     // Undo後: Undoボタンはdisabled、Redoボタンはenabled
     const redoBtn = page.locator('[data-testid="redo-button"]');
     await expect(redoBtn).toBeEnabled({ timeout: 5_000 });
+
+    // Redoボタンをクリック
+    await redoBtn.click();
+
+    // Redo実行完了を待機（Firestore書き込みによるリアルタイム反映）
+    await page.waitForTimeout(2000);
+
+    // Redo後: Undoボタンがenabledに戻る（やり直しが適用されたため再度Undo可能）
+    await expect(undoBtn).toBeEnabled({ timeout: 5_000 });
   });
 
   test('割当済みオーダーを未割当セクションにドロップして割当解除できる', async ({ page }) => {
