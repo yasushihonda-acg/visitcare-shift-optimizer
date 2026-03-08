@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-09（Codexレビュー指摘対応 PR #151, #152 マージ済み）
+**最終更新**: 2026-03-08（Codexレビュー Medium指摘対応 PR #158 マージ予定）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -58,6 +58,25 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+## 直近の実装（2026-03-08 Codex Medium対応）
+
+- **fix (#158, 2026-03-08)** ✅: Codex Medium指摘3件修正
+  - `checker.ts`: not_visited + 複数人体制 → error から warning に降格（validation.ts / optimizer と整合性統一）
+  - `useScheduleData.ts`: `travelTimesLoading` を combined `loading` に追加（travel_times ロード前の制約チェック漏れ防止）
+  - `LATEST.md`: PR #155〜#157 の内容を追記
+
+- **fix (#157, 2026-03-08)** ✅: 希望休日付フィルタ・権限境界・週切替リセットの3件修正（Codex High指摘対応）
+  - `validation.ts` / `checker.ts`: 希望休 `slot.date` と `order.date` の日付比較 `isSameDate()` を追加（別日の希望休が誤適用されるバグ修正）
+  - `auth.py`: `require_manager_or_above()` で role claim 未設定ユーザーを403拒否に変更（セキュリティ修正）
+  - `useOrders.ts` / `useStaffUnavailability.ts`: 週切替時に state を初期化（前週データ残留防止）
+  - テスト: validation.test.ts +2件、checker.test.ts +2件、test_auth.py 期待値変更
+
+- **fix (#156, 2026-03-08)** ✅: 住所正規化をNFKC統一 + テストギャップ解消
+  - `normalize-address.ts` / `normalize_address.py`: NFKC正規化を統一適用
+  - テスト追加: 全角数字・全角ハイフン・スペース正規化のエッジケース
+
+- **docs (#155, 2026-03-08)** ✅: LATEST.md に PR #151, #152 の内容を追記
 
 ## 直近の実装（2026-03-09）
 

@@ -32,9 +32,9 @@ export function useScheduleData(weekStart: Date) {
   const { customers, loading: customersLoading } = useCustomers();
   const { orders, loading: ordersLoading } = useOrders(weekStart);
   const { unavailability, loading: unavailabilityLoading } = useStaffUnavailability(weekStart);
-  const { travelTimeLookup } = useTravelTimes();
+  const { travelTimeLookup, loading: travelTimesLoading } = useTravelTimes();
 
-  const loading = helpersLoading || customersLoading || ordersLoading || unavailabilityLoading;
+  const loading = helpersLoading || customersLoading || ordersLoading || unavailabilityLoading || travelTimesLoading;
 
   const ordersByDay = useMemo(() => {
     const map: Record<DayOfWeek, Order[]> = {
