@@ -111,6 +111,29 @@ describe('createCustomer', () => {
     expect(mockBatchUpdate).toHaveBeenCalled();
     expect(mockBatchCommit).toHaveBeenCalled();
   });
+
+  it('自己参照がsame_household_customer_idsから除外される', async () => {
+    const input = { ...validCustomerInput(), same_household_customer_ids: ['auto-generated-id', 'C002'] };
+
+    await createCustomer(input as never);
+    const writtenData = mockBatchSet.mock.calls[0][1];
+    expect(writtenData.same_household_customer_ids).toEqual(['C002']);
+  });
+
+  it('自己参照がsame_facility_customer_idsから除外される', async () => {
+    const input = { ...validCustomerInput(), same_facility_customer_ids: ['auto-generated-id', 'C003'] };
+
+    await createCustomer(input as never);
+    const writtenData = mockBatchSet.mock.calls[0][1];
+    expect(writtenData.same_facility_customer_ids).toEqual(['C003']);
+  });
+
+  it('batch.commitが失敗した場合エラーが伝播する', async () => {
+    mockBatchCommit.mockRejectedValueOnce(new Error('NOT_FOUND: No document to update'));
+    const input = { ...validCustomerInput(), same_household_customer_ids: ['non-existent-id'] };
+
+    await expect(createCustomer(input as never)).rejects.toThrow('NOT_FOUND');
+  });
 });
 
 describe('updateCustomer', () => {
@@ -149,5 +172,34 @@ describe('updateCustomer', () => {
     expect(mockRunTransaction).toHaveBeenCalled();
     // 自ドキュメント更新 + C002からの削除 + C003への追加 = 3回
     expect(mockTransactionUpdate).toHaveBeenCalledTimes(3);
+  });
+
+  it('自己参照がsame_household_customer_idsから除外される', async () => {
+    await updateCustomer('C001', { same_household_customer_ids: ['C001', 'C002'] });
+    const writtenData = mockTransactionUpdate.mock.calls[0][1];
+    expect(writtenData.same_household_customer_ids).toEqual(['C002']);
+  });
+
+  it('トランザクションが失敗した場合エラーが伝播する', async () => {
+    mockRunTransaction.mockRejectedValueOnce(new Error('NOT_FOUND: No document to update'));
+
+    await expect(updateCustomer('C001', { same_household_customer_ids: ['non-existent'] })).rejects.toThrow('NOT_FOUND');
+  });
+
+  it('世帯と施設の同時変更で両方の双方向同期が行われる', async () => {
+    mockTransactionGet.mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({
+        same_household_customer_ids: ['C002'],
+        same_facility_customer_ids: ['C010'],
+      }),
+    });
+
+    await updateCustomer('C001', {
+      same_household_customer_ids: ['C003'],
+      same_facility_customer_ids: ['C011'],
+    });
+    // 自ドキュメント更新(1) + household: C002削除+C003追加(2) + facility: C010削除+C011追加(2) = 5回
+    expect(mockTransactionUpdate).toHaveBeenCalledTimes(5);
   });
 });
