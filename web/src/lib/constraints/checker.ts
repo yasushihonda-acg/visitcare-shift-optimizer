@@ -51,12 +51,12 @@ export function checkConstraints(input: CheckInput): ViolationMap {
 
   const assignedOrders = input.orders.filter((o) => o.assigned_staff_ids.length > 0);
 
-  // staff_count 違反チェック（オーダー単位）
   for (const order of assignedOrders) {
     const customer = input.customers.get(order.customer_id);
     const staffCount = getStaffCount(order, customer, input.day);
     const assignedCount = order.assigned_staff_ids.length;
 
+    // staff_count 違反チェック（オーダー単位）
     if (assignedCount > 0 && assignedCount < staffCount) {
       addViolation({
         orderId: order.id,
@@ -72,10 +72,6 @@ export function checkConstraints(input: CheckInput): ViolationMap {
         message: `必要人数超過（必要: ${staffCount}人、割当: ${assignedCount}人）`,
       });
     }
-  }
-
-  for (const order of assignedOrders) {
-    const customer = input.customers.get(order.customer_id);
 
     for (const staffId of order.assigned_staff_ids) {
       const helper = input.helpers.get(staffId);
@@ -108,7 +104,6 @@ export function checkConstraints(input: CheckInput): ViolationMap {
 
       // 研修状態（複数人体制なら同行可能のため warning に降格）
       const trainingStatus = helper.customer_training_status[order.customer_id];
-      const staffCount = getStaffCount(order, customer, input.day);
       if (trainingStatus === 'not_visited') {
         if (staffCount > 1) {
           addViolation({

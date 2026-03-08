@@ -291,7 +291,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 最新テスト結果サマリー（2026-03-08）
 - **Optimizer**: 297件 pass ✅
-- **Web (Next.js)**: **490件 pass** ✅（+29: OptimizeButton事前チェック7件 + WeeklySchedulePage 9件 + E2Eテスト拡充関連）
+- **Web (Next.js)**: **521件 pass** ✅（+31: useScheduleData loading 7件 + checker training整合性 1件 + household/facility関連 23件）
 - **Firestore Rules**: 107件 pass
 - **E2E Tests (Playwright)**: **66テスト** pass（+2: Undo/Redo初期状態 + D&D→Undo→Redoフロー）
 - **CI/CD**: PR #147 CI全4ジョブGREEN
