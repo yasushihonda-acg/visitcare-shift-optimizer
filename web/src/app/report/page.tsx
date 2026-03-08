@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { startOfMonth } from 'date-fns';
 import { Header } from '@/components/layout/Header';
+import { AppBreadcrumb } from '@/components/layout/AppBreadcrumb';
 import { ExportButton } from '@/components/report/ExportButton';
 import { MonthSelector } from '@/components/report/MonthSelector';
 import { StaffSummaryTable } from '@/components/report/StaffSummaryTable';
@@ -33,6 +34,7 @@ export default function ReportPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
+      <AppBreadcrumb />
 
       <main className="flex-1 px-4 py-6">
         <div className="mx-auto max-w-6xl space-y-6">

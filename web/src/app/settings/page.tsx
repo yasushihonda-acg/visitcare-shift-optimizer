@@ -7,6 +7,7 @@ import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { updateNotificationSettings } from '@/lib/firestore/settings';
 import { Header } from '@/components/layout/Header';
+import { AppBreadcrumb } from '@/components/layout/AppBreadcrumb';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,6 +46,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      <AppBreadcrumb />
       <main className="max-w-2xl mx-auto p-6 space-y-6">
         <h1 className="text-2xl font-bold">設定</h1>
 

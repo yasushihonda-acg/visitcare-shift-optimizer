@@ -6,9 +6,11 @@ import { Header } from '@/components/layout/Header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const MASTER_TABS = [
-  { value: '/masters/customers', label: '利用者マスタ' },
-  { value: '/masters/helpers', label: 'ヘルパーマスタ' },
-  { value: '/masters/unavailability', label: '希望休管理' },
+  { value: '/masters/customers', label: '利用者' },
+  { value: '/masters/helpers', label: 'ヘルパー' },
+  { value: '/masters/service-types', label: 'サービス種別' },
+  { value: '/masters/weekly-schedule', label: '基本予定' },
+  { value: '/masters/unavailability', label: '希望休' },
 ] as const;
 
 export default function MastersLayout({
@@ -22,7 +24,7 @@ export default function MastersLayout({
   return (
     <div className="flex h-screen flex-col">
       <Header />
-      <div className="border-b px-4 pt-2">
+      <div className="overflow-x-auto border-b px-4 pt-2">
         <Tabs value={currentTab}>
           <TabsList>
             {MASTER_TABS.map((tab) => (

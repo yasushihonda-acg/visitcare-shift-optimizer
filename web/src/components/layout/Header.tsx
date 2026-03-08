@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Settings, Users, UserCog, CalendarOff, History, LogOut, HelpCircle, BarChart2, Tag, CalendarCheck, Bell } from 'lucide-react';
+import { Heart, Menu, Users, UserCog, CalendarOff, History, LogOut, HelpCircle, BarChart2, Tag, CalendarCheck, Bell, LayoutDashboard } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -74,55 +74,58 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
                 size="icon"
                 className="text-white hover:bg-white/15"
               >
-                <Settings className="h-4.5 w-4.5" />
+                <Menu className="h-4.5 w-4.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href="/" className={pathname === '/' ? 'bg-accent' : ''}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  スケジュール
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuLabel>マスタ管理</DropdownMenuLabel>
-              <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/masters/customers">
+                <Link href="/masters/customers" className={pathname?.startsWith('/masters/customers') ? 'bg-accent' : ''}>
                   <Users className="mr-2 h-4 w-4" />
-                  利用者マスタ
+                  利用者
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/masters/helpers">
+                <Link href="/masters/helpers" className={pathname?.startsWith('/masters/helpers') ? 'bg-accent' : ''}>
                   <UserCog className="mr-2 h-4 w-4" />
-                  ヘルパーマスタ
+                  ヘルパー
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/masters/service-types">
+                <Link href="/masters/service-types" className={pathname?.startsWith('/masters/service-types') ? 'bg-accent' : ''}>
                   <Tag className="mr-2 h-4 w-4" />
-                  サービス種別マスタ
+                  サービス種別
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/masters/weekly-schedule">
+                <Link href="/masters/weekly-schedule" className={pathname?.startsWith('/masters/weekly-schedule') ? 'bg-accent' : ''}>
                   <CalendarCheck className="mr-2 h-4 w-4" />
-                  基本予定一覧
+                  基本予定
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/masters/unavailability">
+                <Link href="/masters/unavailability" className={pathname?.startsWith('/masters/unavailability') ? 'bg-accent' : ''}>
                   <CalendarOff className="mr-2 h-4 w-4" />
-                  希望休管理
+                  希望休
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>最適化</DropdownMenuLabel>
+              <DropdownMenuLabel>運用</DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/history">
+                <Link href="/history" className={pathname?.startsWith('/history') ? 'bg-accent' : ''}>
                   <History className="mr-2 h-4 w-4" />
                   実行履歴
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>レポート</DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/report">
+                <Link href="/report" className={pathname?.startsWith('/report') ? 'bg-accent' : ''}>
                   <BarChart2 className="mr-2 h-4 w-4" />
                   月次レポート
                 </Link>
@@ -130,7 +133,7 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
               <DropdownMenuSeparator />
               <DropdownMenuLabel>設定</DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/settings">
+                <Link href="/settings" className={pathname?.startsWith('/settings') ? 'bg-accent' : ''}>
                   <Bell className="mr-2 h-4 w-4" />
                   通知設定
                 </Link>
