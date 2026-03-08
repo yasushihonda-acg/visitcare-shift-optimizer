@@ -156,7 +156,7 @@ describe('buildCustomerDetailViewModel', () => {
     expect(vm.weeklyServices[0].dayLabel).toBe('月');
     expect(vm.weeklyServices[0].slots[0].serviceLabel).toBe('身体介護');
     expect(vm.weeklyServices[0].slots[0].time).toBe('09:00 - 10:00');
-    expect(vm.hasWeeklyServices).toBe(true);
+    expect(vm.weeklyServices.length).toBeGreaterThan(0);
   });
 
   it('未知のservice_typeはコードがそのまま使われる', () => {

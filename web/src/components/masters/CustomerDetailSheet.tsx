@@ -185,7 +185,7 @@ export function CustomerDetailSheet({
           )}
 
           {/* 4. 週間サービス */}
-          {vm.hasWeeklyServices && (
+          {vm.weeklyServices.length > 0 && (
             <section>
               <SectionHeader>週間サービス</SectionHeader>
               <div className="overflow-x-auto rounded-lg border">

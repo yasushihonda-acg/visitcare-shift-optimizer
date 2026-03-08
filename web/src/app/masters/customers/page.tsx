@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Plus, Pencil, Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useHelpers } from '@/hooks/useHelpers';
+import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ const KANA_ROWS: { label: string; chars: Set<string> }[] = [
 export default function CustomersPage() {
   const { customers, loading } = useCustomers();
   const { helpers } = useHelpers();
+  const { serviceTypes } = useServiceTypes();
   const { canEditCustomers } = useAuthRole();
   const [search, setSearch] = useState('');
   const [sortKana, setSortKana] = useState<'asc' | 'desc' | null>(null);
@@ -55,7 +57,7 @@ export default function CustomersPage() {
 
   const detailCustomer = detailId ? customers.get(detailId) ?? null : null;
   const detailOpen = detailId !== null;
-  const detailVm = useCustomerDetailViewModel(detailCustomer, helpers, customers);
+  const detailVm = useCustomerDetailViewModel(detailCustomer, helpers, customers, serviceTypes);
 
   const filtered = useMemo(() => {
     const list = Array.from(customers.values());

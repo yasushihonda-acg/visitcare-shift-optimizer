@@ -68,7 +68,7 @@ export default function WeeklySchedulePage() {
 
   const detailCustomer = detailId ? customers.get(detailId) ?? null : null;
   const detailOpen = detailId !== null;
-  const detailVm = useCustomerDetailViewModel(detailCustomer, helpers, customers);
+  const detailVm = useCustomerDetailViewModel(detailCustomer, helpers, customers, serviceTypes);
 
   const openDetail = (customer: Customer) => {
     setDetailId(customer.id);

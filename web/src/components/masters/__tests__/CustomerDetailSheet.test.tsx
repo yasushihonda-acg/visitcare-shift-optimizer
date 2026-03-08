@@ -26,7 +26,6 @@ function makeVm(overrides: Partial<CustomerDetailViewModel> = {}): CustomerDetai
     householdMembers: [],
     facilityMembers: [],
     weeklyServices: [],
-    hasWeeklyServices: false,
     irregularPatterns: [],
     hasContact: false,
     hasExternalIds: false,
@@ -138,7 +137,6 @@ describe('CustomerDetailSheet', () => {
 
   it('週間サービスが設定されている場合にテーブルが表示される', () => {
     render(<CustomerDetailSheet {...defaultProps} vm={makeVm({
-      hasWeeklyServices: true,
       weeklyServices: [{
         day: 'monday',
         dayLabel: '月',
