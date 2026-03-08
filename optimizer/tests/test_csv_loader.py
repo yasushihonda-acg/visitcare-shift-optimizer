@@ -109,12 +109,17 @@ class TestLoadStaffUnavailabilities:
 class TestLoadStaffConstraints:
     def test_loaded(self, seed_data_dir: Path) -> None:
         constraints = load_staff_constraints(seed_data_dir)
-        assert len(constraints) == 19
+        assert len(constraints) == 21
 
     def test_ng_count(self, seed_data_dir: Path) -> None:
         constraints = load_staff_constraints(seed_data_dir)
         ng = [c for c in constraints if c.constraint_type == "ng"]
         assert len(ng) == 7
+
+    def test_allowed_count(self, seed_data_dir: Path) -> None:
+        constraints = load_staff_constraints(seed_data_dir)
+        allowed = [c for c in constraints if c.constraint_type == "allowed"]
+        assert len(allowed) == 2
 
 
 class TestGenerateOrdersLinkedOrders:
@@ -162,4 +167,4 @@ class TestLoadOptimizationInput:
         assert len(inp.helpers) == 20
         assert len(inp.orders) == 184
         assert len(inp.travel_times) > 0
-        assert len(inp.staff_constraints) == 19
+        assert len(inp.staff_constraints) == 21

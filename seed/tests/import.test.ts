@@ -132,14 +132,26 @@ describe('Firestore import integration', () => {
     const helperIds = new Set(helpersSnap.docs.map((d) => d.id));
 
     const customersSnap = await db.collection('customers').get();
+    const staffFields = ['ng_staff_ids', 'preferred_staff_ids', 'allowed_staff_ids'] as const;
     for (const doc of customersSnap.docs) {
       const data = doc.data();
-      for (const staffId of data.ng_staff_ids) {
-        expect(helperIds.has(staffId)).toBe(true);
-      }
-      for (const staffId of data.preferred_staff_ids) {
-        expect(helperIds.has(staffId)).toBe(true);
+      for (const field of staffFields) {
+        for (const staffId of data[field] ?? []) {
+          expect(helperIds.has(staffId), `${doc.id}.${field}: ${staffId} not in helpers`).toBe(true);
+        }
       }
     }
+  });
+
+  it('should have allowed_staff_ids for C010 from seed constraints', async () => {
+    const db = getFirestore();
+    const doc = await db.collection('customers').doc('C010').get();
+    expect(doc.exists).toBe(true);
+
+    const data = doc.data()!;
+    expect(data.allowed_staff_ids).toBeInstanceOf(Array);
+    expect(data.allowed_staff_ids).toContain('H001');
+    expect(data.allowed_staff_ids).toContain('H009');
+    expect(data.allowed_staff_ids).toHaveLength(2);
   });
 });

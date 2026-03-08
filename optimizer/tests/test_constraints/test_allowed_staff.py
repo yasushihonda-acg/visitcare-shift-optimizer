@@ -10,6 +10,9 @@ from optimizer.models import (
     OptimizationInput,
     Order,
     StaffConstraint,
+    StaffConstraintType,
+    StaffUnavailability,
+    UnavailableSlot,
 )
 
 
@@ -37,6 +40,30 @@ def _o(id: str, cid: str) -> Order:
     )
 
 
+def _unavail(staff_id: str, date: str = "2025-01-06") -> StaffUnavailability:
+    return StaffUnavailability(
+        staff_id=staff_id, week_start_date=date,
+        unavailable_slots=[UnavailableSlot(date=date, all_day=True)],
+    )
+
+
+def _allowed_with_unavailabilities(
+    unavailable_staff_ids: list[str],
+) -> OptimizationInput:
+    """allowed=[H001,H002], helpers=[H001,H002,H003] の共通セットアップ"""
+    return OptimizationInput(
+        customers=[_c("C1", allowed=["H001", "H002"])],
+        helpers=[_h("H001"), _h("H002"), _h("H003")],
+        orders=[_o("O1", "C1")],
+        travel_times=[],
+        staff_unavailabilities=[_unavail(sid) for sid in unavailable_staff_ids],
+        staff_constraints=[
+            StaffConstraint(customer_id="C1", staff_id="H001", constraint_type=StaffConstraintType.ALLOWED),
+            StaffConstraint(customer_id="C1", staff_id="H002", constraint_type=StaffConstraintType.ALLOWED),
+        ],
+    )
+
+
 class TestAllowedStaffConstraint:
     def test_allowed_empty_no_restriction(self) -> None:
         """allowed_staff_ids が空 → 制限なし（全スタッフ割り当て可）"""
@@ -60,8 +87,8 @@ class TestAllowedStaffConstraint:
             orders=[_o("O1", "C1")],
             travel_times=[], staff_unavailabilities=[],
             staff_constraints=[
-                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type="allowed"),
-                StaffConstraint(customer_id="C1", staff_id="H002", constraint_type="allowed"),
+                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type=StaffConstraintType.ALLOWED),
+                StaffConstraint(customer_id="C1", staff_id="H002", constraint_type=StaffConstraintType.ALLOWED),
             ],
         )
         result = solve(inp)
@@ -79,8 +106,8 @@ class TestAllowedStaffConstraint:
             orders=[_o("O1", "C1")],
             travel_times=[], staff_unavailabilities=[],
             staff_constraints=[
-                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type="allowed"),
-                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type="ng"),
+                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type=StaffConstraintType.ALLOWED),
+                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type=StaffConstraintType.NG),
             ],
         )
         result = solve(inp)
@@ -96,9 +123,22 @@ class TestAllowedStaffConstraint:
             orders=[_o("O1", "C1")],
             travel_times=[], staff_unavailabilities=[],
             staff_constraints=[
-                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type="allowed"),
+                StaffConstraint(customer_id="C1", staff_id="H001", constraint_type=StaffConstraintType.ALLOWED),
             ],
         )
         result = solve(inp)
         assert result.status == "Optimal"
         assert result.assignments[0].staff_ids == ["H001"]
+
+    def test_all_allowed_staff_unavailable_infeasible(self) -> None:
+        """全allowedスタッフが希望休 → 割り当て不可 → Infeasible"""
+        result = solve(_allowed_with_unavailabilities(["H001", "H002"]))
+        # H001/H002は希望休、H003はallowed外 → 割り当て不可
+        assert result.status == "Infeasible"
+
+    def test_partial_allowed_staff_unavailable_optimal(self) -> None:
+        """allowedスタッフの一部が希望休 → 残りで割り当て可"""
+        result = solve(_allowed_with_unavailabilities(["H001"]))
+        assert result.status == "Optimal"
+        # H001は希望休なので H002 が割り当てられる
+        assert result.assignments[0].staff_ids == ["H002"]
