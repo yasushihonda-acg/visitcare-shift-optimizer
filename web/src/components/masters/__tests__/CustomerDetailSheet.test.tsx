@@ -267,6 +267,21 @@ describe('CustomerDetailSheet', () => {
     expect(onEdit).toHaveBeenCalledOnce();
   });
 
+  it('canEdit=false のとき編集ボタンが表示されない', () => {
+    render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} canEdit={false} />);
+    expect(screen.queryByTestId('customer-detail-edit-button')).not.toBeInTheDocument();
+  });
+
+  it('canEdit=true のとき編集ボタンが表示される', () => {
+    render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} canEdit={true} />);
+    expect(screen.getByTestId('customer-detail-edit-button')).toBeInTheDocument();
+  });
+
+  it('canEdit 未指定（デフォルト）のとき編集ボタンが表示される', () => {
+    render(<CustomerDetailSheet {...defaultProps} customer={makeCustomer()} />);
+    expect(screen.getByTestId('customer-detail-edit-button')).toBeInTheDocument();
+  });
+
   it('不定期パターンが設定されている場合に表示される', () => {
     const customer = makeCustomer({
       irregular_patterns: [{ type: 'biweekly', description: '第1・3週のみ' }],

@@ -326,6 +326,7 @@ export default function CustomersPage() {
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         onEdit={handleDetailEdit}
+        canEdit={canEditCustomers}
         helpers={helpers}
         customers={customers}
       />
