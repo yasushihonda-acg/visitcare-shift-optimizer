@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-08（E2Eセレクタ修正 PR #168 マージ済み）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善）実装済み・マージ済み
+**最終更新**: 2026-03-08（CustomerDetailSheet権限チェック PR #180 マージ済み）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善・CustomerDetailSheet同一世帯/施設Badge表示+権限チェック）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -58,6 +58,22 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+## 直近の実装（2026-03-08 CustomerDetailSheet改善）
+
+- **fix (#180, 2026-03-08)** ✅: CustomerDetailSheetの編集ボタンを権限に応じて非表示にする
+  - `canEdit?: boolean` propを追加（デフォルト`true`で後方互換性維持）
+  - `customers/page.tsx` / `weekly-schedule/page.tsx` で `canEditCustomers` を渡す
+  - 閲覧専用ユーザーに編集ボタンが表示されていたセキュリティバグ修正（Issue #178）
+  - テスト3件追加（canEdit=false/true/未指定）→ 31件全パス
+- **fix (#179, 2026-03-08)** ✅: 自己参照フィルタをフィルタ後配列で条件判定 + テスト補完
+  - `householdIds` / `facilityIds` をフィルタ後に変数化し、条件チェック・レンダリング両方で使用
+  - 自己IDのみの場合に空セクションが表示されるバグ修正
+  - テスト追加: 施設側名前解決・自己参照フィルタ・自己IDのみ非表示（世帯/施設対称）
+- **feat (#177, 2026-03-08)** ✅: CustomerDetailSheetの同一世帯・同一施設をBadge+名前表示に改善
+  - `customers: Map<string, Customer>` propを追加
+  - 同一世帯/施設メンバーをBadgeコンポーネントで表示（名前解決 + IDフォールバック）
+  - 自己参照IDのフィルタリング
 
 ## 直近の実装（2026-03-08 ナビゲーション改善 + E2E修正）
 
