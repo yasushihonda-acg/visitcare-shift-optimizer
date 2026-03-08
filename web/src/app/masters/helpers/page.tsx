@@ -38,9 +38,9 @@ export default function HelpersPage() {
   const [editTarget, setEditTarget] = useState<Helper | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
 
   const detailHelper = detailId ? helpers.get(detailId) ?? null : null;
+  const detailOpen = detailId !== null;
 
   const filtered = useMemo(() => {
     const list = Array.from(helpers.values());
@@ -66,11 +66,10 @@ export default function HelpersPage() {
 
   const openDetail = (helper: Helper) => {
     setDetailId(helper.id);
-    setDetailOpen(true);
   };
 
   const handleDetailEdit = () => {
-    setDetailOpen(false);
+    setDetailId(null);
     if (detailHelper) openEdit(detailHelper);
   };
 
@@ -197,7 +196,7 @@ export default function HelpersPage() {
       <HelperDetailSheet
         helper={detailHelper}
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        onClose={() => setDetailId(null)}
         onEdit={handleDetailEdit}
         canEdit={canEditHelpers}
         customers={customers}

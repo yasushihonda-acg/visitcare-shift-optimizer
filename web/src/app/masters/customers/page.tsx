@@ -51,9 +51,9 @@ export default function CustomersPage() {
   const [editTarget, setEditTarget] = useState<Customer | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
 
   const detailCustomer = detailId ? customers.get(detailId) ?? null : null;
+  const detailOpen = detailId !== null;
 
   const filtered = useMemo(() => {
     const list = Array.from(customers.values());
@@ -114,11 +114,10 @@ export default function CustomersPage() {
 
   const openDetail = (customer: Customer) => {
     setDetailId(customer.id);
-    setDetailOpen(true);
   };
 
   const handleDetailEdit = () => {
-    setDetailOpen(false);
+    setDetailId(null);
     if (detailCustomer) openEdit(detailCustomer);
   };
 
@@ -326,7 +325,7 @@ export default function CustomersPage() {
       <CustomerDetailSheet
         customer={detailCustomer}
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        onClose={() => setDetailId(null)}
         onEdit={handleDetailEdit}
         canEdit={canEditCustomers}
         helpers={helpers}
