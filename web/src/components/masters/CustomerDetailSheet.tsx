@@ -74,6 +74,9 @@ export function CustomerDetailSheet({
     .filter(Boolean) as Helper[];
   const preferredSet = new Set(customer.preferred_staff_ids);
 
+  const householdIds = (customer.same_household_customer_ids ?? []).filter((id) => id !== customer.id);
+  const facilityIds = (customer.same_facility_customer_ids ?? []).filter((id) => id !== customer.id);
+
   const hasContact =
     customer.home_care_office ||
     customer.care_manager_name ||
@@ -133,14 +136,12 @@ export function CustomerDetailSheet({
                 label="性別要件"
                 value={GENDER_REQUIREMENT_LABELS[customer.gender_requirement ?? 'any'] ?? '指定なし'}
               />
-              {customer.same_household_customer_ids?.length > 0 && (
+              {householdIds.length > 0 && (
                 <InfoRow
                   label="同一世帯"
                   value={
                     <div className="flex flex-wrap gap-1.5">
-                      {customer.same_household_customer_ids
-                        .filter((id) => id !== customer.id)
-                        .map((id) => {
+                      {householdIds.map((id) => {
                         const c = customers.get(id);
                         return (
                           <Badge key={id} variant="outline">
@@ -152,14 +153,12 @@ export function CustomerDetailSheet({
                   }
                 />
               )}
-              {customer.same_facility_customer_ids?.length > 0 && (
+              {facilityIds.length > 0 && (
                 <InfoRow
                   label="同一施設"
                   value={
                     <div className="flex flex-wrap gap-1.5">
-                      {customer.same_facility_customer_ids
-                        .filter((id) => id !== customer.id)
-                        .map((id) => {
+                      {facilityIds.map((id) => {
                         const c = customers.get(id);
                         return (
                           <Badge key={id} variant="outline">
