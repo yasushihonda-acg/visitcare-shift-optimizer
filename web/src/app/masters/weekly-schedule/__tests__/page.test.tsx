@@ -206,6 +206,20 @@ describe('基本予定一覧ページ', () => {
     expect(screen.getByTestId('detail-sheet')).toBeInTheDocument();
   });
 
+  it('マスタに存在しないサービス種別はコードがそのまま表示される', () => {
+    mockCustomers.set('c1', makeCustomer('c1', '山田', '太郎', {
+      weekly_services: {
+        monday: [
+          { start_time: '09:00', end_time: '10:00', service_type: 'unknown_type', staff_count: 1 },
+        ],
+      },
+    }));
+
+    render(<WeeklySchedulePage />);
+
+    expect(screen.getByText('unknown_type')).toBeInTheDocument();
+  });
+
   it('staff_count > 1 のとき人数バッジが表示される', () => {
     mockCustomers.set('c1', makeCustomer('c1', '山田', '太郎', {
       weekly_services: {
