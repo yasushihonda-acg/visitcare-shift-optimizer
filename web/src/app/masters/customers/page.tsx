@@ -192,7 +192,7 @@ export default function CustomersPage() {
       </div>
 
       <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[1600px]">
+        <Table className="min-w-[1700px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-28">あおぞらID</TableHead>
@@ -222,6 +222,7 @@ export default function CustomersPage() {
               <TableHead className="w-28">担当相談員</TableHead>
               <TableHead className="w-20 text-center">サービス日数</TableHead>
               <TableHead className="w-28 text-center">NG/推奨</TableHead>
+              <TableHead className="w-24 text-center">世帯/施設</TableHead>
               {canEditCustomers && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
@@ -229,7 +230,7 @@ export default function CustomersPage() {
             {sorted.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={13 + (canEditCustomers ? 1 : 0)}
+                  colSpan={14 + (canEditCustomers ? 1 : 0)}
                   className="text-center text-muted-foreground py-8"
                 >
                   {search || kanaRow ? '一致する利用者が見つかりません' : '利用者が登録されていません'}
@@ -296,6 +297,21 @@ export default function CustomersPage() {
                         </Badge>
                       ) : null}
                       {customer.ng_staff_ids.length === 0 && customer.preferred_staff_ids.length === 0 && '-'}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      {customer.same_household_customer_ids.length > 0 ? (
+                        <Badge variant="outline" className="text-[10px] px-1.5 h-5">
+                          世帯 {customer.same_household_customer_ids.length}
+                        </Badge>
+                      ) : null}
+                      {customer.same_facility_customer_ids.length > 0 ? (
+                        <Badge variant="outline" className="text-[10px] px-1.5 h-5 border-blue-300 text-blue-600">
+                          施設 {customer.same_facility_customer_ids.length}
+                        </Badge>
+                      ) : null}
+                      {customer.same_household_customer_ids.length === 0 && customer.same_facility_customer_ids.length === 0 && '-'}
                     </div>
                   </TableCell>
                   {canEditCustomers && (
