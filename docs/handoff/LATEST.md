@@ -61,6 +61,9 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-03-09）
 
+- **fix (#150, 2026-03-09)** ✅: findSingleBarInRow フォールバックの bar/row 不整合を修正
+  - フォールバック時 `ganttRows.first()` → `firstBar.locator('xpath=ancestor::*[...]')` で実際の親行を取得
+  - bar と row が異なる DOM 要素を参照するリスクを排除
 - **fix (#149, 2026-03-09)** ✅: E2E D&D flakiness改善 — ドラッグ操作の座標安定性を強化（CI: 3回連続GREEN 63 passed, 1 flaky, 0 failed）
   - `dragOrderToTarget()`: ドラッグ開始後にターゲット位置を再スクロール → freshDropBoxで座標再取得。stale drop座標による落下失敗を削減（NOTE: mousedown中のscrollIntoViewIfNeededはdnd-kit座標deltaをずらすリスク、ビューポート拡大で緩和）
   - `findSingleBarInRow()`: N回の非同期DOM問い合わせ（bars.count() ループ）→ 単一`page.evaluate()`呼び出しに最適化。strict mode違反リスク低減、Emulator RPC呼び出し削減

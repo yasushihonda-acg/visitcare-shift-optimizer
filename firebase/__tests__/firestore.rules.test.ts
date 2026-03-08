@@ -279,6 +279,9 @@ const validCustomerData = {
   location: { lat: 35.6895, lng: 139.6917 },
   ng_staff_ids: [],
   preferred_staff_ids: [],
+  allowed_staff_ids: [],
+  same_household_customer_ids: [],
+  same_facility_customer_ids: [],
   weekly_services: {},
   service_manager: '鈴木花子',
   created_at: serverTimestamp(),
@@ -318,6 +321,60 @@ describe('認証済みユーザー - customers create', () => {
         ...validCustomerData,
         ng_staff_ids: 'not-an-array',
       })
+    );
+  });
+
+  it('allowed_staff_ids が配列でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), {
+        ...validCustomerData,
+        allowed_staff_ids: 'not-an-array',
+      })
+    );
+  });
+
+  it('same_household_customer_ids が配列でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), {
+        ...validCustomerData,
+        same_household_customer_ids: 'not-an-array',
+      })
+    );
+  });
+
+  it('same_facility_customer_ids が配列でない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), {
+        ...validCustomerData,
+        same_facility_customer_ids: 'not-an-array',
+      })
+    );
+  });
+
+  it('allowed_staff_ids がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { allowed_staff_ids: _, ...noAllowed } = validCustomerData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noAllowed)
+    );
+  });
+
+  it('same_household_customer_ids がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { same_household_customer_ids: _, ...noHousehold } = validCustomerData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noHousehold)
+    );
+  });
+
+  it('same_facility_customer_ids がない場合は拒否される', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    const { same_facility_customer_ids: _, ...noFacility } = validCustomerData;
+    await assertFails(
+      setDoc(doc(authed.firestore(), 'customers', 'customer-bad'), noFacility)
     );
   });
 
