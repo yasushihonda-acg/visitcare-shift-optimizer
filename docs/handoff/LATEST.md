@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-09（E2E D&D flakiness改善 PR #149 マージ済み）
+**最終更新**: 2026-03-09（Codexレビュー指摘対応 PR #151, #152 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -61,6 +61,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-03-09）
 
+- **fix (#151, 2026-03-09)** ✅: Firestoreルールに `allowed_staff_ids` / `same_household_customer_ids` / `same_facility_customer_ids` のバリデーション追加
+  - `isValidCustomer()` に optional `is list` チェック3件追加（既存データ互換: フィールド未設定は許可）
+  - Firestore Rules テスト6件追加（型不正→拒否3件 + 欠落→許可3件）→ 113件全パス
+- **test (#152, 2026-03-09)** ✅: `customers.ts` 双方向同期の失敗系・エッジケーステスト追加
+  - 自己参照フィルタリング（household/facility各1件）、エラー伝播（batch/transaction各1件）、世帯+施設同時変更（1件）、世帯メンバー変更時の双方向同期検証（1件）→ 16件全パス
+  - Codexレビュー指摘（seed/optimizerグループ結合ロジック乖離 #153、hasNoRoleリスク #154）をIssue化
 - **fix (#150, 2026-03-09)** ✅: findSingleBarInRow フォールバックの bar/row 不整合を修正
   - フォールバック時 `ganttRows.first()` → `firstBar.locator('xpath=ancestor::*[...]')` で実際の親行を取得
   - bar と row が異なる DOM 要素を参照するリスクを排除
