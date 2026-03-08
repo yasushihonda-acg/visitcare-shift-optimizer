@@ -66,8 +66,8 @@ vi.mock('@/components/ui/sheet', () => ({
 
 // CustomerDetailSheet / CustomerEditDialog はシンプルモックで表示テスト
 vi.mock('@/components/masters/CustomerDetailSheet', () => ({
-  CustomerDetailSheet: ({ open, customer }: { open: boolean; customer: Customer | null }) =>
-    open ? <div data-testid="detail-sheet">{customer ? `detail:${customer.name.family}` : 'no-customer'}</div> : null,
+  CustomerDetailSheet: ({ open, vm }: { open: boolean; vm: { fullName: string } | null }) =>
+    open ? <div data-testid="detail-sheet">{vm ? `detail:${vm.fullName}` : 'no-vm'}</div> : null,
 }));
 
 vi.mock('@/components/masters/CustomerEditDialog', () => ({
@@ -227,14 +227,14 @@ describe('基本予定一覧ページ', () => {
 
     // 行クリックで詳細を開く
     fireEvent.click(screen.getByText('山田 太郎'));
-    expect(screen.getByText('detail:山田')).toBeInTheDocument();
+    expect(screen.getByText('detail:山田 太郎')).toBeInTheDocument();
 
     // backing Map を更新（Firestoreリアルタイム更新を模擬）
     mockCustomers.set('c1', makeCustomer('c1', '鈴木', '太郎'));
     rerender(<WeeklySchedulePage />);
 
     // 最新の名前が反映される
-    expect(screen.getByText('detail:鈴木')).toBeInTheDocument();
+    expect(screen.getByText('detail:鈴木 太郎')).toBeInTheDocument();
   });
 
   it('選択中のレコードがMapから消えたらdetailにno-customerが表示される', () => {
@@ -243,14 +243,14 @@ describe('基本予定一覧ページ', () => {
     const { rerender } = render(<WeeklySchedulePage />);
 
     fireEvent.click(screen.getByText('山田 太郎'));
-    expect(screen.getByText('detail:山田')).toBeInTheDocument();
+    expect(screen.getByText('detail:山田 太郎')).toBeInTheDocument();
 
     // レコードが削除される
     mockCustomers.delete('c1');
     rerender(<WeeklySchedulePage />);
 
-    // customer=null でも detailId が残っているため open=true, customer=null
-    expect(screen.getByText('no-customer')).toBeInTheDocument();
+    // vm=null でも detailId が残っているため open=true, vm=null
+    expect(screen.getByText('no-vm')).toBeInTheDocument();
   });
 
   it('staff_count > 1 のとき人数バッジが表示される', () => {

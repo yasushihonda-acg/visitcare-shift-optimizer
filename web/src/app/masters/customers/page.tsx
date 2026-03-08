@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { CustomerEditDialog } from '@/components/masters/CustomerEditDialog';
 import { CustomerDetailSheet } from '@/components/masters/CustomerDetailSheet';
+import { useCustomerDetailViewModel } from '@/components/masters/customerDetailViewModel';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Customer } from '@/types';
 
@@ -54,6 +55,7 @@ export default function CustomersPage() {
 
   const detailCustomer = detailId ? customers.get(detailId) ?? null : null;
   const detailOpen = detailId !== null;
+  const detailVm = useCustomerDetailViewModel(detailCustomer, helpers, customers);
 
   const filtered = useMemo(() => {
     const list = Array.from(customers.values());
@@ -323,13 +325,11 @@ export default function CustomersPage() {
       </p>
 
       <CustomerDetailSheet
-        customer={detailCustomer}
+        vm={detailVm}
         open={detailOpen}
         onClose={() => setDetailId(null)}
         onEdit={handleDetailEdit}
         canEdit={canEditCustomers}
-        helpers={helpers}
-        customers={customers}
       />
 
       <CustomerEditDialog

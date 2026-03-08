@@ -17,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CustomerDetailSheet } from '@/components/masters/CustomerDetailSheet';
+import { useCustomerDetailViewModel } from '@/components/masters/customerDetailViewModel';
 import { CustomerEditDialog } from '@/components/masters/CustomerEditDialog';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 import type { Customer, ServiceSlot, ServiceTypeDoc } from '@/types';
@@ -67,6 +68,7 @@ export default function WeeklySchedulePage() {
 
   const detailCustomer = detailId ? customers.get(detailId) ?? null : null;
   const detailOpen = detailId !== null;
+  const detailVm = useCustomerDetailViewModel(detailCustomer, helpers, customers);
 
   const openDetail = (customer: Customer) => {
     setDetailId(customer.id);
@@ -203,13 +205,11 @@ export default function WeeklySchedulePage() {
       </div>
 
       <CustomerDetailSheet
-        customer={detailCustomer}
+        vm={detailVm}
         open={detailOpen}
         onClose={() => setDetailId(null)}
         onEdit={handleDetailEdit}
         canEdit={canEditCustomers}
-        helpers={helpers}
-        customers={customers}
       />
 
       {canEditCustomers && (
