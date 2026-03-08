@@ -68,7 +68,7 @@ export async function waitForGanttBars(page: Page) {
   const barLocator = page.locator('[data-testid^="gantt-bar-"]').first();
   // データロード完了を待つ
   await expect(page.getByText('読み込み中...')).toBeHidden({ timeout: 30_000 });
-  await barLocator.waitFor({ timeout: 15_000 });
+  await barLocator.waitFor({ timeout: 30_000 });
 }
 
 /**
@@ -137,9 +137,18 @@ export async function dragOrderToTarget(page: Page, source: Locator, target: Loc
   // ドラッグ開始後にターゲットを再スクロール → 座標再取得
   // （ソースとターゲットが離れている場合、最初のスクロールでターゲットがビューポート外に出る）
   // NOTE: mousedown中のscrollIntoViewIfNeededはdnd-kitの座標deltaをずらすリスクがある。
-  // ビューポート1280x1200 + steps:20の移動で現状は緩和されているが、将来的にはビューポート拡大で対処を検討。
-  await target.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(200);
+  // ビューポートが十分大きい場合はスキップし、delta ずれを回避する。
+  const preDropBox = await target.boundingBox();
+  const viewportSize = page.viewportSize();
+  const isTargetInViewport = preDropBox && viewportSize &&
+    preDropBox.y >= 0 &&
+    preDropBox.y + preDropBox.height <= viewportSize.height &&
+    preDropBox.x >= 0 &&
+    preDropBox.x + preDropBox.width <= viewportSize.width;
+  if (!isTargetInViewport) {
+    await target.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
+  }
   const freshDropBox = await target.boundingBox();
   if (!freshDropBox) throw new Error('Could not get bounding box for drop target after scroll');
 

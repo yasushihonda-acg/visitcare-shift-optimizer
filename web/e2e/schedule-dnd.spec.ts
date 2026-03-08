@@ -4,8 +4,9 @@ import { goToSchedule, waitForGanttBars, dragOrderToTarget, dragOrderHorizontall
 test.describe('スケジュール画面 D&D', { tag: '@dnd' }, () => {
   // D&Dテストはフレーキーになりやすいため、リトライ + タイムアウト延長
   test.describe.configure({ retries: 2, timeout: 60_000 });
-  // 17ヘルパー行+未割当セクションを1画面に収めるためビューポートを拡大
-  test.use({ viewport: { width: 1280, height: 1200 } });
+  // 全ヘルパー行+未割当セクションを1画面に収め、ドラッグ中のスクロールを不要にする
+  // （mousedown中のscrollIntoViewIfNeededはdnd-kitの座標deltaをずらすため）
+  test.use({ viewport: { width: 1920, height: 1600 } });
 
   test('ガントバーをドラッグ開始するとopacityが変化する', async ({ page }) => {
     await goToSchedule(page);
