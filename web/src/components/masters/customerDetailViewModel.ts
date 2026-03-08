@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 import type { Customer, Helper, ServiceTypeDoc, DayOfWeek } from '@/types';
 
@@ -58,7 +57,6 @@ export interface CustomerDetailViewModel {
   facilityMembers: { id: string; name: string }[];
 
   weeklyServices: WeeklyServiceRow[];
-  hasWeeklyServices: boolean;
 
   irregularPatterns: IrregularPatternRow[];
 
@@ -170,7 +168,6 @@ export function buildCustomerDetailViewModel(
     facilityMembers,
 
     weeklyServices,
-    hasWeeklyServices: weeklyServices.length > 0,
 
     irregularPatterns,
 
@@ -195,8 +192,8 @@ export function useCustomerDetailViewModel(
   customer: Customer | null,
   helpers: Map<string, Helper>,
   customers: Map<string, Customer>,
+  serviceTypes: Map<string, ServiceTypeDoc>,
 ): CustomerDetailViewModel | null {
-  const { serviceTypes } = useServiceTypes();
   return useMemo(
     () => customer ? buildCustomerDetailViewModel(customer, helpers, customers, serviceTypes) : null,
     [customer, helpers, customers, serviceTypes],
