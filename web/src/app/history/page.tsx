@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { ArrowLeft, Clock, CheckCircle2, XCircle, AlertTriangle, FlaskConical, Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import { Clock, CheckCircle2, XCircle, AlertTriangle, FlaskConical, Loader2 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
+import { AppBreadcrumb } from '@/components/layout/AppBreadcrumb';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -166,14 +166,9 @@ export default function HistoryPage() {
   return (
     <div className="flex h-screen flex-col">
       <Header />
+      <AppBreadcrumb />
       <main className="flex-1 overflow-auto p-4">
-        <div className="mb-4 flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/">
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              戻る
-            </Link>
-          </Button>
+        <div className="mb-4">
           <h2 className="text-lg font-semibold">最適化実行履歴</h2>
         </div>
 
