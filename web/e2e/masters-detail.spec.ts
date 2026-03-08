@@ -105,8 +105,9 @@ test.describe('利用者マスタ 詳細シート', () => {
     await expect(sheet).toBeVisible({ timeout: 5_000 });
 
     // 同一世帯セクションにC002（山田花子）が表示される
+    // C001とC002は同一住所のため同一施設にも表示され、2要素にマッチする → first()で回避
     await expect(sheet.getByText('同一世帯')).toBeVisible();
-    await expect(sheet.getByText('山田 花子')).toBeVisible();
+    await expect(sheet.getByText('山田 花子').first()).toBeVisible();
   });
 
   test('週間サービスが詳細シートに表示される', async ({ page }) => {
