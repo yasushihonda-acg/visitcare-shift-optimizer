@@ -216,6 +216,7 @@ export default function WeeklySchedulePage() {
         onClose={() => setDetailOpen(false)}
         onEdit={handleDetailEdit}
         helpers={helpers}
+        customers={customers}
       />
 
       {canEditCustomers && (

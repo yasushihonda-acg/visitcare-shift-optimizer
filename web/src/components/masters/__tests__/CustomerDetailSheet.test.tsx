@@ -69,6 +69,7 @@ const defaultProps = {
   onClose: vi.fn(),
   onEdit: vi.fn(),
   helpers: new Map<string, Helper>(),
+  customers: new Map<string, Customer>(),
 };
 
 describe('CustomerDetailSheet', () => {
@@ -144,14 +145,24 @@ describe('CustomerDetailSheet', () => {
     expect(screen.getByTestId('allowed-staff-preferred-h-3')).toBeInTheDocument();
   });
 
-  it('同一世帯メンバーが設定されている場合にIDが表示される', () => {
+  it('同一世帯メンバーが設定されている場合にBadgeで表示される（IDフォールバック）', () => {
     const customer = makeCustomer({ same_household_customer_ids: ['C002', 'C003'] });
     render(<CustomerDetailSheet {...defaultProps} customer={customer} />);
     expect(screen.getByText('同一世帯')).toBeInTheDocument();
-    expect(screen.getByText('C002, C003')).toBeInTheDocument();
+    // customers Map に該当がないのでIDがそのまま表示される
+    expect(screen.getByText('C002')).toBeInTheDocument();
+    expect(screen.getByText('C003')).toBeInTheDocument();
   });
 
-  it('同一施設メンバーが設定されている場合にIDが表示される', () => {
+  it('同一世帯メンバーのcustomers Map該当時に名前で表示される', () => {
+    const c2 = makeCustomer({ id: 'C002', name: { family: '佐藤', given: '次郎' } });
+    const customersMap = new Map([['C002', c2]]);
+    const customer = makeCustomer({ same_household_customer_ids: ['C002'] });
+    render(<CustomerDetailSheet {...defaultProps} customer={customer} customers={customersMap} />);
+    expect(screen.getByText('佐藤 次郎')).toBeInTheDocument();
+  });
+
+  it('同一施設メンバーが設定されている場合にBadgeで表示される', () => {
     const customer = makeCustomer({ same_facility_customer_ids: ['C010'] });
     render(<CustomerDetailSheet {...defaultProps} customer={customer} />);
     expect(screen.getByText('同一施設')).toBeInTheDocument();
