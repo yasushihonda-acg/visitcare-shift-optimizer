@@ -143,10 +143,10 @@ export function CustomerDetailSheet({
             </section>
           )}
 
-          {/* 3. NG/入れるスタッフ */}
-          {(vm.ngStaff.length > 0 || vm.allowedStaff.length > 0) && (
+          {/* 3. NG/推奨/入れるスタッフ */}
+          {(vm.ngStaff.length > 0 || vm.preferredStaff.length > 0 || vm.allowedStaff.length > 0) && (
             <section>
-              <SectionHeader>NG / 入れるスタッフ</SectionHeader>
+              <SectionHeader>NG / 推奨 / 入れるスタッフ</SectionHeader>
               <div className="space-y-2">
                 {vm.ngStaff.length > 0 && (
                   <div>
@@ -155,6 +155,18 @@ export function CustomerDetailSheet({
                       {vm.ngStaff.map((s) => (
                         <Badge key={s.id} variant="destructive">
                           {s.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {vm.preferredStaff.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">推奨スタッフ</p>
+                    <div className="flex flex-wrap gap-1.5" data-testid="preferred-staff-badges">
+                      {vm.preferredStaff.map((s) => (
+                        <Badge key={s.id} variant="secondary" className="border-amber-300 text-amber-700">
+                          {s.name} ★
                         </Badge>
                       ))}
                     </div>
