@@ -221,7 +221,7 @@ export default function CustomersPage() {
               <TableHead className="w-36">相談支援事業所</TableHead>
               <TableHead className="w-28">担当相談員</TableHead>
               <TableHead className="w-20 text-center">サービス日数</TableHead>
-              <TableHead className="w-28 text-center">NG/推奨</TableHead>
+              <TableHead className="w-36 text-center">NG/推奨/入れる</TableHead>
               <TableHead className="w-24 text-center">世帯/施設</TableHead>
               {canEditCustomers && <TableHead className="w-10" />}
             </TableRow>
@@ -285,7 +285,7 @@ export default function CustomersPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex items-center justify-center gap-1 flex-wrap">
                       {(customer.ng_staff_ids?.length ?? 0) > 0 ? (
                         <Badge variant="destructive" className="text-[10px] px-1.5 h-5">
                           NG {customer.ng_staff_ids.length}
@@ -296,7 +296,12 @@ export default function CustomersPage() {
                           推奨 {customer.preferred_staff_ids.length}
                         </Badge>
                       ) : null}
-                      {(customer.ng_staff_ids?.length ?? 0) === 0 && (customer.preferred_staff_ids?.length ?? 0) === 0 && '-'}
+                      {(customer.allowed_staff_ids?.length ?? 0) > 0 ? (
+                        <Badge variant="outline" className="text-[10px] px-1.5 h-5 border-green-300 text-green-600">
+                          入れる {customer.allowed_staff_ids.length}
+                        </Badge>
+                      ) : null}
+                      {(customer.ng_staff_ids?.length ?? 0) === 0 && (customer.preferred_staff_ids?.length ?? 0) === 0 && (customer.allowed_staff_ids?.length ?? 0) === 0 && '-'}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">

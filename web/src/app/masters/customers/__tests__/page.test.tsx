@@ -1,11 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import CustomersPage from '../page';
 
 // ── モック ──────────────────────────────────────────────────────
 
+const mockCustomers = new Map();
+
 vi.mock('@/hooks/useCustomers', () => ({
-  useCustomers: () => ({ customers: new Map(), loading: false }),
+  useCustomers: () => ({ customers: mockCustomers, loading: false }),
 }));
 
 vi.mock('@/hooks/useHelpers', () => ({
@@ -67,6 +69,10 @@ vi.mock('lucide-react', () => ({
 // ── テスト ──────────────────────────────────────────────────────
 
 describe('利用者マスタページ', () => {
+  beforeEach(() => {
+    mockCustomers.clear();
+  });
+
   it('エラーなくレンダリングされる', () => {
     render(<CustomersPage />);
     expect(screen.getByText('利用者マスタ')).toBeInTheDocument();
@@ -92,5 +98,24 @@ describe('利用者マスタページ', () => {
     expect(screen.getByText('氏名')).toBeInTheDocument();
     expect(screen.getByText('住所')).toBeInTheDocument();
     expect(screen.getByText('サ責')).toBeInTheDocument();
+    expect(screen.getByText('NG/推奨/入れる')).toBeInTheDocument();
+  });
+
+  it('allowed_staff_idsを持つ利用者に「入れる」バッジが表示される', () => {
+    mockCustomers.set('C010', {
+      id: 'C010',
+      name: { family: '吉田', given: '勝', family_kana: 'よしだ', given_kana: 'かつ' },
+      address: '鹿児島市天文館町15-7',
+      service_manager: '鈴木裕子',
+      weekly_services: {},
+      ng_staff_ids: [],
+      preferred_staff_ids: ['H001', 'H009'],
+      allowed_staff_ids: ['H001', 'H009'],
+      same_household_customer_ids: [],
+      same_facility_customer_ids: [],
+    });
+    render(<CustomersPage />);
+    expect(screen.getByText('推奨 2')).toBeInTheDocument();
+    expect(screen.getByText('入れる 2')).toBeInTheDocument();
   });
 });
