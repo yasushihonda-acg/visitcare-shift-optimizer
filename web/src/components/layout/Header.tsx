@@ -138,14 +138,18 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
                   通知設定
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/help" className={pathname?.startsWith('/help') ? 'bg-accent' : ''}>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  使い方ガイド
+                </Link>
+              </DropdownMenuItem>
               {onShowWelcome && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onShowWelcome}>
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    使い方
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={onShowWelcome}>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  クイックツアー
+                </DropdownMenuItem>
               )}
               {isLoggedIn && (
                 <>

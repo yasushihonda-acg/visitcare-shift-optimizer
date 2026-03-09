@@ -28,12 +28,14 @@ function connectEmulators(dbInstance: Firestore, authInstance: Auth) {
   _emulatorConnected = true;
 
   try {
-    connectFirestoreEmulator(dbInstance, 'localhost', 8080);
+    const firestorePort = parseInt(process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? '8080', 10);
+    connectFirestoreEmulator(dbInstance, 'localhost', firestorePort);
   } catch {
     // 既に接続済みの場合のエラーを無視
   }
   try {
-    connectAuthEmulator(authInstance, 'http://localhost:9099', { disableWarnings: true });
+    const authPort = process.env.NEXT_PUBLIC_AUTH_EMULATOR_PORT ?? '9099';
+    connectAuthEmulator(authInstance, `http://localhost:${authPort}`, { disableWarnings: true });
   } catch {
     // 既に接続済みの場合のエラーを無視
   }

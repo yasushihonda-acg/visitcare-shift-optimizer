@@ -43,6 +43,7 @@ build/
 # Screenshots & temporary images
 *.png
 !docs/**/*.png
+!web/public/help/*.png
 
 # Playwright MCP (Claude Code automation)
 .playwright-mcp/

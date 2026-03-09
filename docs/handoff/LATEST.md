@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-09（tsc型エラー修正 PR #199 マージ済み、CI全ジョブ SUCCESS）
+**最終更新**: 2026-03-09（Customer配列フィールド欠落クラッシュ修正 PR #202 マージ済み、CI全ジョブ SUCCESS）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善・CustomerDetailSheet同一世帯/施設Badge表示+権限チェック・SERVICE_LABELSマスタ参照化・detailTarget stale data修正・CustomerDetailSheet ViewModel切り出し・hasWeeklyServices削除+useServiceTypes外部化・allowed_staff_ids Seedデータ+テスト拡充・利用者一覧世帯/施設列追加・tsc型エラー修正）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -58,6 +58,24 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+## 直近の実装（2026-03-09 クラッシュ修正）
+
+- **fix (#202, 2026-03-09)** ✅: Customer配列フィールド欠落による全クラッシュ箇所を網羅修正
+  - 既存Firestoreドキュメントに `ng_staff_ids` / `preferred_staff_ids` / `allowed_staff_ids` が存在しない場合のクラッシュ修正
+  - `checker.ts` / `validation.ts` / `allowed-staff-check.ts` / `customerDetailViewModel.ts` にオプショナルチェーン（`?.`）またはデフォルト値（`?? []`）を追加
+  - 再現テスト3件追加（TDD RED→GREEN）
+  - E2Eテストのstrict mode違反も修正（`.first()` 使用）
+
+- **fix (#201, 2026-03-09)** ✅: 利用者一覧ページのundefinedクラッシュを修正
+  - 既存Firestoreドキュメントに `same_household_customer_ids` / `same_facility_customer_ids` が存在しない場合の `undefined.length` TypeError修正
+  - `useCustomers.ts` でデフォルト値補完、`customers/page.tsx` でオプショナルチェーン追加
+
+- **test (#200, 2026-03-09)** ✅: allowed_staff_ids 事前チェックダイアログE2Eテスト追加
+  - Firestore emulator REST APIでH001/H009に月曜希望休を追加し、C010の警告を発生させるE2E
+  - 警告ダイアログ表示・「戻って修正する」・「警告を無視して実行」の3テスト
+  - `mode: 'serial'` でworker間データ競合を防止
+  - CI SUCCESS（E2Eテスト拡充完了）
 
 ## 直近の実装（2026-03-09 品質強化+Phase C完了）
 
@@ -381,10 +399,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 最新テスト結果サマリー（2026-03-09）
 - **Optimizer**: 297件 pass ✅
-- **Web (Next.js)**: 529件 pass ✅
+- **Web (Next.js)**: 532件以上 pass ✅（PR #202で+3件追加）
 - **Firestore Rules**: 107件 pass
-- **E2E Tests (Playwright)**: **70テスト** pass（3 skipped）✅
-- **CI/CD**: PR #196 main push CI SUCCESS（run #22831459288、全ジョブ GREEN + デプロイ完了）
+- **E2E Tests (Playwright)**: **73テスト以上** pass（PR #200で+3件追加）✅
+- **CI/CD**: PR #202 main push CI SUCCESS（全ジョブ GREEN + デプロイ完了）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -440,7 +458,6 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
    - 基本予定一覧詳細シート（行クリック詳細シート）E2E
    - 変更確認チェックボタン（アンバーリング→緑確認ボタン→解除）E2E
    - Undo/Redo ボタン操作（Cmd+Z / Cmd+Shift+Z）E2E
-   - allowed_staff_ids 事前チェックダイアログ E2E
    - 同一世帯・同一施設MultiSelect E2E
 4. **次フェーズ方針決定**: Phase 6（モバイル対応・PWA化・オフライン対応）等を検討
 5. **seed複数週対応の活用**: `import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23` で複数週一括投入が可能
