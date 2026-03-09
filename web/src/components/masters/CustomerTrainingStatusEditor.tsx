@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -145,6 +146,7 @@ export function CustomerTrainingStatusEditor({
         <DialogContent className="max-h-[70vh] max-w-sm">
           <DialogHeader>
             <DialogTitle>研修状態を追加</DialogTitle>
+            <DialogDescription className="sr-only">サービス種別と研修状態を選択してください</DialogDescription>
           </DialogHeader>
 
           <div className="relative">

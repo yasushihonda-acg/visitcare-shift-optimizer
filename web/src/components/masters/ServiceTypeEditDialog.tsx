@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -73,6 +74,7 @@ export function ServiceTypeEditDialog({
           <DialogTitle>
             {isNew ? 'サービス種別を追加' : 'サービス種別を編集'}
           </DialogTitle>
+          <DialogDescription className="sr-only">サービス種別の情報を入力してください</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-09（ヘルプページ更新 PR #206 + テストカバレッジ強化 PR #205/204 マージ済み、CI SUCCESS）
+**最終更新**: 2026-03-10（世帯/施設グループDRY化 PR #226 + パッチスクリプト PR #225 + Emulator project ID統一 PR #224 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善・CustomerDetailSheet同一世帯/施設Badge表示+権限チェック・SERVICE_LABELSマスタ参照化・detailTarget stale data修正・CustomerDetailSheet ViewModel切り出し・hasWeeklyServices削除+useServiceTypes外部化・allowed_staff_ids Seedデータ+テスト拡充・利用者一覧世帯/施設列追加・tsc型エラー修正）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -58,6 +58,32 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+## 直近の実装（2026-03-10 世帯/施設DRY化 + パッチスクリプト + Emulator安全性強化）
+
+- **refactor (#226, 2026-03-10)** ✅: 世帯/施設グループ構築ロジックを共通モジュールに抽出
+  - `seed/scripts/utils/household-groups.ts` 新規作成: `buildHouseholdFacilityGroups()` 純粋関数
+  - `import-customers.ts` / `patch-customers-household.ts` の重複ロジック（~30行）を共通モジュールに統合
+  - ユニットテスト7件追加（`seed/tests/household-groups.test.ts`）
+  - CI全4ジョブGREEN
+
+- **feat (#225, 2026-03-10)** ✅: 利用者の世帯/施設フィールドを差分更新するパッチスクリプトを追加
+  - `seed/scripts/patch-customers-household.ts` 新規作成
+  - `batch.set(ref, {...}, { merge: true })` で既存ドキュメントの `same_household_customer_ids` / `same_facility_customer_ids` のみ更新（他フィールド保持）
+  - `--dry-run` / `SEED_TARGET=production` 対応
+  - 背景: 本番Firestoreの世帯/施設フィールドが空だった問題の安全な修正手段
+
+- **fix (#224, 2026-03-10)** ✅: Emulator project IDをdemo-visitcareに統一（安全性向上）
+  - seed firestore-client / CI E2E env / web .env.local すべてで `demo-visitcare` に統一
+  - `demo-` プレフィックスにより Emulator 未接続時の本番書き込みを防止
+  - CI in_progress（run #22863135851）
+
+- **fix (#223, 2026-03-10)** ✅: Emulator project ID不一致でWebからseedデータが見えない
+  - Web の `NEXT_PUBLIC_FIREBASE_PROJECT_ID` が `demo-visitcare` → seed の `visitcare-shift-optimizer` と不一致で Emulator 上のコレクション参照が空になっていた問題を修正
+  - CI SUCCESS（run #22862576160）
+
+- **test (#221, 2026-03-10)** ✅: 利用者テーブルの世帯/施設バッジ表示テストを追加
+  - `customers` ページの世帯/施設列 Badge 表示を Vitest でカバー
 
 ## 直近の実装（2026-03-09 テストカバレッジ強化）
 
@@ -313,118 +339,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - iPad(1024px)で約63px余裕あり、Desktop(1280px)で約45px余裕あり
   - CI: success（run #22350898838）
 
-- **2026-02-22〜24の実装**: PR #107〜#124（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
-  - Phase 5b メール通知 → Gmail API DWD実装 → 利用者軸ビュー → staff_count/travel_times D&D統合
-  - ガント幅バグ修正 → 通知設定Firestore化 → マスタ詳細シート → ファビコン → E2E拡充
-  - ふりがなソート/あかさたなフィルター → 基本予定詳細シート → Undo/Redo → iPad横向き対応
-
-
-
-- **PR #85** ✅: ヘルパー編集UIに `customer_training_status` と `name.short` を追加
-  - `shared/types/helper.ts` + Python モデルにフィールド追加
-  - `HelperEditDialog.tsx` に入力フォーム追加
-
-- **PR #86** ✅: 利用者の不定期パターン（`irregular_patterns`）を実装（Closes #77）
-  - TypeScript型: `IrregularPattern` interface + `IrregularPatternType` type
-  - Zodバリデーション: `irregularPatternSchema` 追加（10件テスト追加）
-  - UI: `IrregularPatternEditor.tsx` 新規コンポーネント
-  - Python: Pydanticモデル + Firestoreローダー対応
-  - Seed: オーダー生成スクリプトで非アクティブ週スキップ
-
-- **PR #87** ✅: 外部連携ID入力UI (#83) + 分断勤務フラグ (#81)（Closes #83, Closes #81）
-  - 利用者編集ダイアログに外部連携ID（介ソルID / カカラID / CURA ID）入力フィールド追加
-  - ヘルパーに `split_shift_allowed` フラグ追加（UI + バックエンドモデル）
-
-- **PR #88** ✅: 徒歩移動スタッフへの訪問移動時間上限制約を追加（Closes #84）
-  - Optimizer: `MAX_WALK_TRAVEL_MINUTES = 30`（30分）を超えるペアへの割り当てを禁止
-  - API/Schema: `WalkingDistanceConstraint` モデル、routes.py に制約適用
-  - Firestore loader: ヘルパーの `transport_mode` 読み込み対応
-
-- **PR #89** ✅: サービス種別を8種類に拡張（Closes #80）
-  - 型定義: `shared/types/common.ts` + `web/src/types/index.ts` + `optimizer/models/common.py` に6種追加（mixed/prevention/private/disability/transport_support/severe_visiting）
-  - 資格制約: `constraints.py` で `_PHYSICAL_CARE_TYPES = {physical_care, mixed}` — mixedも `can_physical_care` 必須
-  - UI: WeeklyServicesEditor・GanttBar・GanttRow・UnassignedSection・OrderDetailPanel・ServiceTypeSummaryCard 全対応
-  - Seed CSV: 2件追加（C003/thursday/mixed, C007/friday/prevention）
-
-- **PR #90** ✅: 性別制約をソルバーのハード制約として実装（Closes #82）
-  - 型定義: `Gender`（`male`/`female`）・`GenderRequirement`（`any`/`female`/`male`）を TS・Python 両方に追加
-  - Optimizer: `_add_gender_constraint()` 追加 — `gender_requirement` が `any` 以外の利用者に対し性別不一致スタッフを割当禁止
-  - UI: `HelperEditDialog` に性別 Select、`CustomerEditDialog` にスタッフ性別要件 Select を追加
-  - Seed CSV: `helpers.csv` に `gender` 列（20名分）、`customers.csv` に `gender_requirement` 列（女性限定18名・男性限定2名）
-  - テスト: 4ケース新規（TDD: RED→GREEN確認済み）、Python 238件 / Web 247件 / E2E 全pass
-
-- **hotfix（2026-02-20）** ✅: ドキュメント整合性監査で発見した漏れを修正
-  - `optimizer/models/customer.py` に外部連携ID（`kaiso_id` / `karakara_id` / `cura_id`）を追加（PR #83 で UI/TS 追加時の Python 側反映漏れ）
-  - `docs/schema/firestore-schema.md` の `ServiceSlot.service_type` / `orders.service_type` を PR #89 の8種に更新（ドキュメント未更新漏れ）
-
-- **PR #91** ✅: PRD/SOWに新マスタフィールド・スコープ外・将来フェーズを反映
-  - `PRD.md`: 利用者マスタ6フィールド・スタッフマスタ4フィールド・研修状態3段階・可視化機能・スコープ外セクション追記
-  - `SOW.md`: サービス種別8種・拡張フィールド・スコープ外（突合処理）・将来フェーズを反映
-
-- **PR #92** ✅: Helper.genderをrequiredに統一・LATEST.mdの徒歩記述を実態に修正
-  - `shared/types/helper.ts` + `web/src/types/index.ts`: `gender?: Gender` → `gender: Gender`（Zodスキーマ・Pythonモデルは元々required）
-  - `docs/handoff/LATEST.md`: PR#88の「徒歩距離2.0km」→「徒歩移動時間30分（`MAX_WALK_TRAVEL_MINUTES = 30`）」
-
-- **PR #93** ✅: Customer/Helperマスタに新フィールドを追加（14ファイル、+331行）
-  - **Customer（6フィールド）**: `aozora_id`, `phone_number`, `home_care_office`, `consultation_support_office`, `care_manager_name`, `support_specialist_name`（全てoptional）
-  - **Helper（4フィールド）**: `employee_number`, `address`, `location`（GeoLocation?）, `phone_number`（全てoptional）
-  - 追加レイヤー: TypeScript共有型・フロントエンド型・Zodスキーマ・Pythonモデル・Firestoreローダー・UI編集ダイアログ（住所ジオコーディング含む）・Seedデータ/スクリプト・スキーマドキュメント
-  - `CustomerEditDialog.tsx`: 「連絡先・関連機関」セクション新設、外部連携IDにaozora_id追加
-  - `HelperEditDialog.tsx`: 社員番号・電話番号追加、住所セクション（住所入力＋ジオコーディングボタン＋lat/lng）新設
-
-- **PR #95** ✅: HelperEditDialog location NaN バリデーション修正（Closes #94）
-  - `HelperEditDialog.tsx`: `geocodeAddress()` で `lat`/`lng` が `NaN` になるケースの入力バリデーションを追加
-  - E2E CI failure（`masters-crud` テスト）を修正
-
-- **PR #102** ✅: スケジュール週全体ビュー（ピボット表示）を追加（Closes #96）
-  - `ScheduleContext` に `viewMode`（`'day' | 'week'`）を追加（デフォルト `'day'`、既存E2E影響なし）
-  - `ViewModeToggle` コンポーネント（日/週ボタン切り替え）を新規作成
-  - `WeeklyGanttChart` でヘルパー×曜日のピボット表示を実装（ResizeObserver でレスポンシブ列幅）
-  - `SERVICE_COLORS` を `constants.ts` に移動し週ビューでも再利用
-  - テスト: `ViewModeToggle.test.tsx`（5件）+ `WeeklyGanttChart.test.tsx`（7件）追加、計12件新規
-
-- **Phase 3** ✅: Python Optimizer の service_types 動的化（Closes #98 Phase 3）
-  - `models/common.py`: `ServiceTypeConfig` Pydantic モデル新設（code/label/short_label/requires_physical_care_cert/sort_order）
-  - `models/problem.py`: `OptimizationInput` に `service_type_configs: list[ServiceTypeConfig] = []` 追加（後方互換: デフォルト空）
-  - `data/firestore_loader.py`: `load_service_types()` + `load_all_service_types()` 追加、`load_optimization_input()` を更新
-  - `engine/constraints.py`: `_requires_physical_care_cert()` ヘルパー追加（Firestoreマスタ優先、静的フォールバック）
-  - `engine/solver.py`: `_compute_feasible_pairs()` で `service_type_configs` を動的参照（`o.service_type in ("physical_care", "mixed")` のハードコードを削除）
-  - `report/aggregation.py`: `aggregate_service_type_summary()` に `service_type_configs` 引数追加（ラベル動的解決）
-  - `api/routes.py`: 月次レポートエンドポイントで `load_all_service_types()` を呼び出し、集計に渡す
-  - テスト15件新規追加: `TestLoadServiceTypes`（5件）+ `TestLoadAllServiceTypes`（2件）+ `TestDynamicQualificationConstraint`（4件）+ 動的ラベルテスト（4件）
-  - 全266件 pass
-
-- **PR #103** ✅: service_types Firestoreコレクション + CRUD UI を追加（Closes #98 Phase 1）
-  - `service_types` コレクション新設（ドキュメントID = code）、delete 禁止ルール
-  - 8種の初期 Seed データ（CSV + `import-service-types.ts`）
-  - `useServiceTypes` フック（onSnapshot + sort_order 順 sortedList）
-  - Firestore CRUD: `createServiceType`（setDoc）/ `updateServiceType`（updateDoc）
-  - Zod: `serviceTypeSchema`（code は英小文字・アンダースコアのみ）
-  - `/masters/service-types` ページ + `ServiceTypeEditDialog`（編集モードで code は read-only）
-  - Header.tsx ナビゲーションに「サービス種別マスタ」リンク追加
-  - テスト: 33件新規追加（CRUD 8件 + Zod 12件 + Firestore Rules 13件）
-
-- **PR #101** ✅: TrainingStatusを3段階（not_visited/training/independent）に拡張（Closes #97）
-  - `shared/types/common.ts` + `web/src/types/index.ts`: TrainingStatus に `not_visited` を追加
-  - `optimizer/models/common.py`: TrainingStatus enum に NOT_VISITED を追加
-  - `optimizer/engine/constraints.py`: not_visited も training と同様に単独割当禁止に適用
-  - `web/src/lib/validation/schemas.ts`: Zod enum に `not_visited` を追加
-  - `CustomerTrainingStatusEditor.tsx`: SelectItem に「未経験」を追加（UI: 3択）
-  - テスト: Optimizer 251件 pass / Web 250件 pass
-
-- **PR #100** ✅: household制約のFirestoreリンク生成を共通化（Closes #99）
-  - `optimizer/data/link_household.py` を新規作成し、`csv_loader._link_household_orders()` を共通関数 `link_household_orders()` として抽出
-  - `firestore_loader.load_optimization_input()` でも共通関数を呼び出し、Firestoreに `linked_order_id` がない場合も動的リンクを生成するよう修正
-  - `csv_loader` は共通関数を呼ぶだけに変更（動作は同一）
-  - `seed/scripts/import-orders.ts` のリンクロジックを時間ギャップベース（30分以内）に修正しcsv_loaderと整合
-  - テスト: `test_link_household.py`（10件新規）+ `test_firestore_loader.py`（2件追加）→ 計250件 pass（Optimizer）/ 249件 pass（Web）
+- **2026-02-20〜02-25の実装**: PR #85〜#131（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
+  - 不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別8種→105種・性別制約
+  - 新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化・allowed_staff_ids
+  - PR #107〜#124: Phase 5b メール通知・Gmail API DWD・利用者軸ビュー・Undo/Redo・iPad横向き対応
 
 ## 最新テスト結果サマリー（2026-03-09）
 - **Optimizer**: 297件 pass ✅
 - **Web (Next.js)**: **972件** pass ✅（PR #204: 577→865件、PR #205: 865→972件）
 - **Firestore Rules**: 107件 pass
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #205 main push CI in_progress（Web/Firestore Rules SUCCESS、Optimizer/E2E in_progress）
+- **CI/CD**: PR #224 main push CI in_progress（Firestore Rules SUCCESS、他 in_progress）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
