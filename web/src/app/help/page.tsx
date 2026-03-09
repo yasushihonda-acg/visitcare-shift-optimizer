@@ -29,7 +29,10 @@ const permissionRows: { label: string; admin: boolean; mgr: boolean; helper: boo
   { label: 'ヘルパーマスタ編集', admin: true, mgr: false, helper: false },
   { label: '希望休管理（全員）', admin: true, mgr: true, helper: false },
   { label: '希望休管理（自分のみ）', admin: false, mgr: false, helper: true },
+  { label: '月次レポート閲覧', admin: true, mgr: true, helper: true },
+  { label: 'Sheetsエクスポート', admin: true, mgr: true, helper: false },
   { label: '実行履歴閲覧', admin: true, mgr: true, helper: true },
+  { label: '通知設定', admin: true, mgr: false, helper: false },
 ];
 
 const sections: HelpSection[] = [
@@ -87,9 +90,10 @@ const sections: HelpSection[] = [
     Icon: Wand2,
     title: '最適化の実行',
     description:
-      'AI最適化エンジンが移動時間・スタッフ適性・勤務バランスを考慮して自動割当を行います。',
+      'AI最適化エンジンが移動時間・スタッフ適性・勤務バランスを考慮して自動割当を行います。実行前に「入れるスタッフ」の整合性を自動チェックし、問題があれば警告を表示します。',
     steps: [
       { label: '「最適化実行」をクリック', detail: 'スケジュール画面右上のボタンから実行ダイアログを開きます。' },
+      { label: '事前チェック', detail: '「入れるスタッフ」が全員対応不可の場合、警告ダイアログが表示されます。「戻って修正する」か「警告を無視して実行」を選択できます。' },
       { label: 'テスト実行 or 本実行', detail: 'テスト実行はDB保存なし（確認用）。本実行はFirestoreに書き戻します。' },
       { label: '詳細設定', detail: '移動時間最小化・推奨スタッフ優先・稼働バランス・担当継続性の重みを調整可能。' },
       { label: '結果確認', detail: '完了後トースト通知が表示され、ガントチャートに反映されます。' },
@@ -97,6 +101,7 @@ const sections: HelpSection[] = [
     tips: [
       'まずテスト実行で結果を確認し、納得してから本実行がおすすめ',
       '詳細設定のスライダーで最適化の優先度をカスタマイズ可能',
+      '「入れるスタッフ」の警告が出た場合、利用者マスタで対象スタッフを追加するか希望休を調整してください',
     ],
   },
   {
@@ -104,12 +109,17 @@ const sections: HelpSection[] = [
     Icon: Users,
     title: '利用者マスタ',
     description:
-      '利用者の基本情報（氏名・住所・サ責・NG/推奨スタッフ等）を一覧・編集できます。あいうえお順フィルターや検索機能付き。',
+      '利用者の基本情報（氏名・住所・サ責・NG/推奨スタッフ・入れるスタッフ・同一世帯/同一施設等）を一覧・編集できます。あいうえお順フィルターや検索機能付き。',
     screenshot: '/help/04-customers.png',
     steps: [
       { label: '検索', detail: 'あおぞらID・名前・ふりがな・住所・ケアマネで絞り込み。頭文字フィルターも利用可能。' },
       { label: '新規追加', detail: '右上の「+新規追加」ボタンから登録。' },
       { label: '編集', detail: '行右端の鉛筆アイコンで編集ダイアログを開きます。' },
+    ],
+    tips: [
+      '「入れるスタッフ」（ホワイトリスト）を設定すると、最適化時にそのスタッフのみ割当対象になります',
+      '「同一世帯」「同一施設」を設定すると、移動時間が0として最適化されます',
+      '一覧の「世帯/施設」列で同一世帯・同一施設の登録状況をバッジで確認できます',
     ],
   },
   {
