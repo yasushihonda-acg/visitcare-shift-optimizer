@@ -115,7 +115,28 @@ describe('利用者マスタページ', () => {
       same_facility_customer_ids: [],
     });
     render(<CustomersPage />);
-    expect(screen.getByText('推奨 2')).toBeInTheDocument();
+    // preferred が全て allowed に含まれるため「推奨」バッジは表示されない
+    expect(screen.queryByText('推奨 2')).not.toBeInTheDocument();
     expect(screen.getByText('入れる 2')).toBeInTheDocument();
+  });
+
+  it('preferred が allowed と重複しない場合のみ「推奨」バッジが表示される', () => {
+    mockCustomers.set('C020', {
+      id: 'C020',
+      name: { family: '山田', given: '太郎', family_kana: 'やまだ', given_kana: 'たろう' },
+      address: '鹿児島市中央町1-1',
+      service_manager: '鈴木裕子',
+      weekly_services: {},
+      ng_staff_ids: ['H003'],
+      preferred_staff_ids: ['H001', 'H002', 'H009'],
+      allowed_staff_ids: ['H009'],
+      same_household_customer_ids: [],
+      same_facility_customer_ids: [],
+    });
+    render(<CustomersPage />);
+    expect(screen.getByText('NG 1')).toBeInTheDocument();
+    // H001, H002 は allowed に含まれないので推奨バッジに表示
+    expect(screen.getByText('推奨 2')).toBeInTheDocument();
+    expect(screen.getByText('入れる 1')).toBeInTheDocument();
   });
 });

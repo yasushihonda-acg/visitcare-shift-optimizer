@@ -188,7 +188,6 @@ describe('buildCustomerDetailViewModel', () => {
     expect(vm.weeklyServices[0].dayLabel).toBe('月');
     expect(vm.weeklyServices[0].slots[0].serviceLabel).toBe('身体介護');
     expect(vm.weeklyServices[0].slots[0].time).toBe('09:00 - 10:00');
-    expect(vm.weeklyServices.length).toBeGreaterThan(0);
   });
 
   it('未知のservice_typeはコードがそのまま使われる', () => {
@@ -226,6 +225,33 @@ describe('buildCustomerDetailViewModel', () => {
       emptyHelpers, emptyCustomers, emptyServiceTypes,
     );
     expect(vmYes.hasContact).toBe(true);
+  });
+
+  it('NG + preferred + allowed の3種が同時に正しく分類される（C010相当）', () => {
+    const helpers = new Map([
+      ['h-1', makeHelper('h-1', '鈴木', '一郎')],
+      ['h-2', makeHelper('h-2', '高橋', '二郎')],
+      ['h-3', makeHelper('h-3', '山本', 'さくら')],
+      ['h-4', makeHelper('h-4', '佐藤', '太郎')],
+    ]);
+    const vm = buildCustomerDetailViewModel(
+      makeCustomer({
+        ng_staff_ids: ['h-1'],
+        preferred_staff_ids: ['h-2', 'h-3'],
+        allowed_staff_ids: ['h-3', 'h-4'],
+      }),
+      helpers, emptyCustomers, emptyServiceTypes,
+    );
+    // h-1: NGのみ
+    expect(vm.ngStaff).toEqual([{ id: 'h-1', name: '鈴木 一郎', isPreferred: false }]);
+    // h-2: preferred かつ allowed に含まれない → preferredStaff
+    expect(vm.preferredStaff).toEqual([{ id: 'h-2', name: '高橋 二郎', isPreferred: true }]);
+    // h-3: preferred かつ allowed → allowedStaff に isPreferred=true で入る
+    // h-4: allowed のみ → allowedStaff に isPreferred=false で入る
+    expect(vm.allowedStaff).toEqual([
+      { id: 'h-3', name: '山本 さくら', isPreferred: true },
+      { id: 'h-4', name: '佐藤 太郎', isPreferred: false },
+    ]);
   });
 
   it('性別要件ラベルが正しく変換される', () => {
