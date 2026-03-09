@@ -90,7 +90,7 @@ export function checkAllowedStaff(input: CheckAllowedStaffInput): AllowedStaffWa
 
   for (const order of input.orders) {
     const customer = input.customers.get(order.customer_id);
-    if (!customer || customer.allowed_staff_ids.length === 0) continue;
+    if (!customer || (customer.allowed_staff_ids?.length ?? 0) === 0) continue;
 
     const dayOfWeek = getDayOfWeek(order.date);
 

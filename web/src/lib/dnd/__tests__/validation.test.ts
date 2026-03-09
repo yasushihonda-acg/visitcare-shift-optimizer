@@ -567,4 +567,17 @@ describe('validateDrop', () => {
       expect(result.allowed).toBe(false);
     });
   });
+
+  describe('Firestore配列フィールド欠落への耐性', () => {
+    it('ng_staff_ids/preferred_staff_ids が undefined でもクラッシュしない', () => {
+      const input = baseInput();
+      const legacyCustomer = {
+        ...makeCustomer(),
+        ng_staff_ids: undefined,
+        preferred_staff_ids: undefined,
+      } as unknown as Customer;
+      input.customers = new Map([['cust-1', legacyCustomer]]);
+      expect(() => validateDrop(input)).not.toThrow();
+    });
+  });
 });

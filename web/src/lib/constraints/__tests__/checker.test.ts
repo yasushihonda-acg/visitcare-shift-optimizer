@@ -537,4 +537,25 @@ describe('checkConstraints', () => {
       expect(violations.some((v) => v.type === 'preferred_staff')).toBe(false);
     });
   });
+
+  describe('Firestore配列フィールド欠落への耐性', () => {
+    it('ng_staff_ids/preferred_staff_ids が undefined でもクラッシュしない', () => {
+      const legacyCustomer = {
+        ...makeCustomer(),
+        ng_staff_ids: undefined,
+        preferred_staff_ids: undefined,
+      } as unknown as Customer;
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', legacyCustomer]]);
+      expect(() => {
+        checkConstraints({
+          orders: [makeOrder()],
+          helpers,
+          customers,
+          unavailability: [],
+          day: 'monday',
+        });
+      }).not.toThrow();
+    });
+  });
 });
