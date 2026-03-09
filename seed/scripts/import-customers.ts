@@ -81,9 +81,10 @@ export async function importCustomers(): Promise<number> {
     const sameHousehold = c.household_id
       ? (hhGroups[c.household_id] || []).filter((id) => id !== c.id)
       : [];
-    // 同一施設: 同じ住所の他メンバー
+    // 同一施設: 同じ住所の他メンバー（世帯メンバーは除外）
     const normAddr = normalizeAddress(c.address);
-    const sameFacility = (addrGroups[normAddr] || []).filter((id) => id !== c.id);
+    const hhSet = new Set(sameHousehold);
+    const sameFacility = (addrGroups[normAddr] || []).filter((id) => id !== c.id && !hhSet.has(id));
     // 曜日別サービス枠を構築
     const customerServices = services.filter((s) => s.customer_id === c.id);
     const weeklyServices: Record<string, Array<{
