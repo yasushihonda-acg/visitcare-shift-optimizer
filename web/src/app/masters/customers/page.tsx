@@ -286,32 +286,32 @@ export default function CustomersPage() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      {customer.ng_staff_ids.length > 0 ? (
+                      {(customer.ng_staff_ids?.length ?? 0) > 0 ? (
                         <Badge variant="destructive" className="text-[10px] px-1.5 h-5">
                           NG {customer.ng_staff_ids.length}
                         </Badge>
                       ) : null}
-                      {customer.preferred_staff_ids.length > 0 ? (
+                      {(customer.preferred_staff_ids?.length ?? 0) > 0 ? (
                         <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
                           推奨 {customer.preferred_staff_ids.length}
                         </Badge>
                       ) : null}
-                      {customer.ng_staff_ids.length === 0 && customer.preferred_staff_ids.length === 0 && '-'}
+                      {(customer.ng_staff_ids?.length ?? 0) === 0 && (customer.preferred_staff_ids?.length ?? 0) === 0 && '-'}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      {customer.same_household_customer_ids.length > 0 ? (
+                      {(customer.same_household_customer_ids?.length ?? 0) > 0 ? (
                         <Badge variant="outline" className="text-[10px] px-1.5 h-5">
                           世帯 {customer.same_household_customer_ids.length}
                         </Badge>
                       ) : null}
-                      {customer.same_facility_customer_ids.length > 0 ? (
+                      {(customer.same_facility_customer_ids?.length ?? 0) > 0 ? (
                         <Badge variant="outline" className="text-[10px] px-1.5 h-5 border-blue-300 text-blue-600">
                           施設 {customer.same_facility_customer_ids.length}
                         </Badge>
                       ) : null}
-                      {customer.same_household_customer_ids.length === 0 && customer.same_facility_customer_ids.length === 0 && '-'}
+                      {(customer.same_household_customer_ids?.length ?? 0) === 0 && (customer.same_facility_customer_ids?.length ?? 0) === 0 && '-'}
                     </div>
                   </TableCell>
                   {canEditCustomers && (

@@ -18,6 +18,12 @@ export function useCustomers() {
         const map = new Map<string, Customer>();
         snapshot.forEach((doc) => {
           const data = convertTimestamps<Customer>({ id: doc.id, ...doc.data() });
+          // 既存ドキュメントに欠落している可能性がある配列フィールドを補完
+          data.ng_staff_ids ??= [];
+          data.preferred_staff_ids ??= [];
+          data.allowed_staff_ids ??= [];
+          data.same_household_customer_ids ??= [];
+          data.same_facility_customer_ids ??= [];
           map.set(doc.id, data);
         });
         setCustomers(map);
