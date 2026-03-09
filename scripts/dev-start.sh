@@ -42,6 +42,8 @@ echo "[3/4] Optimizer API 起動中 (port 8081)..."
 cd "$ROOT_DIR/optimizer"
 ALLOW_UNAUTHENTICATED=true \
 FIRESTORE_EMULATOR_HOST=localhost:8080 \
+GCP_PROJECT_ID=demo-visitcare \
+CORS_ORIGINS=http://localhost:3000,http://localhost:3002 \
 .venv/bin/uvicorn optimizer.api.main:app --host 0.0.0.0 --port 8081 --reload &
 API_PID=$!
 cd "$ROOT_DIR"

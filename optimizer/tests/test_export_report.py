@@ -253,3 +253,52 @@ class TestExportReportEndpoint:
 
         assert response.status_code == 200
         assert response.json()["title"] == "月次レポート 2025年12月"
+
+    @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
+    @patch("optimizer.api.routes.build")
+    @patch("optimizer.api.routes.google.auth.default")
+    @patch("optimizer.api.routes.load_all_customers")
+    @patch("optimizer.api.routes.load_all_helpers")
+    @patch("optimizer.api.routes.load_monthly_orders")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_export_report_403_includes_scope_hint(
+        self,
+        mock_get_db: MagicMock,
+        mock_load_orders: MagicMock,
+        mock_load_helpers: MagicMock,
+        mock_load_customers: MagicMock,
+        mock_google_auth: MagicMock,
+        mock_build: MagicMock,
+        mock_create_sheet: MagicMock,
+    ) -> None:
+        """403エラー時にADCスコープのヒントが含まれる"""
+        mock_load_orders.return_value = [
+            {
+                "id": "order-1",
+                "customer_id": "cust-1",
+                "date": "2026-02-01",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "service_type": "physical_care",
+                "status": "completed",
+                "assigned_staff_ids": [],
+                "staff_count": 1,
+            }
+        ]
+        mock_load_helpers.return_value = []
+        mock_load_customers.return_value = []
+        mock_google_auth.return_value = (MagicMock(), "test-project")
+        mock_create_sheet.side_effect = Exception(
+            "HttpError 403 when requesting ... returned \"The caller does not have permission\""
+        )
+
+        response = client.post(
+            "/export-report",
+            json={"year_month": "2026-02"},
+        )
+
+        assert response.status_code == 500
+        detail = response.json()["detail"]
+        assert "403" in detail
+        assert "gcloud auth application-default login" in detail
+        assert "spreadsheets" in detail
