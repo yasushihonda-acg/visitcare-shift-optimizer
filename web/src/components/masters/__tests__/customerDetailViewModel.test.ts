@@ -254,6 +254,37 @@ describe('buildCustomerDetailViewModel', () => {
     ]);
   });
 
+  it('世帯+施設の両方がある場合に両方のメンバーが解決される', () => {
+    const c017 = makeCustomer({ id: 'C017', name: { family: '森', given: 'ハル' } });
+    const c042 = makeCustomer({ id: 'C042', name: { family: '中川', given: 'ウメ' } });
+    const customersMap = new Map([['C017', c017], ['C042', c042]]);
+    const vm = buildCustomerDetailViewModel(
+      makeCustomer({
+        id: 'C008',
+        same_household_customer_ids: ['C017'],
+        same_facility_customer_ids: ['C042'],
+      }),
+      emptyHelpers, customersMap, emptyServiceTypes,
+    );
+    expect(vm.householdMembers).toEqual([{ id: 'C017', name: '森 ハル' }]);
+    expect(vm.facilityMembers).toEqual([{ id: 'C042', name: '中川 ウメ' }]);
+  });
+
+  it('施設のみ（世帯なし）の場合 householdMembers が空', () => {
+    const c043 = makeCustomer({ id: 'C043', name: { family: '中島', given: '喜一' } });
+    const customersMap = new Map([['C043', c043]]);
+    const vm = buildCustomerDetailViewModel(
+      makeCustomer({
+        id: 'C018',
+        same_household_customer_ids: [],
+        same_facility_customer_ids: ['C043'],
+      }),
+      emptyHelpers, customersMap, emptyServiceTypes,
+    );
+    expect(vm.householdMembers).toEqual([]);
+    expect(vm.facilityMembers).toEqual([{ id: 'C043', name: '中島 喜一' }]);
+  });
+
   it('性別要件ラベルが正しく変換される', () => {
     const vm = buildCustomerDetailViewModel(
       makeCustomer({ gender_requirement: 'female' }),

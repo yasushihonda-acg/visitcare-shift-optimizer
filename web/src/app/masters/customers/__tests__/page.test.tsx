@@ -139,4 +139,79 @@ describe('利用者マスタページ', () => {
     expect(screen.getByText('推奨 2')).toBeInTheDocument();
     expect(screen.getByText('入れる 1')).toBeInTheDocument();
   });
+
+  it('同一世帯メンバーがいる利用者に「世帯」バッジが表示される', () => {
+    mockCustomers.set('C001', {
+      id: 'C001',
+      name: { family: '山田', given: '太郎', family_kana: 'やまだ', given_kana: 'たろう' },
+      address: '鹿児島市天文館町10-1',
+      service_manager: '田中美咲',
+      weekly_services: {},
+      ng_staff_ids: [],
+      preferred_staff_ids: [],
+      allowed_staff_ids: [],
+      same_household_customer_ids: ['C002'],
+      same_facility_customer_ids: [],
+    });
+    render(<CustomersPage />);
+    expect(screen.getByText('世帯 1')).toBeInTheDocument();
+    // 施設バッジ（"施設 N"形式）は表示されない（ヘッダーの「世帯/施設」は除く）
+    expect(screen.queryByText(/^施設 \d+$/)).not.toBeInTheDocument();
+  });
+
+  it('同一施設メンバーがいる利用者に「施設」バッジが表示される', () => {
+    mockCustomers.set('C018', {
+      id: 'C018',
+      name: { family: '池田', given: '政夫', family_kana: 'いけだ', given_kana: 'まさお' },
+      address: '鹿児島市谷山中央一丁目6-12',
+      service_manager: '佐藤健一',
+      weekly_services: {},
+      ng_staff_ids: [],
+      preferred_staff_ids: [],
+      allowed_staff_ids: [],
+      same_household_customer_ids: [],
+      same_facility_customer_ids: ['C043'],
+    });
+    render(<CustomersPage />);
+    expect(screen.getByText('施設 1')).toBeInTheDocument();
+    // 世帯バッジ（"世帯 N"形式）は表示されない
+    expect(screen.queryByText(/^世帯 \d+$/)).not.toBeInTheDocument();
+  });
+
+  it('世帯+施設の両方がある利用者に両バッジが表示される', () => {
+    mockCustomers.set('C008', {
+      id: 'C008',
+      name: { family: '渡辺', given: 'トメ', family_kana: 'わたなべ', given_kana: 'とめ' },
+      address: '鹿児島市鴨池一丁目18-3',
+      service_manager: '田中美咲',
+      weekly_services: {},
+      ng_staff_ids: [],
+      preferred_staff_ids: [],
+      allowed_staff_ids: [],
+      same_household_customer_ids: ['C017'],
+      same_facility_customer_ids: ['C042'],
+    });
+    render(<CustomersPage />);
+    expect(screen.getByText('世帯 1')).toBeInTheDocument();
+    expect(screen.getByText('施設 1')).toBeInTheDocument();
+  });
+
+  it('世帯も施設もない利用者は「-」が表示される', () => {
+    mockCustomers.set('C003', {
+      id: 'C003',
+      name: { family: '中村', given: '正雄', family_kana: 'なかむら', given_kana: 'まさお' },
+      address: '鹿児島市中央町5-3',
+      service_manager: '佐藤健一',
+      weekly_services: {},
+      ng_staff_ids: [],
+      preferred_staff_ids: [],
+      allowed_staff_ids: [],
+      same_household_customer_ids: [],
+      same_facility_customer_ids: [],
+    });
+    render(<CustomersPage />);
+    // NG/推奨/入れるの「-」と世帯/施設の「-」の2つがある
+    const dashes = screen.getAllByText('-');
+    expect(dashes.length).toBeGreaterThanOrEqual(2);
+  });
 });
