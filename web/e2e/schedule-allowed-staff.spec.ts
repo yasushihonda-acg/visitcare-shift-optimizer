@@ -72,7 +72,9 @@ async function removeUnavailability(staffId: string, weekStart: string): Promise
 // ── Tests ──
 
 test.describe('allowed_staff_ids 事前チェックダイアログ', () => {
-  test.describe.configure({ retries: 2, timeout: 60_000 });
+  // 全テストが同一workerで逐次実行されるよう mode: 'serial' を指定。
+  // beforeAll/afterAll のデータセットアップ・クリーンアップがworker間で競合しないようにする。
+  test.describe.configure({ retries: 2, timeout: 60_000, mode: 'serial' });
 
   const weekStart = getCurrentMondayJST();
 
