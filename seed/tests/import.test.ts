@@ -124,6 +124,9 @@ describe('Firestore import integration', () => {
     expect(c002.same_household_customer_ids).toContain('C001');
     expect(c001.location.lat).toBe(c002.location.lat);
     expect(c001.location.lng).toBe(c002.location.lng);
+    // 世帯メンバーは施設グループに含まれない
+    expect(c001.same_facility_customer_ids).not.toContain('C002');
+    expect(c002.same_facility_customer_ids).not.toContain('C001');
   });
 
   it('should have all household groups linked (H001-H005)', async () => {
