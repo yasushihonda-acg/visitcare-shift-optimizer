@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -114,6 +115,7 @@ export function CustomerMultiSelect({
         <DialogContent className="max-h-[70vh] max-w-sm">
           <DialogHeader>
             <DialogTitle>{label}を選択</DialogTitle>
+            <DialogDescription className="sr-only">チェックボックスで{label}を選択してください</DialogDescription>
           </DialogHeader>
 
           <div className="relative">

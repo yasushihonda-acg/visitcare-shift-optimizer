@@ -9,6 +9,7 @@ import { addDays, format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -136,6 +137,7 @@ export function UnavailabilityEditDialog({
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isNew ? '希望休を追加' : '希望休を編集'}</DialogTitle>
+          <DialogDescription className="sr-only">希望休の詳細を入力してください</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

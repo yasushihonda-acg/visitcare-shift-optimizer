@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -126,6 +127,7 @@ export function ChatReminderDialog({
             <MessageSquare className="inline mr-2 h-5 w-5" />
             Chat催促を送信
           </DialogTitle>
+          <DialogDescription className="sr-only">希望休未提出のスタッフにChat催促を送信します</DialogDescription>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground">
