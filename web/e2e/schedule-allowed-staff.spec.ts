@@ -102,10 +102,10 @@ test.describe('allowed_staff_ids 事前チェックダイアログ', () => {
     await expect(dialog.getByText('最適化前の注意')).toBeVisible();
     // C010（吉田勝）の利用者名が表示される
     await expect(dialog.getByText('吉田').first()).toBeVisible();
-    // 月曜の表示
-    await expect(dialog.getByText(/月曜/)).toBeVisible();
+    // 月曜の表示（C010は月曜に2オーダーあるため複数マッチ → first()）
+    await expect(dialog.getByText(/月曜/).first()).toBeVisible();
     // allowed ヘルパー名の表示（設定中: ... → 全員対応不可）
-    await expect(dialog.getByText(/全員対応不可/)).toBeVisible();
+    await expect(dialog.getByText(/全員対応不可/).first()).toBeVisible();
   });
 
   test('「戻って修正する」で警告ダイアログが閉じる', async ({ page }) => {

@@ -98,9 +98,9 @@ export function buildCustomerDetailViewModel(
       ? `${customer.name.family_kana ?? ''} ${customer.name.given_kana ?? ''}`.trim()
       : null;
 
-  const preferredSet = new Set(customer.preferred_staff_ids);
+  const preferredSet = new Set(customer.preferred_staff_ids ?? []);
 
-  const ngStaff: ResolvedStaff[] = customer.ng_staff_ids
+  const ngStaff: ResolvedStaff[] = (customer.ng_staff_ids ?? [])
     .filter((id) => helpers.has(id))
     .map((id) => ({
       id,

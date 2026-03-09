@@ -303,4 +303,21 @@ describe('checkAllowedStaff', () => {
       expect(result[0].customer_id).toBe('C002');
     });
   });
+
+  describe('Firestore配列フィールド欠落への耐性', () => {
+    it('allowed_staff_ids が undefined でもクラッシュしない', () => {
+      const legacyCustomer = {
+        ...makeCustomer({ id: 'C001' }),
+        allowed_staff_ids: undefined,
+      } as unknown as Customer;
+      expect(() => {
+        checkAllowedStaff({
+          customers: new Map([['C001', legacyCustomer]]),
+          helpers: new Map([['H001', makeHelper({ id: 'H001' })]]),
+          orders: [makeOrder({ id: 'O001', customer_id: 'C001' })],
+          unavailability: [],
+        });
+      }).not.toThrow();
+    });
+  });
 });

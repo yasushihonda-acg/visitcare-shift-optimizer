@@ -56,7 +56,7 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
   }
 
   // NGスタッフ
-  if (customer?.ng_staff_ids.includes(targetHelperId)) {
+  if (customer?.ng_staff_ids?.includes(targetHelperId)) {
     return { allowed: false, reason: `${helper.name.family} はNGスタッフです` };
   }
 
@@ -135,7 +135,7 @@ export function validateDrop(input: ValidateDropInput): DropValidationResult {
   }
 
   // 推奨スタッフ外 → 警告
-  if (customer && customer.preferred_staff_ids.length > 0 && !customer.preferred_staff_ids.includes(targetHelperId)) {
+  if (customer && (customer.preferred_staff_ids?.length ?? 0) > 0 && !customer.preferred_staff_ids.includes(targetHelperId)) {
     warnings.push(`${helper.name.family} は推奨スタッフ外です`);
   }
 

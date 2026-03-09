@@ -78,7 +78,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
       if (!helper) continue;
 
       // NGスタッフ
-      if (customer?.ng_staff_ids.includes(staffId)) {
+      if (customer?.ng_staff_ids?.includes(staffId)) {
         addViolation({
           orderId: order.id,
           staffId,
@@ -133,7 +133,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
       }
 
       // 推奨スタッフ外
-      if (customer && customer.preferred_staff_ids.length > 0 && !customer.preferred_staff_ids.includes(staffId)) {
+      if (customer && (customer.preferred_staff_ids?.length ?? 0) > 0 && !customer.preferred_staff_ids.includes(staffId)) {
         addViolation({
           orderId: order.id,
           staffId,
