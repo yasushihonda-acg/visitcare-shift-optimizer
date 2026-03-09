@@ -34,7 +34,7 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
   const isLoggedIn = authMode === 'required' && user && !user.isAnonymous;
 
   return (
-    <header className="bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] px-4 py-3 shadow-brand">
+    <header className="bg-gradient-brand px-4 py-3 shadow-brand">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Link href="/" className="flex items-center gap-2.5">

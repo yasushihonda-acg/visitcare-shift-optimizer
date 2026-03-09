@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Heart, ArrowLeft, Calendar, MousePointerClick, Wand2, Users, UserCog, CalendarCheck, CalendarOff, BarChart2, Bell, GripVertical, ChevronRight } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { Heart, ArrowLeft, Calendar, MousePointerClick, Wand2, Users, UserCog, CalendarCheck, CalendarOff, BarChart2, Bell, GripVertical, ChevronRight, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
 /*  Section data                                                       */
@@ -10,18 +12,30 @@ import { useState, useEffect, useRef } from 'react';
 
 interface HelpSection {
   id: string;
-  icon: React.ReactNode;
+  Icon: LucideIcon;
   title: string;
   description: string;
   screenshot?: string;
   steps?: { label: string; detail: string }[];
   tips?: string[];
+  children?: React.ReactNode;
 }
+
+const permissionRows: { label: string; admin: boolean; mgr: boolean; helper: boolean }[] = [
+  { label: 'スケジュール閲覧', admin: true, mgr: true, helper: true },
+  { label: '最適化実行', admin: true, mgr: true, helper: false },
+  { label: '手動割当変更', admin: true, mgr: true, helper: false },
+  { label: '利用者マスタ編集', admin: true, mgr: true, helper: false },
+  { label: 'ヘルパーマスタ編集', admin: true, mgr: false, helper: false },
+  { label: '希望休管理（全員）', admin: true, mgr: true, helper: false },
+  { label: '希望休管理（自分のみ）', admin: false, mgr: false, helper: true },
+  { label: '実行履歴閲覧', admin: true, mgr: true, helper: true },
+];
 
 const sections: HelpSection[] = [
   {
     id: 'schedule',
-    icon: <Calendar className="h-5 w-5" />,
+    Icon: Calendar,
     title: 'スケジュール画面',
     description:
       'メイン画面です。ヘルパーごとのガントチャートで週間シフトを一覧できます。曜日タブで切り替え、統計バーで割当状況を即座に把握できます。',
@@ -40,7 +54,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'order-detail',
-    icon: <MousePointerClick className="h-5 w-5" />,
+    Icon: MousePointerClick,
     title: 'オーダー詳細',
     description:
       'ガントチャート上のオーダーバーをクリックすると、右側に詳細パネルが開きます。割当スタッフの変更やステータス確認ができます。',
@@ -54,7 +68,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'drag-and-drop',
-    icon: <GripVertical className="h-5 w-5" />,
+    Icon: GripVertical,
     title: '手動編集（ドラッグ&ドロップ）',
     description:
       'オーダーバーをドラッグして別のヘルパー行にドロップすると、割当を変更できます。制約チェックはリアルタイムで行われます。',
@@ -70,7 +84,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'optimization',
-    icon: <Wand2 className="h-5 w-5" />,
+    Icon: Wand2,
     title: '最適化の実行',
     description:
       'AI最適化エンジンが移動時間・スタッフ適性・勤務バランスを考慮して自動割当を行います。',
@@ -87,7 +101,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'customers',
-    icon: <Users className="h-5 w-5" />,
+    Icon: Users,
     title: '利用者マスタ',
     description:
       '利用者の基本情報（氏名・住所・サ責・NG/推奨スタッフ等）を一覧・編集できます。あいうえお順フィルターや検索機能付き。',
@@ -100,7 +114,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'helpers',
-    icon: <UserCog className="h-5 w-5" />,
+    Icon: UserCog,
     title: 'ヘルパーマスタ',
     description:
       'ヘルパーの資格・雇用形態・身体介護可否・勤務日数・希望時間等を管理します。',
@@ -112,7 +126,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'weekly-schedule',
-    icon: <CalendarCheck className="h-5 w-5" />,
+    Icon: CalendarCheck,
     title: '基本予定一覧',
     description:
       '利用者ごとの週間サービス予定を一覧表示。曜日・サービス種別・時間帯・合計件数が一目でわかります。',
@@ -120,7 +134,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'unavailability',
-    icon: <CalendarOff className="h-5 w-5" />,
+    Icon: CalendarOff,
     title: '希望休管理',
     description:
       'スタッフの希望休を週単位で管理します。終日または時間指定で登録でき、Chat催促・メール催促機能も利用可能です。',
@@ -133,7 +147,7 @@ const sections: HelpSection[] = [
   },
   {
     id: 'report',
-    icon: <BarChart2 className="h-5 w-5" />,
+    Icon: BarChart2,
     title: '月次レポート',
     description:
       '月単位の実績サマリーを表示。実績確認率、サービス種別内訳、スタッフ別稼働時間、利用者別サービス実績が確認でき、Google Sheetsへのエクスポートも可能です。',
@@ -141,11 +155,18 @@ const sections: HelpSection[] = [
   },
   {
     id: 'settings',
-    icon: <Bell className="h-5 w-5" />,
+    Icon: Bell,
     title: '通知設定',
     description:
       'メール通知に使用する送信元アドレスを設定します。Google Workspaceドメインのメールアドレスを指定してください。',
     screenshot: '/help/10-settings.png',
+  },
+  {
+    id: 'permissions',
+    Icon: ShieldCheck,
+    title: '権限について',
+    description:
+      'ロールによって操作できる範囲が異なります。',
   },
 ];
 
@@ -164,13 +185,14 @@ function TableOfContents({ activeId }: { activeId: string }) {
           <li key={s.id}>
             <a
               href={`#${s.id}`}
-              className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-all duration-200
-                ${activeId === s.id
+              className={cn(
+                'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-all duration-200',
+                activeId === s.id
                   ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                }`}
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+              )}
             >
-              <span className="shrink-0 opacity-70">{s.icon}</span>
+              <span className="shrink-0 opacity-70"><s.Icon className="h-4 w-4" /></span>
               <span className="truncate">{s.title}</span>
             </a>
           </li>
@@ -181,10 +203,41 @@ function TableOfContents({ activeId }: { activeId: string }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Permissions table                                                  */
+/* ------------------------------------------------------------------ */
+
+function PermissionsTable() {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left">
+            <th className="py-2.5 pr-4 font-semibold text-foreground">操作</th>
+            <th className="py-2.5 px-4 font-semibold text-center text-foreground">管理者</th>
+            <th className="py-2.5 px-4 font-semibold text-center text-foreground">サ責</th>
+            <th className="py-2.5 px-4 font-semibold text-center text-foreground">ヘルパー</th>
+          </tr>
+        </thead>
+        <tbody className="text-muted-foreground">
+          {permissionRows.map((row) => (
+            <tr key={row.label} className="border-b last:border-0">
+              <td className="py-2.5 pr-4 font-medium text-foreground">{row.label}</td>
+              <td className="py-2.5 px-4 text-center">{row.admin ? <span className="text-primary font-bold">&#x25CB;</span> : '—'}</td>
+              <td className="py-2.5 px-4 text-center">{row.mgr ? <span className="text-primary font-bold">&#x25CB;</span> : '—'}</td>
+              <td className="py-2.5 px-4 text-center">{row.helper ? <span className="text-primary font-bold">&#x25CB;</span> : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Section card component                                             */
 /* ------------------------------------------------------------------ */
 
-function SectionCard({ section, index }: { section: HelpSection; index: number }) {
+function SectionCard({ section, index, children }: { section: HelpSection; index: number; children?: React.ReactNode }) {
   return (
     <section
       id={section.id}
@@ -195,7 +248,7 @@ function SectionCard({ section, index }: { section: HelpSection; index: number }
         {/* Header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b bg-gradient-to-r from-primary/[0.04] to-transparent">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            {section.icon}
+            <section.Icon className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-foreground">{section.title}</h2>
@@ -230,7 +283,7 @@ function SectionCard({ section, index }: { section: HelpSection; index: number }
               </h3>
               <ol className="space-y-2">
                 {section.steps.map((step, i) => (
-                  <li key={i} className="flex gap-3 items-start">
+                  <li key={step.label} className="flex gap-3 items-start">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold mt-0.5">
                       {i + 1}
                     </span>
@@ -248,16 +301,18 @@ function SectionCard({ section, index }: { section: HelpSection; index: number }
           {section.tips && section.tips.length > 0 && (
             <div className="rounded-lg bg-accent/40 border border-accent px-4 py-3 space-y-1.5">
               <p className="text-xs font-semibold text-accent-foreground">Tips</p>
-              <ul className="space-y-1">
-                {section.tips.map((tip, i) => (
-                  <li key={i} className="text-sm text-accent-foreground/80 flex items-start gap-2">
-                    <span className="text-primary mt-0.5">&#x2022;</span>
+              <ul className="list-disc list-inside space-y-1">
+                {section.tips.map((tip) => (
+                  <li key={tip} className="text-sm text-accent-foreground/80">
                     {tip}
                   </li>
                 ))}
               </ul>
             </div>
           )}
+
+          {/* Custom children (e.g. permissions table) */}
+          {children}
         </div>
       </div>
     </section>
@@ -270,10 +325,9 @@ function SectionCard({ section, index }: { section: HelpSection; index: number }
 
 export default function HelpPage() {
   const [activeId, setActiveId] = useState(sections[0].id);
-  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
@@ -286,15 +340,15 @@ export default function HelpPage() {
     );
 
     const els = sections.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[];
-    els.forEach((el) => observerRef.current?.observe(el));
+    els.forEach((el) => observer.observe(el));
 
-    return () => observerRef.current?.disconnect();
+    return () => observer.disconnect();
   }, []);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero header */}
-      <div className="bg-gradient-to-r from-[oklch(0.50_0.13_200)] to-[oklch(0.56_0.14_188)] text-white">
+      <div className="bg-gradient-brand text-white">
         <div className="mx-auto max-w-6xl px-6 py-8">
           <Link
             href="/"
@@ -322,56 +376,10 @@ export default function HelpPage() {
         <TableOfContents activeId={activeId} />
         <main className="flex-1 min-w-0 space-y-6">
           {sections.map((section, index) => (
-            <SectionCard key={section.id} section={section} index={index} />
+            <SectionCard key={section.id} section={section} index={index}>
+              {section.id === 'permissions' && <PermissionsTable />}
+            </SectionCard>
           ))}
-
-          {/* Permissions table */}
-          <section id="permissions" className="scroll-mt-24">
-            <div className="rounded-xl border bg-card shadow-brand-sm overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b bg-gradient-to-r from-primary/[0.04] to-transparent">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Users className="h-5 w-5" />
-                </div>
-                <h2 className="text-lg font-bold text-foreground">権限について</h2>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-muted-foreground mb-4">
-                  ロールによって操作できる範囲が異なります。
-                </p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left">
-                        <th className="py-2.5 pr-4 font-semibold text-foreground">操作</th>
-                        <th className="py-2.5 px-4 font-semibold text-center text-foreground">管理者</th>
-                        <th className="py-2.5 px-4 font-semibold text-center text-foreground">サ責</th>
-                        <th className="py-2.5 px-4 font-semibold text-center text-foreground">ヘルパー</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-muted-foreground">
-                      {[
-                        ['スケジュール閲覧', true, true, true],
-                        ['最適化実行', true, true, false],
-                        ['手動割当変更', true, true, false],
-                        ['利用者マスタ編集', true, true, false],
-                        ['ヘルパーマスタ編集', true, false, false],
-                        ['希望休管理（全員）', true, true, false],
-                        ['希望休管理（自分のみ）', false, false, true],
-                        ['実行履歴閲覧', true, true, true],
-                      ].map(([label, admin, mgr, helper], i) => (
-                        <tr key={i} className="border-b last:border-0">
-                          <td className="py-2.5 pr-4 font-medium text-foreground">{label as string}</td>
-                          <td className="py-2.5 px-4 text-center">{admin ? <span className="text-primary font-bold">&#x25CB;</span> : '—'}</td>
-                          <td className="py-2.5 px-4 text-center">{mgr ? <span className="text-primary font-bold">&#x25CB;</span> : '—'}</td>
-                          <td className="py-2.5 px-4 text-center">{helper ? <span className="text-primary font-bold">&#x25CB;</span> : '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </section>
 
           {/* Footer nav */}
           <div className="text-center py-4">
@@ -385,20 +393,6 @@ export default function HelpPage() {
           </div>
         </main>
       </div>
-
-      {/* CSS keyframes */}
-      <style jsx global>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }
