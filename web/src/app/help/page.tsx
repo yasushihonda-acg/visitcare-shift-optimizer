@@ -42,7 +42,7 @@ const sections: HelpSection[] = [
     title: 'スケジュール画面',
     description:
       'メイン画面です。ヘルパーごとのガントチャートで週間シフトを一覧できます。曜日タブで切り替え、統計バーで割当状況を即座に把握できます。',
-    screenshot: '/help/01-schedule-main.png',
+    screenshot: '/help/01-schedule-main.png?v=2',
     steps: [
       { label: '曜日タブ', detail: '月〜日のタブをクリックで曜日を切り替え。バッジにオーダー件数が表示されます。' },
       { label: '統計バー', detail: 'オーダー数・割当率・未割当数・ヘルパー数・制約違反数をリアルタイム表示。' },
@@ -61,7 +61,7 @@ const sections: HelpSection[] = [
     title: 'オーダー詳細',
     description:
       'ガントチャート上のオーダーバーをクリックすると、右側に詳細パネルが開きます。割当スタッフの変更やステータス確認ができます。',
-    screenshot: '/help/02-order-detail.png',
+    screenshot: '/help/02-order-detail.png?v=2',
     steps: [
       { label: '基本情報', detail: '利用者名、時間帯、サービス種別、ステータスを表示。' },
       { label: '割当スタッフ', detail: '「選択」ボタンから割当スタッフを追加・変更。変更は即時保存されます。' },
@@ -110,7 +110,7 @@ const sections: HelpSection[] = [
     title: '利用者マスタ',
     description:
       '利用者の基本情報（氏名・住所・サ責・NG/推奨スタッフ・入れるスタッフ・同一世帯/同一施設等）を一覧・編集できます。あいうえお順フィルターや検索機能付き。',
-    screenshot: '/help/04-customers.png',
+    screenshot: '/help/04-customers.png?v=2',
     steps: [
       { label: '検索', detail: 'あおぞらID・名前・ふりがな・住所・ケアマネで絞り込み。頭文字フィルターも利用可能。' },
       { label: '新規追加', detail: '右上の「+新規追加」ボタンから登録。' },
@@ -128,7 +128,7 @@ const sections: HelpSection[] = [
     title: 'ヘルパーマスタ',
     description:
       'ヘルパーの資格・雇用形態・身体介護可否・勤務日数・希望時間等を管理します。',
-    screenshot: '/help/05-helpers.png',
+    screenshot: '/help/05-helpers.png?v=2',
     steps: [
       { label: '一覧', detail: '氏名、資格、身体介護可否、雇用形態、移動手段、勤務日数、希望時間を表示。' },
       { label: '編集', detail: '鉛筆アイコンから週間勤務可能時間帯や資格情報を編集。' },
@@ -140,7 +140,7 @@ const sections: HelpSection[] = [
     title: '基本予定一覧',
     description:
       '利用者ごとの週間サービス予定を一覧表示。曜日・サービス種別・時間帯・合計件数が一目でわかります。',
-    screenshot: '/help/06-weekly-schedule.png',
+    screenshot: '/help/06-weekly-schedule.png?v=2',
   },
   {
     id: 'unavailability',
@@ -148,7 +148,7 @@ const sections: HelpSection[] = [
     title: '希望休管理',
     description:
       'スタッフの希望休を週単位で管理します。終日または時間指定で登録でき、Chat催促・メール催促機能も利用可能です。',
-    screenshot: '/help/07-unavailability.png',
+    screenshot: '/help/07-unavailability.png?v=2',
     steps: [
       { label: '週の切替', detail: '矢印ボタンで対象週を切り替え。' },
       { label: '新規追加', detail: '「+新規追加」からスタッフ・日時・備考を登録。' },
@@ -161,7 +161,7 @@ const sections: HelpSection[] = [
     title: '月次レポート',
     description:
       '月単位の実績サマリーを表示。実績確認率、サービス種別内訳、スタッフ別稼働時間、利用者別サービス実績が確認でき、Google Sheetsへのエクスポートも可能です。',
-    screenshot: '/help/09-report.png',
+    screenshot: '/help/09-report.png?v=2',
   },
   {
     id: 'settings',
@@ -169,7 +169,7 @@ const sections: HelpSection[] = [
     title: '通知設定',
     description:
       'メール通知に使用する送信元アドレスを設定します。Google Workspaceドメインのメールアドレスを指定してください。',
-    screenshot: '/help/10-settings.png',
+    screenshot: '/help/10-settings.png?v=2',
   },
   {
     id: 'permissions',

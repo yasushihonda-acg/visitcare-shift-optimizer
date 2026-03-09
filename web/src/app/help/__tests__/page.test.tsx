@@ -74,7 +74,7 @@ describe('HelpPage', () => {
     render(<HelpPage />);
     const img = screen.getByAltText('スケジュール画面のスクリーンショット');
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute('src')).toBe('/help/01-schedule-main.png');
+    expect(img.getAttribute('src')).toMatch(/^\/help\/01-schedule-main\.png/);
   });
 
   it('「スケジュールに戻る」リンクが存在する', () => {
