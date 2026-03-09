@@ -92,7 +92,7 @@ jobs:
         env:
           NEXT_PUBLIC_USE_EMULATOR: 'true'
           NEXT_PUBLIC_AUTH_MODE: demo
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: visitcare-shift-optimizer
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-visitcare
           NEXT_PUBLIC_OPTIMIZER_API_URL: 'http://localhost:8081'
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
