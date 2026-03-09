@@ -143,18 +143,23 @@ describe('Firestore import integration', () => {
     }
   });
 
-  it('should have same_facility group without household (C034, C042, C050)', async () => {
+  it('should have same_facility groups without household relationship', async () => {
     const db = getFirestore();
-    const ids = ['C034', 'C042', 'C050'];
-    for (const id of ids) {
-      const doc = (await db.collection('customers').doc(id).get()).data()!;
-      const others = ids.filter((x) => x !== id);
-      for (const otherId of others) {
-        expect(doc.same_facility_customer_ids, `${id} should contain ${otherId}`).toContain(otherId);
-      }
-      // household_id なし → same_household_customer_ids は空
-      expect(doc.same_household_customer_ids?.length ?? 0).toBe(0);
-    }
+    // C018+C043: 同一住所(谷山中央一丁目6-12)だがhousehold_idなし → 施設のみ
+    const c018 = (await db.collection('customers').doc('C018').get()).data()!;
+    const c043 = (await db.collection('customers').doc('C043').get()).data()!;
+    expect(c018.same_facility_customer_ids).toContain('C043');
+    expect(c043.same_facility_customer_ids).toContain('C018');
+    expect(c018.same_household_customer_ids?.length ?? 0).toBe(0);
+    expect(c043.same_household_customer_ids?.length ?? 0).toBe(0);
+
+    // C009+C035: 同一住所(谷山中央二丁目9-1)だがhousehold_idなし → 施設のみ
+    const c009 = (await db.collection('customers').doc('C009').get()).data()!;
+    const c035 = (await db.collection('customers').doc('C035').get()).data()!;
+    expect(c009.same_facility_customer_ids).toContain('C035');
+    expect(c035.same_facility_customer_ids).toContain('C009');
+    expect(c009.same_household_customer_ids?.length ?? 0).toBe(0);
+    expect(c035.same_household_customer_ids?.length ?? 0).toBe(0);
   });
 
   it('should reference valid staff_ids in constraints', async () => {
