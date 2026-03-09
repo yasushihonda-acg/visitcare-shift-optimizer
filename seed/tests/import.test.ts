@@ -126,6 +126,37 @@ describe('Firestore import integration', () => {
     expect(c001.location.lng).toBe(c002.location.lng);
   });
 
+  it('should have all household groups linked (H001-H005)', async () => {
+    const db = getFirestore();
+    const groups: [string, string][] = [
+      ['C001', 'C002'], // H001
+      ['C010', 'C011'], // H002
+      ['C025', 'C026'], // H003
+      ['C008', 'C017'], // H004
+      ['C039', 'C047'], // H005
+    ];
+    for (const [idA, idB] of groups) {
+      const a = (await db.collection('customers').doc(idA).get()).data()!;
+      const b = (await db.collection('customers').doc(idB).get()).data()!;
+      expect(a.same_household_customer_ids, `${idA} should contain ${idB}`).toContain(idB);
+      expect(b.same_household_customer_ids, `${idB} should contain ${idA}`).toContain(idA);
+    }
+  });
+
+  it('should have same_facility group without household (C034, C042, C050)', async () => {
+    const db = getFirestore();
+    const ids = ['C034', 'C042', 'C050'];
+    for (const id of ids) {
+      const doc = (await db.collection('customers').doc(id).get()).data()!;
+      const others = ids.filter((x) => x !== id);
+      for (const otherId of others) {
+        expect(doc.same_facility_customer_ids, `${id} should contain ${otherId}`).toContain(otherId);
+      }
+      // household_id なし → same_household_customer_ids は空
+      expect(doc.same_household_customer_ids?.length ?? 0).toBe(0);
+    }
+  });
+
   it('should reference valid staff_ids in constraints', async () => {
     const db = getFirestore();
     const helpersSnap = await db.collection('helpers').get();
