@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-09（使い方ガイドページ追加 PR #203 + ヘルプ/Header テスト追加 commit 344c739 マージ済み、CI SUCCESS）
+**最終更新**: 2026-03-09（ヘルプページ更新 PR #206 + テストカバレッジ強化 PR #205/204 マージ済み、CI SUCCESS）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善・CustomerDetailSheet同一世帯/施設Badge表示+権限チェック・SERVICE_LABELSマスタ参照化・detailTarget stale data修正・CustomerDetailSheet ViewModel切り出し・hasWeeklyServices削除+useServiceTypes外部化・allowed_staff_ids Seedデータ+テスト拡充・利用者一覧世帯/施設列追加・tsc型エラー修正）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -58,6 +58,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+## 直近の実装（2026-03-09 テストカバレッジ強化）
+
+- **fix (#206, 2026-03-09)** ✅: ヘルプページを最新機能・スクリーンショットに更新
+  - CI SUCCESS（全ジョブ GREEN + デプロイ完了）
+
+- **test (#205, 2026-03-09)** ✅: カバレッジギャップを埋める14テストファイル追加（865→972テスト）
+  - CI SUCCESS（全ジョブ GREEN）
+
+- **test (#204, 2026-03-09)** ✅: 包括的テストカバレッジ追加（577→865テスト）
+  - CI SUCCESS（全ジョブ GREEN）
 
 ## 直近の実装（2026-03-09 ヘルプページ + テスト品質強化）
 
@@ -410,10 +421,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 最新テスト結果サマリー（2026-03-09）
 - **Optimizer**: 297件 pass ✅
-- **Web (Next.js)**: 532件以上 pass ✅（PR #202で+3件、commit 344c739でさらに追加）
+- **Web (Next.js)**: **972件** pass ✅（PR #204: 577→865件、PR #205: 865→972件）
 - **Firestore Rules**: 107件 pass
-- **E2E Tests (Playwright)**: **73テスト以上** pass（PR #200で+3件追加）✅
-- **CI/CD**: commit 344c739 main push CI SUCCESS（全ジョブ GREEN + デプロイ完了）
+- **E2E Tests (Playwright)**: **73テスト以上** pass ✅
+- **CI/CD**: PR #205 main push CI in_progress（Web/Firestore Rules SUCCESS、Optimizer/E2E in_progress）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
