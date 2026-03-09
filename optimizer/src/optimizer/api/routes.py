@@ -451,9 +451,17 @@ def export_report(
         )
     except Exception as e:
         logger.error("スプレッドシート作成失敗: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"スプレッドシートの作成に失敗しました: {e}"
-        ) from e
+        detail = f"スプレッドシートの作成に失敗しました: {e}"
+        if "403" in str(e) or "permission" in str(e).lower():
+            detail += (
+                "\n\nヒント: ローカル開発では ADC に Sheets/Drive スコープが必要です。"
+                "\ngcloud auth application-default login "
+                "--scopes=openid,https://www.googleapis.com/auth/userinfo.email,"
+                "https://www.googleapis.com/auth/cloud-platform,"
+                "https://www.googleapis.com/auth/spreadsheets,"
+                "https://www.googleapis.com/auth/drive"
+            )
+        raise HTTPException(status_code=500, detail=detail) from e
 
     year, month = req.year_month.split("-")
     title = f"月次レポート {year}年{int(month)}月"
