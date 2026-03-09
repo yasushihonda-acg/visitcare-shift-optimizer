@@ -126,6 +126,42 @@ describe('Firestore import integration', () => {
     expect(c001.location.lng).toBe(c002.location.lng);
   });
 
+  it('should have all household groups linked (H001-H005)', async () => {
+    const db = getFirestore();
+    const groups: [string, string][] = [
+      ['C001', 'C002'], // H001
+      ['C010', 'C011'], // H002
+      ['C025', 'C026'], // H003
+      ['C008', 'C017'], // H004
+      ['C039', 'C047'], // H005
+    ];
+    for (const [idA, idB] of groups) {
+      const a = (await db.collection('customers').doc(idA).get()).data()!;
+      const b = (await db.collection('customers').doc(idB).get()).data()!;
+      expect(a.same_household_customer_ids, `${idA} should contain ${idB}`).toContain(idB);
+      expect(b.same_household_customer_ids, `${idB} should contain ${idA}`).toContain(idA);
+    }
+  });
+
+  it('should have same_facility groups without household relationship', async () => {
+    const db = getFirestore();
+    // C018+C043: 同一住所(谷山中央一丁目6-12)だがhousehold_idなし → 施設のみ
+    const c018 = (await db.collection('customers').doc('C018').get()).data()!;
+    const c043 = (await db.collection('customers').doc('C043').get()).data()!;
+    expect(c018.same_facility_customer_ids).toContain('C043');
+    expect(c043.same_facility_customer_ids).toContain('C018');
+    expect(c018.same_household_customer_ids?.length ?? 0).toBe(0);
+    expect(c043.same_household_customer_ids?.length ?? 0).toBe(0);
+
+    // C009+C035: 同一住所(谷山中央二丁目9-1)だがhousehold_idなし → 施設のみ
+    const c009 = (await db.collection('customers').doc('C009').get()).data()!;
+    const c035 = (await db.collection('customers').doc('C035').get()).data()!;
+    expect(c009.same_facility_customer_ids).toContain('C035');
+    expect(c035.same_facility_customer_ids).toContain('C009');
+    expect(c009.same_household_customer_ids?.length ?? 0).toBe(0);
+    expect(c035.same_household_customer_ids?.length ?? 0).toBe(0);
+  });
+
   it('should reference valid staff_ids in constraints', async () => {
     const db = getFirestore();
     const helpersSnap = await db.collection('helpers').get();
