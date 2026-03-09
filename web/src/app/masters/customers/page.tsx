@@ -291,11 +291,15 @@ export default function CustomersPage() {
                           NG {customer.ng_staff_ids.length}
                         </Badge>
                       ) : null}
-                      {(customer.preferred_staff_ids?.length ?? 0) > 0 ? (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
-                          推奨 {customer.preferred_staff_ids.length}
-                        </Badge>
-                      ) : null}
+                      {(() => {
+                        const allowedSet = new Set(customer.allowed_staff_ids ?? []);
+                        const preferredOnly = (customer.preferred_staff_ids ?? []).filter((id) => !allowedSet.has(id));
+                        return preferredOnly.length > 0 ? (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
+                            推奨 {preferredOnly.length}
+                          </Badge>
+                        ) : null;
+                      })()}
                       {(customer.allowed_staff_ids?.length ?? 0) > 0 ? (
                         <Badge variant="outline" className="text-[10px] px-1.5 h-5 border-green-300 text-green-600">
                           入れる {customer.allowed_staff_ids.length}
