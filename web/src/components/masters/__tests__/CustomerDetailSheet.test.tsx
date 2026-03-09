@@ -22,6 +22,7 @@ function makeVm(overrides: Partial<CustomerDetailViewModel> = {}): CustomerDetai
     serviceManager: '山田太郎',
     genderRequirementLabel: '指定なし',
     ngStaff: [],
+    preferredStaff: [],
     allowedStaff: [],
     householdMembers: [],
     facilityMembers: [],
@@ -128,6 +129,21 @@ describe('CustomerDetailSheet', () => {
     render(<CustomerDetailSheet {...defaultProps} vm={makeVm()} />);
     expect(screen.queryByText('同一世帯')).not.toBeInTheDocument();
     expect(screen.queryByText('同一施設')).not.toBeInTheDocument();
+  });
+
+  it('推奨スタッフのバッジが表示される', () => {
+    render(<CustomerDetailSheet {...defaultProps} vm={makeVm({
+      preferredStaff: [{ id: 'h-4', name: '山本 さくら', isPreferred: true }],
+    })} />);
+    expect(screen.getByTestId('preferred-staff-badges')).toBeInTheDocument();
+    expect(screen.getByText(/山本 さくら/)).toBeInTheDocument();
+  });
+
+  it('推奨スタッフのみの場合でもスタッフセクションが表示される', () => {
+    render(<CustomerDetailSheet {...defaultProps} vm={makeVm({
+      preferredStaff: [{ id: 'h-5', name: '渡辺 恵子', isPreferred: true }],
+    })} />);
+    expect(screen.getByText('NG / 推奨 / 入れるスタッフ')).toBeInTheDocument();
   });
 
   it('allowed_staff が空のとき「入れるスタッフ」セクションが表示されない', () => {

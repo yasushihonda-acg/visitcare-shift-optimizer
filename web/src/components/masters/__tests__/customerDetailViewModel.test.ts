@@ -96,6 +96,38 @@ describe('buildCustomerDetailViewModel', () => {
     expect(vm.ngStaff).toEqual([]);
   });
 
+  it('preferredStaff が正しく解決される（allowed に含まれないものだけ）', () => {
+    const helpers = new Map([
+      ['h-1', makeHelper('h-1', '鈴木', '一郎')],
+      ['h-2', makeHelper('h-2', '高橋', '二郎')],
+    ]);
+    const vm = buildCustomerDetailViewModel(
+      makeCustomer({
+        preferred_staff_ids: ['h-1', 'h-2'],
+        allowed_staff_ids: ['h-2'],
+      }),
+      helpers, emptyCustomers, emptyServiceTypes,
+    );
+    // h-1 は allowed に含まれないので preferredStaff に入る
+    expect(vm.preferredStaff).toEqual([{ id: 'h-1', name: '鈴木 一郎', isPreferred: true }]);
+    // h-2 は allowed に含まれるので preferredStaff には入らない
+    expect(vm.preferredStaff.find((s) => s.id === 'h-2')).toBeUndefined();
+    // h-2 は allowedStaff に入り isPreferred=true
+    expect(vm.allowedStaff[0].isPreferred).toBe(true);
+  });
+
+  it('preferred のみの利用者で preferredStaff が設定される', () => {
+    const helpers = new Map([
+      ['h-1', makeHelper('h-1', '山本', 'さくら')],
+    ]);
+    const vm = buildCustomerDetailViewModel(
+      makeCustomer({ preferred_staff_ids: ['h-1'] }),
+      helpers, emptyCustomers, emptyServiceTypes,
+    );
+    expect(vm.preferredStaff).toEqual([{ id: 'h-1', name: '山本 さくら', isPreferred: true }]);
+    expect(vm.allowedStaff).toEqual([]);
+  });
+
   it('allowedStaff に preferred フラグが正しく設定される', () => {
     const helpers = new Map([
       ['h-1', makeHelper('h-1', '鈴木', '一郎')],

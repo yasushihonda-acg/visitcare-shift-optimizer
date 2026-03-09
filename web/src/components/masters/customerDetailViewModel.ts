@@ -52,6 +52,7 @@ export interface CustomerDetailViewModel {
   genderRequirementLabel: string;
 
   ngStaff: ResolvedStaff[];
+  preferredStaff: ResolvedStaff[];
   allowedStaff: ResolvedStaff[];
   householdMembers: { id: string; name: string }[];
   facilityMembers: { id: string; name: string }[];
@@ -106,6 +107,16 @@ export function buildCustomerDetailViewModel(
       id,
       name: resolveStaffName(id, helpers),
       isPreferred: false,
+    }));
+
+  const allowedSet = new Set(customer.allowed_staff_ids ?? []);
+
+  const preferredStaff: ResolvedStaff[] = (customer.preferred_staff_ids ?? [])
+    .filter((id) => helpers.has(id) && !allowedSet.has(id))
+    .map((id) => ({
+      id,
+      name: resolveStaffName(id, helpers),
+      isPreferred: true,
     }));
 
   const allowedStaff: ResolvedStaff[] = (customer.allowed_staff_ids ?? [])
@@ -163,6 +174,7 @@ export function buildCustomerDetailViewModel(
       GENDER_REQUIREMENT_LABELS[customer.gender_requirement ?? 'any'] ?? '指定なし',
 
     ngStaff,
+    preferredStaff,
     allowedStaff,
     householdMembers,
     facilityMembers,
