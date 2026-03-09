@@ -105,29 +105,28 @@ test.describe('利用者マスタ 詳細シート', () => {
     await expect(sheet).toBeVisible({ timeout: 5_000 });
 
     // 同一世帯セクションにC002（山田花子）が表示される
-    // C001とC002は同一住所のため同一施設にも表示され、2要素にマッチする → first()で回避
     await expect(sheet.getByText('同一世帯')).toBeVisible();
-    await expect(sheet.getByText('山田 花子').first()).toBeVisible();
+    await expect(sheet.getByText('山田 花子')).toBeVisible();
   });
 
   test('同一施設メンバーが詳細シートに表示される', async ({ page }) => {
     await goToMasters(page, 'customers');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 15_000 });
 
-    // C001（山田太郎, AZ-001）を検索 — C002と同一住所のため同一施設グループ
+    // C018（池田政夫, AZ-018）を検索 — C043と同一住所だが世帯関係なし → 施設グループ
     const searchInput = page.getByPlaceholder('あおぞらID・名前・ふりがな・住所・ケアマネで検索...');
-    await searchInput.fill('AZ-001');
+    await searchInput.fill('AZ-018');
     await page.waitForTimeout(500);
 
-    const row = page.getByRole('row').filter({ hasText: '山田' });
+    const row = page.getByRole('row').filter({ hasText: '池田' });
     await row.first().click();
 
     const sheet = page.locator('[data-testid="customer-detail-sheet"]');
     await expect(sheet).toBeVisible({ timeout: 5_000 });
 
-    // 同一施設セクションにC002（山田花子）が表示される
+    // 同一施設セクションにC043（中島喜一）が表示される
     await expect(sheet.getByText('同一施設')).toBeVisible();
-    await expect(sheet.getByText('山田 花子').first()).toBeVisible();
+    await expect(sheet.getByText('中島 喜一').first()).toBeVisible();
   });
 
   test('週間サービスが詳細シートに表示される', async ({ page }) => {
