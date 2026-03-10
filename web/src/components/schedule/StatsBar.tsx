@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 import type { ViolationMap, ViolationSeverity } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
+import type { Order } from '@/types';
 import { ViolationPopover } from './ViolationPopover';
 
 interface StatsBarProps {
@@ -15,10 +16,15 @@ interface StatsBarProps {
 }
 
 export function StatsBar({ schedule, violations, diffMap, onViolationClick }: StatsBarProps) {
-  const allOrders = schedule.helperRows.flatMap((r) => r.orders).concat(schedule.unassignedOrders);
-  const assignedCount = schedule.helperRows.reduce(
-    (sum, row) => sum + row.orders.length, 0
-  );
+  // staff_count>=2 のオーダーは複数ヘルパー行に重複するため、IDで重複排除
+  const uniqueAssigned = new Map<string, Order>();
+  for (const row of schedule.helperRows) {
+    for (const order of row.orders) {
+      uniqueAssigned.set(order.id, order);
+    }
+  }
+  const allOrders = [...uniqueAssigned.values(), ...schedule.unassignedOrders];
+  const assignedCount = uniqueAssigned.size;
   const completedCount = allOrders.filter((o) => o.status === 'completed').length;
   const cancelledCount = allOrders.filter((o) => o.status === 'cancelled').length;
   const errorCount = Array.from(violations.values())
