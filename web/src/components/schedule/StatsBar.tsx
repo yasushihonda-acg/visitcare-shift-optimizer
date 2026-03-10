@@ -3,8 +3,7 @@
 import { ClipboardList, CheckCircle2, AlertCircle, Users, CircleCheck, GitCompare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { DaySchedule } from '@/hooks/useScheduleData';
-import type { ViolationMap } from '@/lib/constraints/checker';
-import type { ViolationSeverity } from '@/lib/constraints/checker';
+import type { ViolationMap, ViolationSeverity } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { ViolationPopover } from './ViolationPopover';
 
