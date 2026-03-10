@@ -28,9 +28,11 @@ import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { checkConstraints } from '@/lib/constraints/checker';
 import { createConfirmEditCommand } from '@/lib/undo/commands';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
+import { ViolationPanel } from '@/components/schedule/ViolationPanel';
 import { SLOT_WIDTH_PX } from '@/components/gantt/constants';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Order, DayOfWeek } from '@/types';
+import type { ViolationSeverity } from '@/lib/constraints/checker';
 
 function SchedulePage() {
   const { welcomeOpen, closeWelcome, reopenWelcome } = useWelcomeDialog();
@@ -40,6 +42,13 @@ function SchedulePage() {
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [violationPanelOpen, setViolationPanelOpen] = useState(false);
+  const [violationPanelFilter, setViolationPanelFilter] = useState<ViolationSeverity | 'all'>('all');
+
+  const handleViolationClick = useCallback((severity: ViolationSeverity) => {
+    setViolationPanelFilter(severity);
+    setViolationPanelOpen(true);
+  }, []);
 
   const { canUndo, canRedo, undo, redo, pushCommand, clearHistory, undoLabel, redoLabel } = useUndoRedo();
   useUndoRedoKeyboard({ undo, redo, canUndo, canRedo });
@@ -213,6 +222,7 @@ function SchedulePage() {
         schedule={viewMode === 'week' ? weeklySchedule : schedule}
         violations={viewMode === 'week' ? (new Map() as typeof violations) : violations}
         diffMap={diffMap}
+        onViolationClick={handleViolationClick}
       />
       <main className="flex-1 overflow-auto p-4">
         {viewMode === 'day' ? (
@@ -259,6 +269,14 @@ function SchedulePage() {
           />
         )}
       </main>
+      <ViolationPanel
+        open={violationPanelOpen}
+        onOpenChange={setViolationPanelOpen}
+        violations={violations}
+        customers={customers}
+        helpers={helpers}
+        initialFilter={violationPanelFilter}
+      />
       <OrderDetailPanel
         order={selectedOrder}
         customer={selectedOrder ? customers.get(selectedOrder.customer_id) : undefined}

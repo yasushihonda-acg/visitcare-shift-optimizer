@@ -3,7 +3,7 @@
 import { ClipboardList, CheckCircle2, AlertCircle, Users, CircleCheck, GitCompare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { DaySchedule } from '@/hooks/useScheduleData';
-import type { ViolationMap } from '@/lib/constraints/checker';
+import type { ViolationMap, ViolationSeverity } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { ViolationPopover } from './ViolationPopover';
 
@@ -11,9 +11,10 @@ interface StatsBarProps {
   schedule: DaySchedule;
   violations: ViolationMap;
   diffMap?: Map<string, AssignmentDiff>;
+  onViolationClick?: (severity: ViolationSeverity) => void;
 }
 
-export function StatsBar({ schedule, violations, diffMap }: StatsBarProps) {
+export function StatsBar({ schedule, violations, diffMap, onViolationClick }: StatsBarProps) {
   const allOrders = schedule.helperRows.flatMap((r) => r.orders).concat(schedule.unassignedOrders);
   const assignedCount = schedule.helperRows.reduce(
     (sum, row) => sum + row.orders.length, 0
@@ -116,8 +117,8 @@ export function StatsBar({ schedule, violations, diffMap }: StatsBarProps) {
           <p className="text-[11px] text-muted-foreground leading-none">ヘルパー</p>
           <div className="flex items-center gap-1.5">
             <p className="text-lg font-bold leading-tight">{schedule.helperRows.length}<span className="text-xs font-normal text-muted-foreground ml-0.5">名</span></p>
-            <ViolationPopover violations={violations} severity="error" count={errorCount} />
-            <ViolationPopover violations={violations} severity="warning" count={warningCount} />
+            <ViolationPopover violations={violations} severity="error" count={errorCount} onBadgeClick={onViolationClick} />
+            <ViolationPopover violations={violations} severity="warning" count={warningCount} onBadgeClick={onViolationClick} />
           </div>
         </div>
       </div>

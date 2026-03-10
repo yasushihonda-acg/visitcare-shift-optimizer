@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { AlertTriangle, XCircle } from 'lucide-react';
+import { AlertTriangle, XCircle, PanelRightOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -28,6 +28,7 @@ interface ViolationPopoverProps {
   violations: ViolationMap;
   severity: ViolationSeverity;
   count: number;
+  onBadgeClick?: (severity: ViolationSeverity) => void;
 }
 
 interface GroupedViolation {
@@ -36,7 +37,7 @@ interface GroupedViolation {
   items: Violation[];
 }
 
-export function ViolationPopover({ violations, severity, count }: ViolationPopoverProps) {
+export function ViolationPopover({ violations, severity, count, onBadgeClick }: ViolationPopoverProps) {
   const grouped = useMemo(() => {
     const all = Array.from(violations.values())
       .flat()
@@ -93,9 +94,19 @@ export function ViolationPopover({ violations, severity, count }: ViolationPopov
           ) : (
             <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0" />
           )}
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium flex-1">
             {isError ? '違反' : '警告'}一覧（{count}件）
           </span>
+          {onBadgeClick && (
+            <button
+              type="button"
+              onClick={() => onBadgeClick(severity)}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-0.5 transition-colors"
+              aria-label="詳細パネルを開く"
+            >
+              <PanelRightOpen className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <div className="divide-y">
           {grouped.map((group) => (
