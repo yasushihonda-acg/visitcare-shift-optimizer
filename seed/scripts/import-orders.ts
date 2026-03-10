@@ -83,6 +83,24 @@ export async function importOrders(weekStartDate?: string): Promise<number> {
   const weekStart = new Date(weekStartDate + 'T00:00:00+09:00');
   const weekStartTs = Timestamp.fromDate(weekStart);
 
+  // 同じ週の既存オーダーを削除（CSVの行数変更による残骸を防止）
+  const db = getDB();
+  const existingSnap = await db.collection('orders')
+    .where('week_start_date', '==', weekStartTs)
+    .get();
+  if (!existingSnap.empty) {
+    const BATCH_LIMIT = 500;
+    for (let i = 0; i < existingSnap.docs.length; i += BATCH_LIMIT) {
+      const batch = db.batch();
+      const chunk = existingSnap.docs.slice(i, i + BATCH_LIMIT);
+      for (const doc of chunk) {
+        batch.delete(doc.ref);
+      }
+      await batch.commit();
+    }
+    console.log(`Deleted ${existingSnap.size} existing orders for week ${weekStartDate}`);
+  }
+
   let orderNum = 1;
   const docs: { id: string; data: Record<string, unknown> }[] = [];
 
