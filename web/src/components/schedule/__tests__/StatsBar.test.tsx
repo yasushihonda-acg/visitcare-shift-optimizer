@@ -205,5 +205,9 @@ describe('StatsBar', () => {
     // completed=1件（重複排除）、cancelled=1件
     // 完了率 = 1 / (2 - 1) = 100%
     expect(screen.getByText(/取消1/)).toBeInTheDocument();
+    // 実績確認セクションの数値検証: completed=1, 完了率=100%
+    const completionSection = screen.getByText('実績確認').closest('div')!.parentElement!;
+    expect(completionSection.textContent).toContain('1');
+    expect(completionSection.textContent).toContain('100%');
   });
 });
