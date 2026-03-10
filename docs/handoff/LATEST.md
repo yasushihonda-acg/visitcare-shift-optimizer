@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-10（世帯/施設グループDRY化 PR #226 + パッチスクリプト PR #225 + Emulator project ID統一 PR #224 マージ済み）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善・CustomerDetailSheet同一世帯/施設Badge表示+権限チェック・SERVICE_LABELSマスタ参照化・detailTarget stale data修正・CustomerDetailSheet ViewModel切り出し・hasWeeklyServices削除+useServiceTypes外部化・allowed_staff_ids Seedデータ+テスト拡充・利用者一覧世帯/施設列追加・tsc型エラー修正）実装済み・マージ済み
+**最終更新**: 2026-03-10（違反/警告サマリーバー常時表示 PR #238 + multi-staffテスト強化 PR #237 + StatsBar二重カウント修正 PR #236 マージ済み）
+**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善・CustomerDetailSheet同一世帯/施設Badge表示+権限チェック・SERVICE_LABELSマスタ参照化・detailTarget stale data修正・CustomerDetailSheet ViewModel切り出し・hasWeeklyServices削除+useServiceTypes外部化・allowed_staff_ids Seedデータ+テスト拡充・利用者一覧世帯/施設列追加・tsc型エラー修正・aria-describedby警告解消・違反/警告一覧Sheetドロワー・StatsBar Popover詳細表示・違反/警告サマリーバー常時表示）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
 
@@ -58,6 +58,36 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+## 直近の実装（2026-03-10 StatsBar 違反/警告サマリーバー常時表示）
+
+- **feat (#238, 2026-03-10)** ✅: 違反/警告サマリーバーを常時表示する（Closes #234）
+  - StatsBar の violations/warnings カウントを最適化未実行時も常時表示
+  - CI in_progress（run #22889539834、main push）
+
+- **test (#237, 2026-03-10)** ✅: StatsBar multi-staffテストにcompleted数値の直接検証を追加
+  - staff_count>=2 オーダーの完了数が正しくカウントされることを直接検証
+  - CI SUCCESS（run #22889203537）
+
+- **fix (#236, 2026-03-10)** ✅: StatsBarの割当済カウントでstaff_count>=2のオーダーが二重カウントされる問題を修正
+  - 複数スタッフ体制オーダーを assignments.length ではなく orders 単位でカウントするよう修正
+
+## 直近の実装（2026-03-10 違反/警告UI強化）
+
+- **feat (#232, 2026-03-10)** ✅: 違反/警告一覧パネル（Sheetドロワー）を追加
+  - StatsBarの違反/警告バッジクリックで全件一覧をSheetドロワー表示
+  - 違反（error）・警告（warning）を色分けリスト表示
+  - CI SUCCESS（run #22882490188、8m40s）
+
+- **feat (#230, 2026-03-10)** ✅: StatsBarの違反/警告バッジにPopover詳細表示を追加（Closes #229）
+  - StatsBarのerror/warningカウントバッジにhover/clickでPopover表示
+  - 件数が多い場合は「詳細はパネルで確認」誘導
+
+- **fix (#228, 2026-03-10)** ✅: seedデータの実行可能性を修正（世帯/施設連続訪問パターン追加）
+  - 同一世帯・同一施設の連続訪問パターンをseedに追加
+  - Optimizerのinfeasibleリスクを低減
+
+- **fix (#227, 2026-03-10)** ✅: DialogContentのaria-describedby警告を解消
 
 ## 直近の実装（2026-03-10 世帯/施設DRY化 + パッチスクリプト + Emulator安全性強化）
 
@@ -344,12 +374,12 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - 新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化・allowed_staff_ids
   - PR #107〜#124: Phase 5b メール通知・Gmail API DWD・利用者軸ビュー・Undo/Redo・iPad横向き対応
 
-## 最新テスト結果サマリー（2026-03-09）
+## 最新テスト結果サマリー（2026-03-10）
 - **Optimizer**: 297件 pass ✅
 - **Web (Next.js)**: **972件** pass ✅（PR #204: 577→865件、PR #205: 865→972件）
 - **Firestore Rules**: 107件 pass
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #224 main push CI in_progress（Firestore Rules SUCCESS、他 in_progress）
+- **CI/CD**: PR #238 main push CI in_progress（run #22889539834）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -411,7 +441,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: PR #144（バリデーション拒否テスト）、PR #143（HelperNotSubmitted型付き、Closes #142）、PR #141（品質ゲート補完、Closes #140）、PR #139（スキーマdoc+Seed、Closes #138）、PR #137（Chat DM催促、Closes #132）、PR #136（同一世帯/施設MultiSelect）、PR #134（household_id廃止、Closes #133）
+- **クローズ済み（直近）**: PR #238（サマリーバー常時表示、Closes #234）、PR #237（multi-staffテスト）、PR #236（StatsBar二重カウント修正）、PR #232（違反/警告Sheetドロワー）、PR #230（StatsBar Popover、Closes #229）、PR #228（seed実行可能性修正）、PR #227（aria-describedby解消）
 - **クローズ済み（既往）**: Issue #118（Gmail DWD）、Issue #125（型定義）、Issue #126（Python制約）、Issue #127（UI）、Issue #120（C010競合修正）、Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）
 
 ## 参考資料（ローカルExcel）
