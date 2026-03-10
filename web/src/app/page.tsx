@@ -80,7 +80,10 @@ function SchedulePage() {
   const violations = useMemo(
     () =>
       checkConstraints({
-        orders: schedule.helperRows.flatMap((r) => r.orders).concat(schedule.unassignedOrders),
+        orders: [...new Map(
+          schedule.helperRows.flatMap((r) => r.orders).concat(schedule.unassignedOrders)
+            .map(o => [o.id, o])
+        ).values()],
         helpers,
         customers,
         unavailability,
