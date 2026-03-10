@@ -49,7 +49,10 @@ export function checkConstraints(input: CheckInput): ViolationMap {
     violations.set(v.orderId, list);
   };
 
-  const assignedOrders = input.orders.filter((o) => o.assigned_staff_ids.length > 0);
+  const activeOrders = input.orders.filter(
+    (o) => o.status !== 'completed' && o.status !== 'cancelled'
+  );
+  const assignedOrders = activeOrders.filter((o) => o.assigned_staff_ids.length > 0);
 
   for (const order of assignedOrders) {
     const customer = input.customers.get(order.customer_id);
@@ -156,13 +159,11 @@ export function checkConstraints(input: CheckInput): ViolationMap {
         });
       }
 
-      // 勤務時間外
-      const availability = helper.weekly_availability[input.day];
-      if (availability) {
-        const withinAny = availability.some(
-          (slot) => slot.start_time <= order.start_time && slot.end_time >= order.end_time
-        );
-        if (!withinAny) {
+      // 勤務時間外（optimizer と整合: 未定義曜日=勤務不可、weekly_availability 自体が未定義=制約なし）
+      if (helper.weekly_availability) {
+        const availability = helper.weekly_availability[input.day];
+        if (!availability || availability.length === 0) {
+          // 曜日エントリがないか空 → optimizer と同じく勤務不可扱い
           addViolation({
             orderId: order.id,
             staffId,
@@ -170,6 +171,19 @@ export function checkConstraints(input: CheckInput): ViolationMap {
             severity: 'warning',
             message: `${helper.name.family} の勤務時間外`,
           });
+        } else {
+          const withinAny = availability.some(
+            (slot) => slot.start_time <= order.start_time && slot.end_time >= order.end_time
+          );
+          if (!withinAny) {
+            addViolation({
+              orderId: order.id,
+              staffId,
+              type: 'outside_hours',
+              severity: 'warning',
+              message: `${helper.name.family} の勤務時間外`,
+            });
+          }
         }
       }
 
