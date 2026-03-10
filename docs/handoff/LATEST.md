@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-10（違反/警告サマリーバー常時表示 PR #238 + multi-staffテスト強化 PR #237 + StatsBar二重カウント修正 PR #236 マージ済み）
+**最終更新**: 2026-03-11（Seedインポート既存オーダー削除 PR #242 + checkerの時間重複チェックlinked_orderペア除外 PR #241 + ViolationSummaryBarフィルターリセット PR #240 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）・マスタ拡張（不定期パターン・外部連携ID・分断勤務・徒歩距離上限・サービス種別→介護保険105種・性別制約・新マスタフィールド・研修状態3段階・週全体ビュー・service_typesマスタ化 Phase 1-3・制約チェック UI 拡張・メール通知・利用者軸ビュー・基本予定一覧・Gmail API DWD送信実装・staff_count複数割当・travel_times D&D統合・ガント幅バグ修正・利用者軸フォント統一・seed複数週対応・通知設定Firestore/UI管理化・マスタ詳細シート追加・ファビコン追加・E2Eテスト拡充・利用者マスタ表示/検索拡充・ふりがなソート/あかさたなフィルター・基本予定一覧詳細シート・手動編集バーアンバーデザイン刷新・Undo/Redo機能・iPad横向きレスポンシブ対応・allowed_staff_ids ホワイトリスト + 事前チェック・same_household/facility_customer_ids移行・利用者編集UI同一世帯/施設MultiSelect・Google Chat DM催促・E2E D&D flakiness改善・CustomerDetailSheet同一世帯/施設Badge表示+権限チェック・SERVICE_LABELSマスタ参照化・detailTarget stale data修正・CustomerDetailSheet ViewModel切り出し・hasWeeklyServices削除+useServiceTypes外部化・allowed_staff_ids Seedデータ+テスト拡充・利用者一覧世帯/施設列追加・tsc型エラー修正・aria-describedby警告解消・違反/警告一覧Sheetドロワー・StatsBar Popover詳細表示・違反/警告サマリーバー常時表示）実装済み・マージ済み
 
 ## 完了済み（詳細は `docs/handoff/archive/2026-02-detailed-history.md` を参照）
@@ -58,6 +58,24 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
+
+## 直近の実装（2026-03-11 Seedインポート既存オーダー削除）
+
+- **fix (#242, 2026-03-11)** ✅: Seedインポート時に同一週の既存オーダーを事前削除して残骸を防止
+  - `seed/scripts/import-orders.ts`: 投入前に同週の既存オーダーをすべて削除
+  - `seed/scripts/clear-orders.ts`（未コミット）: オーダーコレクション全削除スクリプト（開発ツール）
+  - CI SUCCESS（run #22892135879、8m21s）
+
+## 直近の実装（2026-03-10 ViolationSummaryBar フィルターリセット + checker修正）
+
+- **fix (#240, 2026-03-10)** ✅: ViolationSummaryBar「詳細」クリック時にフィルタをallにリセット
+  - 「詳細」ボタンクリックで違反/警告Sheetドロワーを開く際、フィルタをデフォルト（all）にリセットする動作を追加
+  - CI SUCCESS
+
+- **fix (#239, 2026-03-10)** ✅: checkerのcompleted/cancelledオーダー除外とoutside_hours整合性修正（Closes #235）
+  - `checker.ts`: completed/cancelled オーダーを制約チェック対象から除外
+  - `outside_hours` チェックの整合性修正
+  - CI SUCCESS
 
 ## 直近の実装（2026-03-10 StatsBar 違反/警告サマリーバー常時表示）
 
@@ -379,7 +397,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Web (Next.js)**: **972件** pass ✅（PR #204: 577→865件、PR #205: 865→972件）
 - **Firestore Rules**: 107件 pass
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #238 main push CI in_progress（run #22889539834）
+- **CI/CD**: PR #242 main push CI SUCCESS（最新）
 
 ## 重要なドキュメント
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
@@ -441,7 +459,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --
 
 ## GitHub Issuesサマリー
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: PR #238（サマリーバー常時表示、Closes #234）、PR #237（multi-staffテスト）、PR #236（StatsBar二重カウント修正）、PR #232（違反/警告Sheetドロワー）、PR #230（StatsBar Popover、Closes #229）、PR #228（seed実行可能性修正）、PR #227（aria-describedby解消）
+- **クローズ済み（直近）**: PR #242（Seedインポート既存削除）、PR #241（checker時間重複linke_order除外）、PR #240（ViolationSummaryBarフィルターリセット）、PR #239（checker修正、Closes #235）、PR #238（サマリーバー常時表示、Closes #234）、PR #237（multi-staffテスト）、PR #236（StatsBar二重カウント修正）
 - **クローズ済み（既往）**: Issue #118（Gmail DWD）、Issue #125（型定義）、Issue #126（Python制約）、Issue #127（UI）、Issue #120（C010競合修正）、Issue #109（PR #111）、Issue #112（PR #114）、Issue #113（PR #115）
 
 ## 参考資料（ローカルExcel）
