@@ -650,4 +650,93 @@ describe('checkConstraints', () => {
       expect(violations.some((v) => v.type === 'outside_hours')).toBe(false);
     });
   });
+
+  describe('linked_order_id（同一世帯リンクオーダー）', () => {
+    it('リンクオーダーのペアは時間重複として検出しない', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const order1 = makeOrder({
+        id: 'O001',
+        start_time: '09:00',
+        end_time: '10:00',
+        linked_order_id: 'O002',
+      });
+      const order2 = makeOrder({
+        id: 'O002',
+        start_time: '09:00',
+        end_time: '10:00',
+        linked_order_id: 'O001',
+      });
+      const result = checkConstraints({
+        orders: [order1, order2],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const v1 = result.get('O001') ?? [];
+      const v2 = result.get('O002') ?? [];
+      expect(v1.some((v) => v.type === 'overlap')).toBe(false);
+      expect(v2.some((v) => v.type === 'overlap')).toBe(false);
+    });
+
+    it('リンクオーダーでない重複は引き続き検出する', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const order1 = makeOrder({
+        id: 'O001',
+        start_time: '09:00',
+        end_time: '10:00',
+      });
+      const order2 = makeOrder({
+        id: 'O002',
+        start_time: '09:30',
+        end_time: '10:30',
+      });
+      const result = checkConstraints({
+        orders: [order1, order2],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const v1 = result.get('O001') ?? [];
+      expect(v1.some((v) => v.type === 'overlap')).toBe(true);
+    });
+
+    it('リンクオーダーでも別の非リンクオーダーとの重複は検出する', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const linked1 = makeOrder({
+        id: 'O001',
+        start_time: '09:00',
+        end_time: '10:00',
+        linked_order_id: 'O002',
+      });
+      const linked2 = makeOrder({
+        id: 'O002',
+        start_time: '09:00',
+        end_time: '10:00',
+        linked_order_id: 'O001',
+      });
+      const unrelated = makeOrder({
+        id: 'O003',
+        start_time: '09:30',
+        end_time: '10:30',
+      });
+      const result = checkConstraints({
+        orders: [linked1, linked2, unrelated],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      // O001 と O003 は重複（リンクではない）
+      const v1 = result.get('O001') ?? [];
+      expect(v1.filter((v) => v.type === 'overlap').length).toBe(1);
+      // O003 は O001, O002 両方と重複
+      const v3 = result.get('O003') ?? [];
+      expect(v3.filter((v) => v.type === 'overlap').length).toBe(2);
+    });
+  });
 });
