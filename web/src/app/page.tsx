@@ -29,6 +29,7 @@ import { checkConstraints } from '@/lib/constraints/checker';
 import { createConfirmEditCommand } from '@/lib/undo/commands';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { ViolationPanel } from '@/components/schedule/ViolationPanel';
+import { ViolationSummaryBar } from '@/components/schedule/ViolationSummaryBar';
 import { SLOT_WIDTH_PX } from '@/components/gantt/constants';
 import { DAY_OF_WEEK_ORDER } from '@/types';
 import type { Order, DayOfWeek } from '@/types';
@@ -224,6 +225,12 @@ function SchedulePage() {
         diffMap={diffMap}
         onViolationClick={handleViolationClick}
       />
+      {viewMode === 'day' && (
+        <ViolationSummaryBar
+          violations={violations}
+          onOpenPanel={() => setViolationPanelOpen(true)}
+        />
+      )}
       <main className="flex-1 overflow-auto p-4">
         {viewMode === 'day' ? (
           ganttAxis === 'customer' ? (
