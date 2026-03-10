@@ -236,6 +236,8 @@ export function checkConstraints(input: CheckInput): ViolationMap {
       for (let j = i + 1; j < sorted.length; j++) {
         // sorted[j]の開始がsorted[i]の終了以降なら、それ以降も重複しない
         if (sorted[j].start_time >= sorted[i].end_time) break;
+        // 同一オーダーの比較をスキップ（multi-staff orderが重複入力されるケース対策）
+        if (sorted[i].id === sorted[j].id) continue;
         // 同一世帯リンクオーダーのペアは意図的な重複のためスキップ
         if (sorted[i].linked_order_id === sorted[j].id || sorted[j].linked_order_id === sorted[i].id) continue;
         const name = helper?.name.family ?? staffId;

@@ -704,6 +704,31 @@ describe('checkConstraints', () => {
       expect(v1.some((v) => v.type === 'overlap')).toBe(true);
     });
 
+    it('同一オーダーが重複入力されても自己重複として検出しない', () => {
+      const helpers = new Map([
+        ['H001', makeHelper({ id: 'H001' })],
+        ['H002', makeHelper({ id: 'H002', name: { family: '松本', given: '花子' } })],
+      ]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      // staff_count=2のオーダーがhelperRows.flatMapで2回入力されるケースを再現
+      const order = makeOrder({
+        id: 'O001',
+        start_time: '09:00',
+        end_time: '10:00',
+        assigned_staff_ids: ['H001', 'H002'],
+        staff_count: 2,
+      });
+      const result = checkConstraints({
+        orders: [order, order], // 同一オーダーが2回
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'overlap')).toBe(false);
+    });
+
     it('リンクオーダーでも別の非リンクオーダーとの重複は検出する', () => {
       const helpers = new Map([['H001', makeHelper()]]);
       const customers = new Map([['C001', makeCustomer()]]);
