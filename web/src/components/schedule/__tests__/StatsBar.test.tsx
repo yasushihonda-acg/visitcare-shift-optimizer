@@ -149,4 +149,61 @@ describe('StatsBar', () => {
     render(<StatsBar schedule={schedule} violations={emptyViolations} />);
     expect(screen.getByText(/取消1/)).toBeInTheDocument();
   });
+
+  it('staff_count=2 のオーダーが複数ヘルパー行にあっても割当済は1件としてカウントされる', () => {
+    // staff_count=2 のオーダーは2人のヘルパーに割り当てられ、各行に同じオーダーが入る
+    const multiStaffOrder: Order = {
+      ...makeOrder('o-multi', 'assigned'),
+      staff_count: 2,
+      assigned_staff_ids: ['h1', 'h2'],
+    };
+    const singleOrder = makeOrder('o-single', 'assigned');
+
+    const schedule: DaySchedule = {
+      day: 'tuesday',
+      date: new Date('2026-03-10'),
+      helperRows: [
+        { helper: makeHelper('h1'), orders: [multiStaffOrder, singleOrder] },
+        { helper: makeHelper('h2'), orders: [multiStaffOrder] },
+      ],
+      unassignedOrders: [],
+      totalOrders: 2, // 実際のオーダーは2件（multi + single）
+    };
+
+    render(<StatsBar schedule={schedule} violations={emptyViolations} />);
+
+    // 割当済は2件であるべき（multiStaffOrderは1回のみカウント）
+    // totalOrders=2 なので割当率は100%
+    expect(screen.getByText('100%')).toBeInTheDocument();
+    // 割当済の数値 "2" が表示される
+    const assignedSection = screen.getByText('割当済').closest('div')!.parentElement!;
+    expect(assignedSection.textContent).toContain('2');
+    expect(assignedSection.textContent).toContain('100%');
+  });
+
+  it('staff_count=2 のcompleted/cancelledオーダーも重複カウントされない', () => {
+    const completedMulti: Order = {
+      ...makeOrder('o-comp', 'completed'),
+      staff_count: 2,
+      assigned_staff_ids: ['h1', 'h2'],
+    };
+    const cancelledSingle = makeOrder('o-cancel', 'cancelled');
+
+    const schedule: DaySchedule = {
+      day: 'tuesday',
+      date: new Date('2026-03-10'),
+      helperRows: [
+        { helper: makeHelper('h1'), orders: [completedMulti] },
+        { helper: makeHelper('h2'), orders: [completedMulti] },
+      ],
+      unassignedOrders: [cancelledSingle],
+      totalOrders: 2,
+    };
+
+    render(<StatsBar schedule={schedule} violations={emptyViolations} />);
+
+    // completed=1件（重複排除）、cancelled=1件
+    // 完了率 = 1 / (2 - 1) = 100%
+    expect(screen.getByText(/取消1/)).toBeInTheDocument();
+  });
 });
