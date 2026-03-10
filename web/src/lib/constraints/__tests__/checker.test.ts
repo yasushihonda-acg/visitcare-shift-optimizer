@@ -558,4 +558,96 @@ describe('checkConstraints', () => {
       }).not.toThrow();
     });
   });
+
+  describe('completed/cancelled オーダーの除外', () => {
+    it('status=completed のオーダーは違反チェック対象外', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer({ ng_staff_ids: ['H001'] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder({ status: 'completed' })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      expect(result.size).toBe(0);
+    });
+
+    it('status=cancelled のオーダーは違反チェック対象外', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer({ ng_staff_ids: ['H001'] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder({ status: 'cancelled' })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      expect(result.size).toBe(0);
+    });
+
+    it('status=assigned のオーダーは違反チェック対象', () => {
+      const helpers = new Map([['H001', makeHelper()]]);
+      const customers = new Map([['C001', makeCustomer({ ng_staff_ids: ['H001'] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder({ status: 'assigned' })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      expect(result.get('O001')?.some((v) => v.type === 'ng_staff')).toBe(true);
+    });
+  });
+
+  describe('outside_hours: 未定義曜日のハンドリング', () => {
+    it('weekly_availability に該当曜日がない場合は勤務時間外として警告', () => {
+      // monday のみ定義、tuesday は未定義
+      const helpers = new Map([['H001', makeHelper({
+        weekly_availability: { monday: [{ start_time: '08:00', end_time: '17:00' }] },
+      })]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'tuesday', // monday しか定義されていない
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'outside_hours' && v.severity === 'warning')).toBe(true);
+    });
+
+    it('weekly_availability が空オブジェクトの場合は全曜日で勤務時間外', () => {
+      const helpers = new Map([['H001', makeHelper({
+        weekly_availability: {},
+      })]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'outside_hours' && v.severity === 'warning')).toBe(true);
+    });
+
+    it('weekly_availability 未定義（undefined）の場合は制約なし（違反なし）', () => {
+      const helpers = new Map([['H001', makeHelper({
+        weekly_availability: undefined as unknown as Helper['weekly_availability'],
+      })]]);
+      const customers = new Map([['C001', makeCustomer()]]);
+      const result = checkConstraints({
+        orders: [makeOrder()],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      expect(violations.some((v) => v.type === 'outside_hours')).toBe(false);
+    });
+  });
 });
