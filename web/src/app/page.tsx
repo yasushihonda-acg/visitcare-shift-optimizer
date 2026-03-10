@@ -228,7 +228,7 @@ function SchedulePage() {
       {viewMode === 'day' && (
         <ViolationSummaryBar
           violations={violations}
-          onOpenPanel={() => setViolationPanelOpen(true)}
+          onOpenPanel={() => { setViolationPanelFilter('all'); setViolationPanelOpen(true); }}
         />
       )}
       <main className="flex-1 overflow-auto p-4">
