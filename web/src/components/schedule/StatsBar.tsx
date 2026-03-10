@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 import type { ViolationMap } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
+import { ViolationPopover } from './ViolationPopover';
 
 interface StatsBarProps {
   schedule: DaySchedule;
@@ -25,7 +26,6 @@ export function StatsBar({ schedule, violations, diffMap }: StatsBarProps) {
   const warningCount = Array.from(violations.values())
     .flat()
     .filter((v) => v.severity === 'warning').length;
-  const totalViolations = errorCount + warningCount;
   const assignRate = schedule.totalOrders > 0
     ? Math.round((assignedCount / schedule.totalOrders) * 100)
     : 0;
@@ -116,16 +116,8 @@ export function StatsBar({ schedule, violations, diffMap }: StatsBarProps) {
           <p className="text-[11px] text-muted-foreground leading-none">ヘルパー</p>
           <div className="flex items-center gap-1.5">
             <p className="text-lg font-bold leading-tight">{schedule.helperRows.length}<span className="text-xs font-normal text-muted-foreground ml-0.5">名</span></p>
-            {errorCount > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
-                違反{errorCount}
-              </Badge>
-            )}
-            {warningCount > 0 && (
-              <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-yellow-500 text-yellow-600">
-                警告{warningCount}
-              </Badge>
-            )}
+            <ViolationPopover violations={violations} severity="error" count={errorCount} />
+            <ViolationPopover violations={violations} severity="warning" count={warningCount} />
           </div>
         </div>
       </div>
