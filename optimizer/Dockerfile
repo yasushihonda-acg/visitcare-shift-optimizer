@@ -15,4 +15,4 @@ USER optimizer
 
 # gunicorn + uvicorn で起動
 # PORT環境変数はCloud Runが自動設定（デフォルト8080）
-CMD ["sh", "-c", "exec gunicorn optimizer.api.main:app --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 300"]
+CMD ["sh", "-c", "exec gunicorn optimizer.api.main:app --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8080} --workers 2 --timeout 300"]
