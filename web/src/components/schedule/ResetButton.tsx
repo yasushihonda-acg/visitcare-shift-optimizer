@@ -65,7 +65,7 @@ export function ResetButton({ onHistoryClear }: ResetButtonProps = {}) {
         <DialogHeader>
           <DialogTitle>割当をリセット</DialogTitle>
           <DialogDescription>
-            {format(weekStart, 'yyyy/M/d')}週のすべてのオーダー割当を解除します。
+            {format(weekStart, 'yyyy/M/d')}週のすべてのオーダー割当を解除します（月〜日の全曜日が対象）。
             この操作は元に戻せません。
           </DialogDescription>
         </DialogHeader>
