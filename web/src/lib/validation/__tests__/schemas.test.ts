@@ -627,7 +627,7 @@ describe('serviceTypeSchema', () => {
 
   it('日本語コード・英数字コードどちらでもパースできる', () => {
     const codes = [
-      '身体介護2・Ⅱ', '生活援助３・Ⅱ', '通所介護Ⅰ11',
+      '身体介護2・Ⅱ', '生活援助３・Ⅱ', '身体1生活1・Ⅱ',
       'physical_care', 'Physical_Care', 'daily-living',
     ];
     for (const code of codes) {
