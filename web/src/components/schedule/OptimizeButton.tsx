@@ -28,9 +28,10 @@ import { DAY_OF_WEEK_LABELS } from '@/types';
 
 interface OptimizeButtonProps {
   onHistoryClear?: () => void;
+  onComplete?: () => void;
 }
 
-export function OptimizeButton({ onHistoryClear }: OptimizeButtonProps = {}) {
+export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonProps = {}) {
   const { weekStart } = useScheduleContext();
   const { customers, helpers, orders, unavailability } = useScheduleData(weekStart);
 
@@ -69,6 +70,7 @@ export function OptimizeButton({ onHistoryClear }: OptimizeButtonProps = {}) {
       setLastResult({ assignedCount: result.assigned_count, totalOrders: result.total_orders });
       setNotifyOpen(true);
       onHistoryClear?.();
+      onComplete?.();
     } catch (err) {
       if (err instanceof OptimizeApiError) {
         const messages: Record<number, string> = {
