@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { addDays } from 'date-fns';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { ScheduleProvider, useScheduleContext } from '@/contexts/ScheduleContext';
@@ -93,6 +93,19 @@ function SchedulePage() {
       }),
     [schedule, helpers, customers, unavailability, selectedDay, serviceTypes, travelTimeLookup]
   );
+
+  // 最適化完了後に違反があれば自動でViolationPanelを表示
+  const pendingViolationCheckRef = useRef(false);
+  const handleOptimizeComplete = useCallback(() => {
+    pendingViolationCheckRef.current = true;
+  }, []);
+  useEffect(() => {
+    if (pendingViolationCheckRef.current && violations.size > 0) {
+      pendingViolationCheckRef.current = false;
+      setViolationPanelFilter('all');
+      setViolationPanelOpen(true);
+    }
+  }, [violations]);
 
   // 週変更時に履歴をクリア
   useEffect(() => {
@@ -219,7 +232,7 @@ function SchedulePage() {
             orders={allOrders}
           />
           <ResetButton onHistoryClear={clearHistory} />
-          <OptimizeButton onHistoryClear={clearHistory} />
+          <OptimizeButton onHistoryClear={clearHistory} onComplete={handleOptimizeComplete} />
         </div>
       </div>
       <StatsBar
