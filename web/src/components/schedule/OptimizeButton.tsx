@@ -150,7 +150,7 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
         <DialogHeader>
           <DialogTitle>シフト最適化の実行</DialogTitle>
           <DialogDescription>
-            {format(weekStart, 'yyyy/M/d')}週のシフトを最適化します。
+            {format(weekStart, 'yyyy/M/d')}週のシフトを最適化します（月〜日の全曜日が対象）。
           </DialogDescription>
         </DialogHeader>
         <ConstraintWeightsForm weights={weights} onChange={setWeights} />
