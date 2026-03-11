@@ -11,7 +11,6 @@ import { DayTabs } from '@/components/schedule/DayTabs';
 import { ViewModeToggle } from '@/components/schedule/ViewModeToggle';
 import { StatsBar } from '@/components/schedule/StatsBar';
 import { OptimizeButton } from '@/components/schedule/OptimizeButton';
-import { NotifyChangesButton } from '@/components/schedule/NotifyChangesButton';
 import { ResetButton } from '@/components/schedule/ResetButton';
 import { BulkCompleteButton } from '@/components/schedule/BulkCompleteButton';
 import { UndoRedoButtons } from '@/components/schedule/UndoRedoButtons';
@@ -225,12 +224,6 @@ function SchedulePage() {
             onRedo={redo}
           />
           {viewMode === 'day' && <BulkCompleteButton schedule={schedule} />}
-          <NotifyChangesButton
-            diffMap={diffMap}
-            helpers={helpers}
-            customers={customers}
-            orders={allOrders}
-          />
           <ResetButton onHistoryClear={clearHistory} />
           <OptimizeButton onHistoryClear={clearHistory} onComplete={handleOptimizeComplete} />
         </div>

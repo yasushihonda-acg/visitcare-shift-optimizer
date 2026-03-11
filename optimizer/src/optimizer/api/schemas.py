@@ -121,61 +121,6 @@ class ErrorResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# 通知 API
-# ---------------------------------------------------------------------------
-
-class NotificationResponse(BaseModel):
-    emails_sent: int
-    recipients: list[str]
-
-
-class ShiftConfirmedNotifyRequest(BaseModel):
-    week_start_date: str = Field(
-        ...,
-        pattern=r"^\d{4}-\d{2}-\d{2}$",
-        description="確定週の開始日（月曜日）YYYY-MM-DD",
-    )
-    assigned_count: int = Field(..., ge=0)
-    total_orders: int = Field(..., ge=0)
-    message: str | None = Field(default=None, description="追加メッセージ（省略可）")
-
-
-class ShiftChangeDetail(BaseModel):
-    order_id: str
-    customer_name: str
-    date: str
-    time_range: str
-    old_staff: str
-    new_staff: str
-
-
-class ShiftChangedNotifyRequest(BaseModel):
-    week_start_date: str = Field(
-        ...,
-        pattern=r"^\d{4}-\d{2}-\d{2}$",
-        description="変更週の開始日（月曜日）YYYY-MM-DD",
-    )
-    changes: list[ShiftChangeDetail] = Field(..., min_length=1)
-
-
-class HelperNotSubmitted(BaseModel):
-    id: str = Field(..., description="スタッフID")
-    name: str = Field(..., description="スタッフ名（表示用）")
-
-
-class UnavailabilityReminderRequest(BaseModel):
-    target_week_start: str = Field(
-        ...,
-        pattern=r"^\d{4}-\d{2}-\d{2}$",
-        description="催促対象週の開始日 YYYY-MM-DD",
-    )
-    helpers_not_submitted: list[HelperNotSubmitted] = Field(
-        ...,
-        description="未提出ヘルパーのリスト",
-    )
-
-
-# ---------------------------------------------------------------------------
 # Google Chat DM 催促
 # ---------------------------------------------------------------------------
 

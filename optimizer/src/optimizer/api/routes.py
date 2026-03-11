@@ -47,7 +47,6 @@ from optimizer.api.schemas import (
     ErrorResponse,
     ExportReportRequest,
     ExportReportResponse,
-    NotificationResponse,
     OptimizationParametersResponse,
     OptimizationRunDetailResponse,
     OptimizationRunListResponse,
@@ -56,9 +55,6 @@ from optimizer.api.schemas import (
     OptimizeResponse,
     ResetAssignmentsRequest,
     ResetAssignmentsResponse,
-    ShiftChangedNotifyRequest,
-    ShiftConfirmedNotifyRequest,
-    UnavailabilityReminderRequest,
     ChatReminderRequest,
     ChatReminderResponse,
     ChatReminderResultItem,
@@ -79,13 +75,6 @@ from optimizer.data.firestore_writer import (
 from optimizer.engine.solver import SoftWeights, diagnose_infeasibility, solve
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
 from optimizer.notification.chat_sender import send_chat_dms
-from optimizer.notification.recipients import list_manager_emails
-from optimizer.notification.sender import send_email
-from optimizer.notification.templates import (
-    render_shift_changed,
-    render_shift_confirmed,
-    render_unavailability_reminder,
-)
 from optimizer.report.aggregation import (
     aggregate_customer_summary,
     aggregate_service_type_summary,
@@ -483,95 +472,8 @@ def export_report(
 
 
 # ---------------------------------------------------------------------------
-# 通知エンドポイント
+# Google Chat DM 催促
 # ---------------------------------------------------------------------------
-
-
-def _get_sender_email() -> str:
-    """Firestore settings から sender_email を取得する。
-
-    settings/notification ドキュメントの sender_email フィールドを参照する。
-    未設定時は NOTIFICATION_SENDER_EMAIL 環境変数にフォールバックする。
-    """
-    try:
-        db = get_firestore_client()
-        doc_snapshot = db.collection("settings").document("notification").get()
-        if doc_snapshot.exists:
-            data = doc_snapshot.to_dict()
-            if data and data.get("sender_email"):
-                return str(data["sender_email"])
-    except Exception:
-        logger.exception("Firestore から sender_email の取得に失敗しました。env var にフォールバックします")
-    return os.getenv("NOTIFICATION_SENDER_EMAIL", "")
-
-
-@router.post(
-    "/notify/shift-confirmed",
-    response_model=NotificationResponse,
-    responses={500: {"model": ErrorResponse}},
-)
-def notify_shift_confirmed(
-    req: ShiftConfirmedNotifyRequest,
-    _auth: dict | None = Depends(require_manager_or_above),
-) -> NotificationResponse:
-    """シフト確定メールをサ責全員に送信する"""
-    recipients = list_manager_emails()
-    subject, html = render_shift_confirmed(
-        week_start_date=req.week_start_date,
-        assigned_count=req.assigned_count,
-        total_orders=req.total_orders,
-        message=req.message,
-    )
-    sender_email = _get_sender_email()
-    sent = send_email(recipients, subject, html, sender_email=sender_email)
-    logger.info("シフト確定通知送信: sent=%d, recipients=%s", sent, recipients)
-    return NotificationResponse(emails_sent=sent, recipients=recipients)
-
-
-@router.post(
-    "/notify/shift-changed",
-    response_model=NotificationResponse,
-    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
-)
-def notify_shift_changed(
-    req: ShiftChangedNotifyRequest,
-    _auth: dict | None = Depends(require_manager_or_above),
-) -> NotificationResponse:
-    """シフト変更メールをサ責全員に送信する"""
-    recipients = list_manager_emails()
-    subject, html = render_shift_changed(
-        week_start_date=req.week_start_date,
-        changes=[c.model_dump() for c in req.changes],
-    )
-    sender_email = _get_sender_email()
-    sent = send_email(recipients, subject, html, sender_email=sender_email)
-    logger.info("シフト変更通知送信: sent=%d, changes=%d件", sent, len(req.changes))
-    return NotificationResponse(emails_sent=sent, recipients=recipients)
-
-
-@router.post(
-    "/notify/unavailability-reminder",
-    response_model=NotificationResponse,
-    responses={500: {"model": ErrorResponse}},
-)
-def notify_unavailability_reminder(
-    req: UnavailabilityReminderRequest,
-    _auth: dict | None = Depends(require_manager_or_above),
-) -> NotificationResponse:
-    """希望休催促メールをサ責全員に送信する"""
-    recipients = list_manager_emails()
-    subject, html = render_unavailability_reminder(
-        target_week_start=req.target_week_start,
-        helpers_not_submitted=[h.model_dump() for h in req.helpers_not_submitted],
-    )
-    sender_email = _get_sender_email()
-    sent = send_email(recipients, subject, html, sender_email=sender_email)
-    logger.info(
-        "希望休催促通知送信: sent=%d, helpers=%d名",
-        sent,
-        len(req.helpers_not_submitted),
-    )
-    return NotificationResponse(emails_sent=sent, recipients=recipients)
 
 
 APP_URL = os.getenv("APP_URL", "https://visitcare-shift-optimizer.web.app")
