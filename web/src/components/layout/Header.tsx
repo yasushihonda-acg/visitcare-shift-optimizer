@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Menu, Users, UserCog, CalendarOff, History, LogOut, HelpCircle, BarChart2, Tag, CalendarCheck, Bell, LayoutDashboard } from 'lucide-react';
+import { Heart, Menu, Users, UserCog, CalendarOff, History, LogOut, HelpCircle, BarChart2, Tag, CalendarCheck, LayoutDashboard } from 'lucide-react';
 import { WeekSelector } from '@/components/schedule/WeekSelector';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -128,14 +128,6 @@ export function Header({ onShowWelcome }: HeaderProps = {}) {
                 <Link href="/report" className={pathname?.startsWith('/report') ? 'bg-accent' : ''}>
                   <BarChart2 className="mr-2 h-4 w-4" />
                   月次レポート
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>設定</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href="/settings" className={pathname?.startsWith('/settings') ? 'bg-accent' : ''}>
-                  <Bell className="mr-2 h-4 w-4" />
-                  通知設定
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

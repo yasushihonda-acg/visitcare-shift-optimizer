@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Search, ChevronLeft, ChevronRight, Mail, MessageSquare, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Search, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { format, addDays, addWeeks, subWeeks, startOfWeek, differenceInCalendarDays } from 'date-fns';
 import { useHelpers } from '@/hooks/useHelpers';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { useStaffUnavailability } from '@/hooks/useStaffUnavailability';
-import { toast } from 'sonner';
-import { notifyUnavailabilityReminder, OptimizeApiError } from '@/lib/api/optimizer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatReminderDialog } from '@/components/unavailability/ChatReminderDialog';
@@ -36,7 +34,6 @@ export default function UnavailabilityPage() {
   const [search, setSearch] = useState('');
   const [editTarget, setEditTarget] = useState<StaffUnavailability | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [reminderSending, setReminderSending] = useState(false);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
 
   const loading = helpersLoading || unavailLoading;
@@ -66,25 +63,6 @@ export default function UnavailabilityPage() {
         .map((h) => ({ id: h.id, name: `${h.name.family} ${h.name.given}` })),
     [helpers, submittedStaffIds],
   );
-
-  const handleSendReminder = async () => {
-    setReminderSending(true);
-    try {
-      const result = await notifyUnavailabilityReminder({
-        target_week_start: format(weekStart, 'yyyy-MM-dd'),
-        helpers_not_submitted: helpersNotSubmitted,
-      });
-      toast.success(`催促メール送信完了: ${result.emails_sent}名に送信しました`);
-    } catch (err) {
-      if (err instanceof OptimizeApiError) {
-        toast.error(`送信エラー: ${err.message}`);
-      } else {
-        toast.error('催促メールの送信に失敗しました');
-      }
-    } finally {
-      setReminderSending(false);
-    }
-  };
 
   const openNew = () => {
     setEditTarget(undefined);
@@ -134,23 +112,6 @@ export default function UnavailabilityPage() {
               >
                 <MessageSquare className="mr-1 h-4 w-4" />
                 Chat催促
-                <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground">
-                  {helpersNotSubmitted.length}
-                </span>
-              </Button>
-              <Button
-                onClick={handleSendReminder}
-                size="sm"
-                variant="outline"
-                disabled={reminderSending}
-                title={`${helpersNotSubmitted.length}名に催促メールを送信`}
-              >
-                {reminderSending ? (
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                ) : (
-                  <Mail className="mr-1 h-4 w-4" />
-                )}
-                催促メール
                 <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-xs text-destructive-foreground">
                   {helpersNotSubmitted.length}
                 </span>

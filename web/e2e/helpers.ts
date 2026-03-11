@@ -36,17 +36,6 @@ export async function goToMasters(page: Page, tab: 'customers' | 'helpers' | 'un
 }
 
 /**
- * 設定画面に遷移して認証完了を待つ
- */
-export async function goToSettings(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('visitcare-welcome-shown', 'true');
-  });
-  await page.goto('/settings');
-  await waitForAuth(page);
-}
-
-/**
  * 履歴画面に遷移して認証完了を待つ
  */
 export async function goToHistory(page: Page) {
