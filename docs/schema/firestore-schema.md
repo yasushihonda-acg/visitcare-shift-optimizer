@@ -139,6 +139,7 @@ pending → assigned（最適化エンジンによる割当）
 assigned → completed（サービス完了）
 assigned → cancelled（キャンセル）
 pending → cancelled（キャンセル）
+cancelled → pending（キャンセル取消・復元）
 ```
 
 ---

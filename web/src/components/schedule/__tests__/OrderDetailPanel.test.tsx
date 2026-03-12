@@ -198,10 +198,10 @@ describe('OrderDetailPanel - ステータス変更セレクト', () => {
     expect(screen.queryByTestId('status-change-select')).not.toBeInTheDocument();
   });
 
-  it('cancelledのとき → ステータス変更セレクトが表示されない', () => {
+  it('cancelledのとき → キャンセル取消セレクトが表示される', () => {
     const order = makeOrder({ status: 'cancelled' });
     render(<OrderDetailPanel order={order} {...defaultProps} />);
-    expect(screen.queryByTestId('status-change-select')).not.toBeInTheDocument();
+    expect(screen.getByTestId('status-change-select')).toBeInTheDocument();
   });
 });
 

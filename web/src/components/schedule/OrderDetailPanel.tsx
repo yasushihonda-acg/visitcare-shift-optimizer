@@ -46,7 +46,7 @@ const NEXT_STATUSES: Record<OrderStatus, { value: OrderStatus; label: string }[]
     { value: 'cancelled', label: 'キャンセル' },
   ],
   completed: [],
-  cancelled: [],
+  cancelled: [{ value: 'pending', label: 'キャンセル取消（未割当に戻す）' }],
 };
 
 /** @deprecated フォールバック用。useServiceTypes() の label を優先 */
@@ -108,7 +108,7 @@ export function OrderDetailPanel({
     : order.customer_id;
 
   const nextStatuses = NEXT_STATUSES[order.status] ?? [];
-  const isFinalized = order.status === 'completed' || order.status === 'cancelled';
+  const isFinalized = order.status === 'completed';
 
   const handleStatusChange = async (newStatus: string) => {
     if (!isOrderStatus(newStatus)) return;
