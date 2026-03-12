@@ -51,5 +51,8 @@ build/
 # Serena IDE (Claude Code semantic tools)
 .serena/
 
+# Firebase Emulator export data
+seed/emulator-data/
+
 # Python package lock (uv)
 optimizer/uv.lock
