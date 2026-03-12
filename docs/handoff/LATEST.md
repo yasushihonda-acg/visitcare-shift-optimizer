@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-12（PR #257 キャンセル操作前に確認ダイアログ追加 マージ済み）
+**最終更新**: 2026-03-13（PR #259 aria-describedby警告解消 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -52,7 +52,17 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-03-12）
+## 直近の実装（2026-03-13）
+
+- **fix (#259, 2026-03-12)** ✅: Dialog/Sheetのaria-describedby警告を解消
+  - `aria-describedby={undefined}` を SheetContent / DialogContent に追加
+  - Radix UIコンソール警告（`Missing Description or aria-describedby`）を解消
+
+- **feat (#258, 2026-03-12)** ✅: キャンセル/復元をトグルボタン化しパネル内でリアルタイム切替可能に
+  - Selectドロップダウンを廃止し、キャンセル・復元・完了を個別ボタンに変更
+  - `selectedOrder` をIDベースで管理し、Firestoreリアルタイム更新がパネルに即反映
+  - パネルを閉じずにキャンセル⇔復元をワンクリックでトグル切替可能に
+  - OrderDetailPanel テスト 27件、page.tsx テスト 3件パス
 
 - **fix (#257, 2026-03-12)** ✅: キャンセル操作前に確認ダイアログを追加
   - `window.confirm` でキャンセル確定前に確認を挟み誤操作防止
@@ -93,7 +103,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
 - **Firestore Rules**: **114件** pass ✅（PR #255でcancelled→pending許可テスト追加）
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #256 main push CI in_progress（最新）
+- **CI/CD**: PR #259 main push CI SUCCESS（最新、7m32s）
 
 ## 重要なドキュメント
 
@@ -143,7 +153,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 ## GitHub Issuesサマリー
 
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: PR #256（復元ボタンUI）、PR #255（キャンセル復元機能）、PR #254（フィルタUI改善+検索）、PR #253（105種全復元+カテゴリフィルタUI）、PR #250（メール削除）
+- **クローズ済み（直近）**: PR #259（aria警告解消）、PR #258（トグルボタン化）、PR #257（確認ダイアログ）、PR #256（復元ボタンUI）、PR #255（キャンセル復元機能）
 
 ## 参考資料（ローカルExcel）
 
