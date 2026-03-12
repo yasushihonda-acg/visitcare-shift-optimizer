@@ -65,9 +65,15 @@ vi.mock('@/components/masters/ServiceTypeEditDialog', () => ({
   ServiceTypeEditDialog: () => null,
 }));
 
+vi.mock('@/components/ui/input', () => ({
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
+}));
+
 vi.mock('lucide-react', () => ({
   Plus: () => <span />,
   Pencil: () => <span />,
+  Search: () => <span />,
+  X: () => <span />,
 }));
 
 // ── テスト ──────────────────────────────────────────────────────
@@ -174,5 +180,36 @@ describe('カテゴリフィルタ', () => {
     fireEvent.click(clearButton);
     expect(screen.getByText('全4件')).toBeInTheDocument();
     expect(screen.queryByText('クリア')).not.toBeInTheDocument();
+  });
+});
+
+describe('テキスト検索', () => {
+  beforeEach(() => {
+    mockSortedList = MULTI_CATEGORY_LIST;
+  });
+
+  it('検索窓が表示される', () => {
+    render(<ServiceTypesPage />);
+    expect(screen.getByPlaceholderText('コード・名前で検索...')).toBeInTheDocument();
+  });
+
+  it('コード名で検索できる', () => {
+    render(<ServiceTypesPage />);
+    fireEvent.change(screen.getByPlaceholderText('コード・名前で検索...'), { target: { value: '身体介護' } });
+    expect(screen.getByText('全4件（表示: 1件）')).toBeInTheDocument();
+  });
+
+  it('検索とカテゴリフィルタを組み合わせできる', () => {
+    render(<ServiceTypesPage />);
+    const filterGroup = screen.getByRole('group', { name: 'カテゴリフィルタ' });
+    fireEvent.click(within(filterGroup).getByRole('button', { name: /訪問介護/ }));
+    fireEvent.change(screen.getByPlaceholderText('コード・名前で検索...'), { target: { value: '生活' } });
+    expect(screen.getByText('全4件（表示: 1件）')).toBeInTheDocument();
+  });
+
+  it('該当なしの場合にメッセージが表示される', () => {
+    render(<ServiceTypesPage />);
+    fireEvent.change(screen.getByPlaceholderText('コード・名前で検索...'), { target: { value: 'zzz存在しない' } });
+    expect(screen.getByText('「zzz存在しない」に一致するサービス種別がありません')).toBeInTheDocument();
   });
 });
