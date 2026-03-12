@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, MapPin, User, AlertTriangle, Pencil } from 'lucide-react';
+import { Clock, MapPin, User, AlertTriangle, Pencil, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -152,7 +152,19 @@ export function OrderDetailPanel({
                 <Badge variant="outline" className={STATUS_BADGE_STYLES[order.status] ?? ''}>
                   {STATUS_LABELS[order.status]}
                 </Badge>
-                {nextStatuses.length > 0 && (
+                {order.status === 'cancelled' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={statusSaving}
+                    onClick={() => handleStatusChange('pending')}
+                    data-testid="status-restore-button"
+                  >
+                    <Undo2 className="mr-1 h-3 w-3" />
+                    復元
+                  </Button>
+                ) : nextStatuses.length > 0 && (
                   <Select
                     onValueChange={handleStatusChange}
                     disabled={statusSaving}
