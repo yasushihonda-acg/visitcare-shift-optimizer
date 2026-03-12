@@ -108,7 +108,7 @@ export function OrderDetailPanel({
     : order.customer_id;
 
   const nextStatuses = NEXT_STATUSES[order.status] ?? [];
-  const isFinalized = order.status === 'completed';
+  const isFinalized = order.status === 'completed' || order.status === 'cancelled';
 
   const handleStatusChange = async (newStatus: string) => {
     if (!isOrderStatus(newStatus)) return;
