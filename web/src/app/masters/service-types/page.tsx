@@ -1,11 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Search, X } from 'lucide-react';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -17,21 +18,16 @@ import {
 import { ServiceTypeEditDialog } from '@/components/masters/ServiceTypeEditDialog';
 import type { ServiceTypeDoc } from '@/types';
 
-const CATEGORY_STYLES: Record<string, string> = {
-  '訪問介護': 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200',
-  '通所介護Ⅰ': 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200',
-  '地域密着型': 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200',
-  '訪問看護': 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200',
-  '大規模型（Ⅰ）': 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200',
+/** カテゴリ色定義: [dot色, 選択時bg, 選択時border, 選択時text, Badge用] */
+const CATEGORY_COLORS: Record<string, { dot: string; active: string; badge: string }> = {
+  '訪問介護':     { dot: 'bg-blue-500',   active: 'bg-blue-50 border-blue-400 text-blue-800 shadow-sm shadow-blue-100',   badge: 'bg-blue-100 text-blue-800 border-blue-300' },
+  '通所介護Ⅰ':   { dot: 'bg-green-500',  active: 'bg-green-50 border-green-400 text-green-800 shadow-sm shadow-green-100',  badge: 'bg-green-100 text-green-800 border-green-300' },
+  '地域密着型':   { dot: 'bg-amber-500',  active: 'bg-amber-50 border-amber-400 text-amber-800 shadow-sm shadow-amber-100',  badge: 'bg-amber-100 text-amber-800 border-amber-300' },
+  '訪問看護':     { dot: 'bg-purple-500', active: 'bg-purple-50 border-purple-400 text-purple-800 shadow-sm shadow-purple-100', badge: 'bg-purple-100 text-purple-800 border-purple-300' },
+  '大規模型（Ⅰ）': { dot: 'bg-rose-500',   active: 'bg-rose-50 border-rose-400 text-rose-800 shadow-sm shadow-rose-100',   badge: 'bg-rose-100 text-rose-800 border-rose-300' },
 };
 
-const CATEGORY_ACTIVE_STYLES: Record<string, string> = {
-  '訪問介護': 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700',
-  '通所介護Ⅰ': 'bg-green-600 text-white border-green-600 hover:bg-green-700',
-  '地域密着型': 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700',
-  '訪問看護': 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700',
-  '大規模型（Ⅰ）': 'bg-rose-600 text-white border-rose-600 hover:bg-rose-700',
-};
+const GHOST_STYLE = 'bg-transparent border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-500';
 
 export default function ServiceTypesPage() {
   const { sortedList, loading } = useServiceTypes();
@@ -39,6 +35,7 @@ export default function ServiceTypesPage() {
   const [editTarget, setEditTarget] = useState<ServiceTypeDoc | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -48,11 +45,23 @@ export default function ServiceTypesPage() {
     return Array.from(cats);
   }, [sortedList]);
 
-  // 未選択 = 全表示
+  // カテゴリフィルタ + テキスト検索
   const filteredList = useMemo(() => {
-    if (selectedCategories.size === 0) return sortedList;
-    return sortedList.filter((st) => st.category && selectedCategories.has(st.category));
-  }, [sortedList, selectedCategories]);
+    let list = sortedList;
+    if (selectedCategories.size > 0) {
+      list = list.filter((st) => st.category && selectedCategories.has(st.category));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((st) =>
+        st.code.toLowerCase().includes(q) ||
+        st.label.toLowerCase().includes(q) ||
+        st.short_label?.toLowerCase().includes(q) ||
+        st.category?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [sortedList, selectedCategories, searchQuery]);
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories((prev) => {
@@ -101,42 +110,61 @@ export default function ServiceTypesPage() {
         )}
       </div>
 
-      {categories.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="カテゴリフィルタ">
-          {categories.map((cat) => {
-            const isActive = selectedCategories.has(cat);
-            const count = sortedList.filter((st) => st.category === cat).length;
-            return (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        {categories.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="カテゴリフィルタ">
+            {categories.map((cat) => {
+              const isActive = selectedCategories.has(cat);
+              const colors = CATEGORY_COLORS[cat];
+              const count = sortedList.filter((st) => st.category === cat).length;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => toggleCategory(cat)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? (colors?.active ?? 'bg-primary/10 border-primary text-primary shadow-sm')
+                      : GHOST_STYLE
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full transition-all duration-200 ${
+                    isActive
+                      ? (colors?.dot ?? 'bg-primary')
+                      : 'bg-gray-300'
+                  }`} />
+                  {cat}
+                  <span className={`tabular-nums text-[10px] leading-none transition-colors duration-200 ${
+                    isActive ? 'opacity-80' : 'opacity-40'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+            {selectedCategories.size > 0 && (
               <button
-                key={cat}
                 type="button"
-                onClick={() => toggleCategory(cat)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                  isActive
-                    ? (CATEGORY_ACTIVE_STYLES[cat] ?? 'bg-primary text-primary-foreground border-primary')
-                    : (CATEGORY_STYLES[cat] ?? 'bg-muted text-muted-foreground border-border hover:bg-accent')
-                }`}
+                onClick={() => setSelectedCategories(new Set())}
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2.5 py-1.5 text-xs text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
               >
-                {cat}
-                <span className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
-                  isActive ? 'bg-white/20' : 'bg-black/5'
-                }`}>
-                  {count}
-                </span>
+                <X className="h-3 w-3" />
+                クリア
               </button>
-            );
-          })}
-          {selectedCategories.size > 0 && (
-            <button
-              type="button"
-              onClick={() => setSelectedCategories(new Set())}
-              className="inline-flex items-center rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-accent transition-colors cursor-pointer"
-            >
-              クリア
-            </button>
-          )}
+            )}
+          </div>
+        )}
+
+        <div className="relative sm:ml-auto sm:w-56">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="コード・名前で検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
-      )}
+      </div>
 
       <div className="rounded-md border">
         <Table>
@@ -157,7 +185,9 @@ export default function ServiceTypesPage() {
                 <TableCell colSpan={colSpan} className="text-center text-muted-foreground py-8">
                   {sortedList.length === 0
                     ? 'サービス種別が登録されていません'
-                    : '該当するサービス種別がありません'}
+                    : searchQuery.trim()
+                      ? `「${searchQuery.trim()}」に一致するサービス種別がありません`
+                      : '該当するサービス種別がありません'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -169,7 +199,7 @@ export default function ServiceTypesPage() {
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] ${CATEGORY_STYLES[st.category] ?? ''}`}
+                      className={`text-[10px] ${CATEGORY_COLORS[st.category]?.badge ?? ''}`}
                     >
                       {st.category}
                     </Badge>
@@ -214,7 +244,7 @@ export default function ServiceTypesPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        {selectedCategories.size > 0
+        {filteredList.length !== sortedList.length
           ? `全${sortedList.length}件（表示: ${filteredList.length}件）`
           : `全${sortedList.length}件`}
       </p>
