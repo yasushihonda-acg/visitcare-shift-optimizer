@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-12（PR #254 サービス種別フィルタUI改善+検索機能追加 マージ済み）
+**最終更新**: 2026-03-12（PR #256 キャンセル復元UIを復元ボタンに変更 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -54,6 +54,15 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-03-12）
 
+- **fix (#256, 2026-03-12)** ✅: キャンセル復元UIをセレクトから明示的な復元ボタンに変更
+  - Undo2アイコン付き「復元」ボタンで誤操作しにくいUIに変更
+  - OrderDetailPanel テスト 24件パス
+
+- **fix (#255, 2026-03-12)** ✅: キャンセル済みオーダーをpendingに復元可能にする
+  - `cancelled → pending` 状態遷移を追加（誤キャンセル取り消し機能）
+  - updateOrder テスト 23件、OrderDetailPanel 24件、Firestoreルール 114件パス
+  - CI SUCCESS
+
 - **feat (#254, 2026-03-12)** ✅: サービス種別フィルタUIを改善し検索機能を追加
   - カテゴリフィルタの選択/未選択状態の視認性大幅改善（ゴースト→カラー切り替え）
   - テキスト検索窓を追加（コード・名前・カテゴリで絞り込み可能、カテゴリフィルタと併用可）
@@ -77,10 +86,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 ## 最新テスト結果サマリー（2026-03-12）
 
 - **Optimizer**: 297件 pass ✅
-- **Web (Next.js)**: **986件以上** pass ✅（PR #254でVitest 15件、累計増加）
-- **Firestore Rules**: 107件 pass
+- **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
+- **Firestore Rules**: **114件** pass ✅（PR #255でcancelled→pending許可テスト追加）
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #254 main push CI SUCCESS（最新）
+- **CI/CD**: PR #256 main push CI in_progress（最新）
 
 ## 重要なドキュメント
 
@@ -130,7 +139,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 ## GitHub Issuesサマリー
 
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: PR #254（フィルタUI改善+検索）、PR #253（105種全復元+カテゴリフィルタUI）、PR #250（メール削除）、PR #247（gunicorn workers増加）、PR #242（Seedインポート既存削除）
+- **クローズ済み（直近）**: PR #256（復元ボタンUI）、PR #255（キャンセル復元機能）、PR #254（フィルタUI改善+検索）、PR #253（105種全復元+カテゴリフィルタUI）、PR #250（メール削除）
 
 ## 参考資料（ローカルExcel）
 
