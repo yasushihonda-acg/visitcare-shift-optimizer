@@ -51,7 +51,7 @@ export default function ServiceTypesPage() {
   // 未選択 = 全表示
   const filteredList = useMemo(() => {
     if (selectedCategories.size === 0) return sortedList;
-    return sortedList.filter((st) => selectedCategories.has(st.category));
+    return sortedList.filter((st) => st.category && selectedCategories.has(st.category));
   }, [sortedList, selectedCategories]);
 
   const toggleCategory = (cat: string) => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import ServiceTypesPage from '../page';
 import type { ServiceTypeDoc } from '@/types';
 
@@ -131,10 +131,8 @@ describe('カテゴリフィルタ', () => {
   it('カテゴリクリックでフィルタリングされる', () => {
     render(<ServiceTypesPage />);
 
-    // フィルタボタンの「訪問介護」をクリック（role=groupの中のボタン）
     const filterGroup = screen.getByRole('group', { name: 'カテゴリフィルタ' });
-    const filterButton = filterGroup.querySelector('button');
-    fireEvent.click(filterButton!);
+    fireEvent.click(within(filterGroup).getByRole('button', { name: /訪問介護/ }));
 
     expect(screen.getByText('全4件（表示: 2件）')).toBeInTheDocument();
     expect(screen.getAllByText('身体介護1・Ⅱ').length).toBeGreaterThanOrEqual(1);
@@ -145,10 +143,8 @@ describe('カテゴリフィルタ', () => {
     render(<ServiceTypesPage />);
 
     const filterGroup = screen.getByRole('group', { name: 'カテゴリフィルタ' });
-    const buttons = filterGroup.querySelectorAll('button');
-    // buttons[0]=訪問介護, buttons[1]=通所介護Ⅰ, buttons[2]=地域密着型
-    fireEvent.click(buttons[0]); // 訪問介護
-    fireEvent.click(buttons[2]); // 地域密着型
+    fireEvent.click(within(filterGroup).getByRole('button', { name: /訪問介護/ }));
+    fireEvent.click(within(filterGroup).getByRole('button', { name: /地域密着型/ }));
 
     expect(screen.getByText('全4件（表示: 3件）')).toBeInTheDocument();
   });
@@ -157,12 +153,12 @@ describe('カテゴリフィルタ', () => {
     render(<ServiceTypesPage />);
 
     const filterGroup = screen.getByRole('group', { name: 'カテゴリフィルタ' });
-    const firstButton = filterGroup.querySelector('button')!;
+    const btn = within(filterGroup).getByRole('button', { name: /訪問介護/ });
 
-    fireEvent.click(firstButton); // 選択
+    fireEvent.click(btn); // 選択
     expect(screen.getByText('全4件（表示: 2件）')).toBeInTheDocument();
 
-    fireEvent.click(firstButton); // 解除
+    fireEvent.click(btn); // 解除
     expect(screen.getByText('全4件')).toBeInTheDocument();
   });
 
@@ -170,7 +166,7 @@ describe('カテゴリフィルタ', () => {
     render(<ServiceTypesPage />);
 
     const filterGroup = screen.getByRole('group', { name: 'カテゴリフィルタ' });
-    fireEvent.click(filterGroup.querySelector('button')!); // 1つ選択
+    fireEvent.click(within(filterGroup).getByRole('button', { name: /訪問介護/ }));
 
     const clearButton = screen.getByText('クリア');
     expect(clearButton).toBeInTheDocument();
