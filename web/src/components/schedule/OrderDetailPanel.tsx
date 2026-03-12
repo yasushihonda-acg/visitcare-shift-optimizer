@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, MapPin, User, AlertTriangle, Pencil, Undo2 } from 'lucide-react';
+import { Clock, MapPin, User, AlertTriangle, Pencil, Undo2, Ban, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,17 +11,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { StaffMultiSelect } from '@/components/masters/StaffMultiSelect';
 import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
 import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
-import type { Order, Customer, Helper, OrderStatus } from '@/types';
+import type { Order, Customer, Helper } from '@/types';
 import type { Violation } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
@@ -39,15 +32,6 @@ interface OrderDetailPanelProps {
   saving?: boolean;
 }
 
-const NEXT_STATUSES: Record<OrderStatus, { value: OrderStatus; label: string }[]> = {
-  pending: [{ value: 'cancelled', label: 'キャンセル' }],
-  assigned: [
-    { value: 'completed', label: '完了（実績確認済み）' },
-    { value: 'cancelled', label: 'キャンセル' },
-  ],
-  completed: [],
-  cancelled: [{ value: 'pending', label: 'キャンセル取消（未割当に戻す）' }],
-};
 
 /** @deprecated フォールバック用。useServiceTypes() の label を優先 */
 const SERVICE_LABELS_FALLBACK: Record<string, string> = {
@@ -107,7 +91,6 @@ export function OrderDetailPanel({
     ? `${customer.name.family} ${customer.name.given}`
     : order.customer_id;
 
-  const nextStatuses = NEXT_STATUSES[order.status] ?? [];
   const isFinalized = order.status === 'completed' || order.status === 'cancelled';
 
   const handleStatusChange = async (newStatus: string) => {
@@ -155,7 +138,7 @@ export function OrderDetailPanel({
                 <Badge variant="outline" className={STATUS_BADGE_STYLES[order.status] ?? ''}>
                   {STATUS_LABELS[order.status]}
                 </Badge>
-                {order.status === 'cancelled' ? (
+                {order.status === 'cancelled' && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -167,25 +150,32 @@ export function OrderDetailPanel({
                     <Undo2 className="mr-1 h-3 w-3" />
                     復元
                   </Button>
-                ) : nextStatuses.length > 0 && (
-                  <Select
-                    onValueChange={handleStatusChange}
+                )}
+                {order.status === 'assigned' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
                     disabled={statusSaving}
+                    onClick={() => handleStatusChange('completed')}
+                    data-testid="status-complete-button"
                   >
-                    <SelectTrigger
-                      className="h-7 w-auto min-w-[100px] text-xs"
-                      data-testid="status-change-select"
-                    >
-                      <SelectValue placeholder="変更..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {nextStatuses.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                    完了
+                  </Button>
+                )}
+                {(order.status === 'pending' || order.status === 'assigned') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs text-destructive hover:text-destructive"
+                    disabled={statusSaving}
+                    onClick={() => handleStatusChange('cancelled')}
+                    data-testid="status-cancel-button"
+                  >
+                    <Ban className="mr-1 h-3 w-3" />
+                    キャンセル
+                  </Button>
                 )}
               </div>
             </div>

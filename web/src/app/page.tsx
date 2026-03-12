@@ -40,7 +40,7 @@ function SchedulePage() {
   const { customers, helpers, orderCounts, getDaySchedule, unavailability, loading, travelTimeLookup } =
     useScheduleData(weekStart);
 
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [violationPanelOpen, setViolationPanelOpen] = useState(false);
   const [violationPanelFilter, setViolationPanelFilter] = useState<ViolationSeverity | 'all'>('all');
@@ -66,6 +66,11 @@ function SchedulePage() {
     }
     return orders;
   }, [weekStart, getDaySchedule]);
+
+  const selectedOrder = useMemo(
+    () => (selectedOrderId ? allOrders.find((o) => o.id === selectedOrderId) ?? null : null),
+    [selectedOrderId, allOrders],
+  );
 
   const { diffMap } = useAssignmentDiff(weekStart, allOrders);
 
@@ -169,7 +174,7 @@ function SchedulePage() {
   }, [allOrders, helpers, selectedDay, dayDate]);
 
   const handleOrderClick = (order: Order) => {
-    setSelectedOrder(order);
+    setSelectedOrderId(order.id);
     setDetailOpen(true);
   };
 

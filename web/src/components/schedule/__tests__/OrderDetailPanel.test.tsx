@@ -33,16 +33,6 @@ vi.mock('@/components/ui/sheet', () => ({
   SheetTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }));
 
-// Select をモック（Radix ポータル対策）
-vi.mock('@/components/ui/select', () => ({
-  Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) =>
-    <button {...props}>{children}</button>,
-  SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
-  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) =>
-    <option value={value}>{children}</option>,
-}));
 
 // StaffMultiSelect をモック
 vi.mock('@/components/masters/StaffMultiSelect', () => ({
@@ -185,17 +175,33 @@ describe('OrderDetailPanel - 基本情報', () => {
   });
 });
 
-describe('OrderDetailPanel - ステータス変更セレクト', () => {
-  it('pendingのとき → ステータス変更セレクトが表示される', () => {
+describe('OrderDetailPanel - ステータス変更ボタン', () => {
+  it('pendingのとき → キャンセルボタンが表示される', () => {
     const order = makeOrder({ status: 'pending' });
     render(<OrderDetailPanel order={order} {...defaultProps} />);
-    expect(screen.getByTestId('status-change-select')).toBeInTheDocument();
+    expect(screen.getByTestId('status-cancel-button')).toBeInTheDocument();
+    expect(screen.getByText('キャンセル')).toBeInTheDocument();
   });
 
-  it('completedのとき → ステータス変更セレクトが表示されない', () => {
+  it('pendingのとき → 完了ボタンは表示されない', () => {
+    const order = makeOrder({ status: 'pending' });
+    render(<OrderDetailPanel order={order} {...defaultProps} />);
+    expect(screen.queryByTestId('status-complete-button')).not.toBeInTheDocument();
+  });
+
+  it('assignedのとき → キャンセルボタンと完了ボタンが表示される', () => {
+    const order = makeOrder({ status: 'assigned' });
+    render(<OrderDetailPanel order={order} {...defaultProps} />);
+    expect(screen.getByTestId('status-cancel-button')).toBeInTheDocument();
+    expect(screen.getByTestId('status-complete-button')).toBeInTheDocument();
+  });
+
+  it('completedのとき → ステータス変更ボタンが表示されない', () => {
     const order = makeOrder({ status: 'completed' });
     render(<OrderDetailPanel order={order} {...defaultProps} />);
-    expect(screen.queryByTestId('status-change-select')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('status-cancel-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('status-complete-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('status-restore-button')).not.toBeInTheDocument();
   });
 
   it('cancelledのとき → 復元ボタンが表示される', () => {
@@ -203,6 +209,12 @@ describe('OrderDetailPanel - ステータス変更セレクト', () => {
     render(<OrderDetailPanel order={order} {...defaultProps} />);
     expect(screen.getByTestId('status-restore-button')).toBeInTheDocument();
     expect(screen.getByText('復元')).toBeInTheDocument();
+  });
+
+  it('cancelledのとき → キャンセルボタンは表示されない', () => {
+    const order = makeOrder({ status: 'cancelled' });
+    render(<OrderDetailPanel order={order} {...defaultProps} />);
+    expect(screen.queryByTestId('status-cancel-button')).not.toBeInTheDocument();
   });
 });
 
