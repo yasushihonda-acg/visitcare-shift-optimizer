@@ -112,6 +112,9 @@ export function OrderDetailPanel({
 
   const handleStatusChange = async (newStatus: string) => {
     if (!isOrderStatus(newStatus)) return;
+    if (newStatus === 'cancelled' && !window.confirm('このオーダーをキャンセルしますか？\nキャンセル後も「復元」ボタンで元に戻せます。')) {
+      return;
+    }
     setStatusSaving(true);
     try {
       await updateOrderStatus(order.id, order.status, newStatus);
