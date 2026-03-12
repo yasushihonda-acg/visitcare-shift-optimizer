@@ -756,7 +756,18 @@ describe('認証済みユーザー - orders status 遷移', () => {
     );
   });
 
-  it('cancelled → assigned の遷移は拒否される（最終状態）', async () => {
+  it('cancelled → pending の遷移が許可される（キャンセル取消）', async () => {
+    await setupOrderWithStatus('cancelled');
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-status'), {
+        status: 'pending',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('cancelled → assigned の遷移は拒否される', async () => {
     await setupOrderWithStatus('cancelled');
     const authed = testEnv.authenticatedContext('user-1');
     await assertFails(

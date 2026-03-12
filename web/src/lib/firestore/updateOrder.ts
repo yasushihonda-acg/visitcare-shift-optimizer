@@ -23,7 +23,7 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['cancelled'],
   assigned: ['completed', 'cancelled'],
   completed: [],
-  cancelled: [],
+  cancelled: ['pending'],
 };
 
 const ORDER_STATUSES: readonly string[] = ['pending', 'assigned', 'completed', 'cancelled'];

@@ -58,6 +58,7 @@ service cloud.firestore {
         && (
           (oldStatus == 'assigned' && (newStatus == 'completed' || newStatus == 'cancelled'))
           || (oldStatus == 'pending' && newStatus == 'cancelled')
+          || (oldStatus == 'cancelled' && newStatus == 'pending')
         );
     }
 

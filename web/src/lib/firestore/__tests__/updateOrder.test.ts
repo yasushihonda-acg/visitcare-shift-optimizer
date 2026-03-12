@@ -43,7 +43,11 @@ describe('updateOrderStatus - 状態遷移バリデーション', () => {
     );
   });
 
-  it('cancelled → assigned はエラーになる（最終状態）', async () => {
+  it('cancelled → pending は許可される（キャンセル取消）', async () => {
+    await expect(updateOrderStatus('o1', 'cancelled', 'pending')).resolves.not.toThrow();
+  });
+
+  it('cancelled → assigned はエラーになる', async () => {
     await expect(updateOrderStatus('o1', 'cancelled', 'assigned')).rejects.toThrow(
       'Invalid status transition'
     );
@@ -81,6 +85,14 @@ describe('isValidTransition - 純粋関数テスト', () => {
 
   it('pending → completed は false', () => {
     expect(isValidTransition('pending', 'completed')).toBe(false);
+  });
+
+  it('cancelled → pending は true（キャンセル取消）', () => {
+    expect(isValidTransition('cancelled', 'pending')).toBe(true);
+  });
+
+  it('cancelled → assigned は false', () => {
+    expect(isValidTransition('cancelled', 'assigned')).toBe(false);
   });
 });
 
