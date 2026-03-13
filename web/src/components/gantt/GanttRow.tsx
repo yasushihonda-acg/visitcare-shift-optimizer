@@ -155,7 +155,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
               sourceHelperId={row.helper.id}
               staffCount={sc}
               onConfirmManualEdit={onConfirmManualEdit}
-              addressGroupInfo={addressGroupMap?.get(order.customer_id)}
+              addressGroupInfo={addressGroupMap?.get(order.id)}
             />
           );
         })}

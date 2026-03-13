@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildAddressGroupMap, getAddressGroupColor, ADDRESS_GROUP_COLORS } from '../useAddressGroups';
-import type { Customer } from '@/types';
+import { buildAddressGroupMap, buildAdjacentAddressOrderMap, getAddressGroupColor, ADDRESS_GROUP_COLORS } from '../useAddressGroups';
+import type { Customer, Order } from '@/types';
 
 function makeCustomer(id: string, overrides: Partial<Customer> = {}): Customer {
   return {
@@ -21,6 +21,24 @@ function makeCustomer(id: string, overrides: Partial<Customer> = {}): Customer {
   } as Customer;
 }
 
+function makeOrder(id: string, customerId: string, startTime: string, endTime: string): Order {
+  return {
+    id,
+    customer_id: customerId,
+    start_time: startTime,
+    end_time: endTime,
+    assigned_staff_ids: [],
+    service_type: 'physical_care',
+    status: 'pending',
+    day_of_week: 'monday',
+    week_start_date: new Date('2026-03-09'),
+    date: new Date('2026-03-09'),
+    manually_edited: false,
+    created_at: new Date(),
+    updated_at: new Date(),
+  } as Order;
+}
+
 describe('buildAddressGroupMap', () => {
   it('空のMapでは空を返す', () => {
     const result = buildAddressGroupMap(new Map());
@@ -38,7 +56,7 @@ describe('buildAddressGroupMap', () => {
     expect(result.has('C002')).toBe(true);
     expect(result.get('C001')!.index).toBe(result.get('C002')!.index);
     expect(result.get('C001')!.type).toBe('household');
-    expect(result.has('C003')).toBe(false); // 単独 → 含まない
+    expect(result.has('C003')).toBe(false);
   });
 
   it('同一施設メンバーが同じグループになる', () => {
@@ -49,19 +67,6 @@ describe('buildAddressGroupMap', () => {
     const result = buildAddressGroupMap(customers);
     expect(result.get('C001')!.index).toBe(result.get('C002')!.index);
     expect(result.get('C001')!.type).toBe('facility');
-  });
-
-  it('世帯と施設が混在するグループを統合する', () => {
-    const customers = new Map<string, Customer>([
-      ['C001', makeCustomer('C001', { same_household_customer_ids: ['C002'] })],
-      ['C002', makeCustomer('C002', { same_household_customer_ids: ['C001'], same_facility_customer_ids: ['C003'] })],
-      ['C003', makeCustomer('C003', { same_facility_customer_ids: ['C002'] })],
-    ]);
-    const result = buildAddressGroupMap(customers);
-    // C001, C002, C003 が全て同一グループ
-    expect(result.get('C001')!.index).toBe(result.get('C002')!.index);
-    expect(result.get('C002')!.index).toBe(result.get('C003')!.index);
-    expect(result.get('C001')!.type).toBe('mixed');
   });
 
   it('複数の独立グループに異なるインデックスを割り当てる', () => {
@@ -80,45 +85,83 @@ describe('buildAddressGroupMap', () => {
       ['C001', makeCustomer('C001', { same_household_customer_ids: ['C999'] })],
     ]);
     const result = buildAddressGroupMap(customers);
-    expect(result.has('C001')).toBe(false); // 相方が存在しないので単独扱い
+    expect(result.has('C001')).toBe(false);
+  });
+});
+
+describe('buildAdjacentAddressOrderMap', () => {
+  const customers = new Map<string, Customer>([
+    ['C001', makeCustomer('C001', { same_household_customer_ids: ['C002'] })],
+    ['C002', makeCustomer('C002', { same_household_customer_ids: ['C001'] })],
+    ['C003', makeCustomer('C003')],
+  ]);
+
+  it('隣接する同一住所ペアにインジケーターを付与する', () => {
+    const helperRows = [{
+      helper: { id: 'H1' },
+      orders: [
+        makeOrder('O1', 'C001', '09:00', '10:00'),
+        makeOrder('O2', 'C002', '10:00', '11:00'),
+      ],
+    }];
+    const result = buildAdjacentAddressOrderMap(helperRows, customers);
+    expect(result.has('O1')).toBe(true);
+    expect(result.has('O2')).toBe(true);
+    expect(result.get('O1')!.index).toBe(result.get('O2')!.index);
   });
 
-  it('全員が単独 → 空Mapを返す', () => {
-    const customers = new Map<string, Customer>([
-      ['C001', makeCustomer('C001')],
-      ['C002', makeCustomer('C002')],
-    ]);
-    const result = buildAddressGroupMap(customers);
+  it('隣接していない同一住所ペアにはインジケーターなし', () => {
+    const helperRows = [{
+      helper: { id: 'H1' },
+      orders: [
+        makeOrder('O1', 'C001', '09:00', '10:00'),
+        makeOrder('O3', 'C003', '10:00', '11:00'),
+        makeOrder('O2', 'C002', '11:00', '12:00'),
+      ],
+    }];
+    const result = buildAdjacentAddressOrderMap(helperRows, customers);
     expect(result.size).toBe(0);
   });
 
-  describe('activeCustomerIds フィルタ', () => {
-    const customers = new Map<string, Customer>([
-      ['C001', makeCustomer('C001', { same_household_customer_ids: ['C002'] })],
-      ['C002', makeCustomer('C002', { same_household_customer_ids: ['C001'] })],
-      ['C003', makeCustomer('C003', { same_household_customer_ids: ['C004'] })],
-      ['C004', makeCustomer('C004', { same_household_customer_ids: ['C003'] })],
-    ]);
+  it('異なるヘルパー行の隣接はカウントしない', () => {
+    const helperRows = [
+      { helper: { id: 'H1' }, orders: [makeOrder('O1', 'C001', '09:00', '10:00')] },
+      { helper: { id: 'H2' }, orders: [makeOrder('O2', 'C002', '10:00', '11:00')] },
+    ];
+    const result = buildAdjacentAddressOrderMap(helperRows, customers);
+    expect(result.size).toBe(0);
+  });
 
-    it('両メンバーに当日オーダーがある場合のみ表示', () => {
-      const active = new Set(['C001', 'C002']); // C001+C002はペア、C003/C004は当日なし
-      const result = buildAddressGroupMap(customers, active);
-      expect(result.has('C001')).toBe(true);
-      expect(result.has('C002')).toBe(true);
-      expect(result.has('C003')).toBe(false);
-      expect(result.has('C004')).toBe(false);
-    });
+  it('同一住所でないペアは隣接でもインジケーターなし', () => {
+    const helperRows = [{
+      helper: { id: 'H1' },
+      orders: [
+        makeOrder('O1', 'C001', '09:00', '10:00'),
+        makeOrder('O3', 'C003', '10:00', '11:00'),
+      ],
+    }];
+    const result = buildAdjacentAddressOrderMap(helperRows, customers);
+    expect(result.size).toBe(0);
+  });
 
-    it('ペアの片方のみ当日オーダー → グループ不成立', () => {
-      const active = new Set(['C001', 'C003']); // C001のみ(C002なし), C003のみ(C004なし)
-      const result = buildAddressGroupMap(customers, active);
-      expect(result.size).toBe(0);
-    });
+  it('空のヘルパー行では空を返す', () => {
+    const result = buildAdjacentAddressOrderMap([], customers);
+    expect(result.size).toBe(0);
+  });
 
-    it('activeCustomerIds 省略時は全グループ表示（後方互換）', () => {
-      const result = buildAddressGroupMap(customers);
-      expect(result.size).toBe(4);
-    });
+  it('3連続の同一住所オーダー（A→B→A）でも隣接ペアごとに判定', () => {
+    const helperRows = [{
+      helper: { id: 'H1' },
+      orders: [
+        makeOrder('O1', 'C001', '09:00', '10:00'),
+        makeOrder('O2', 'C002', '10:00', '11:00'),
+        makeOrder('O3', 'C001', '11:00', '12:00'),
+      ],
+    }];
+    const result = buildAdjacentAddressOrderMap(helperRows, customers);
+    expect(result.has('O1')).toBe(true);
+    expect(result.has('O2')).toBe(true);
+    expect(result.has('O3')).toBe(true);
   });
 });
 

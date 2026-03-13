@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Customer } from '@/types';
+import type { Customer, Order } from '@/types';
 
 /** グループ種別: 世帯 / 施設 / 混在 */
 export type AddressGroupType = 'household' | 'facility' | 'mixed';
@@ -13,24 +13,19 @@ export interface AddressGroupInfo {
 }
 
 /**
- * 同一住所グループの情報マップを計算するフック。
- *
- * same_household_customer_ids / same_facility_customer_ids を Union-Find で
- * 統合し、2名以上のグループに情報を割り当てる。
+ * 同じヘルパー行で隣接する同一住所ペアのオーダーにのみインジケーターを付与するフック。
  *
  * @param customers 全顧客マップ
- * @param activeCustomerIds 当日オーダーがある顧客IDのSet（省略時はフィルタなし）。
- *   指定した場合、グループメンバーのうち当日オーダーがある顧客が2名以上の
- *   グループのみインジケーターを表示する。
- * @returns addressGroupMap — Map<customerId, AddressGroupInfo>（単独顧客は含まない）
+ * @param helperRows ヘルパー行（各行にorders配列）
+ * @returns Map<orderId, AddressGroupInfo>（隣接ペアに該当するオーダーのみ）
  */
-export function useAddressGroups(
+export function useAdjacentAddressGroups(
   customers: Map<string, Customer>,
-  activeCustomerIds?: Set<string>,
+  helperRows: { helper: { id: string }; orders: Order[] }[],
 ): Map<string, AddressGroupInfo> {
   return useMemo(
-    () => buildAddressGroupMap(customers, activeCustomerIds),
-    [customers, activeCustomerIds],
+    () => buildAdjacentAddressOrderMap(helperRows, customers),
+    [customers, helperRows],
   );
 }
 
@@ -76,10 +71,9 @@ class UnionFind {
   }
 }
 
-/** テスト用にエクスポート */
+/** テスト用にエクスポート: 顧客マスタから同一住所グループを構築 */
 export function buildAddressGroupMap(
   customers: Map<string, Customer>,
-  activeCustomerIds?: Set<string>,
 ): Map<string, AddressGroupInfo> {
   const uf = new UnionFind();
   const customerIds = new Set(customers.keys());
@@ -112,7 +106,6 @@ export function buildAddressGroupMap(
     if (members.length < 2) continue;
     let hasHousehold = false;
     let hasFacility = false;
-    // メンバーペアがhousehold/facilityのどちらに属するか確認
     for (const id of members) {
       const customer = customers.get(id)!;
       for (const relatedId of customer.same_household_customer_ids) {
@@ -126,20 +119,54 @@ export function buildAddressGroupMap(
   }
 
   // 2名以上のグループに情報を割り当て
-  // activeCustomerIds 指定時は、当日オーダーがあるメンバーが2名以上のグループのみ対象
   const result = new Map<string, AddressGroupInfo>();
   let groupIndex = 0;
   for (const [root, members] of groups) {
     if (members.length < 2) continue;
-    const activeMembers = activeCustomerIds
-      ? members.filter((id) => activeCustomerIds.has(id))
-      : members;
-    if (activeMembers.length < 2) continue;
     const type = groupTypes.get(root)!;
-    for (const id of activeMembers) {
+    for (const id of members) {
       result.set(id, { index: groupIndex, type });
     }
     groupIndex++;
+  }
+
+  return result;
+}
+
+/**
+ * テスト用にエクスポート: ヘルパー行の隣接オーダーペアから表示対象を計算。
+ *
+ * 同じヘルパー行で時間的に隣接（前のend_time === 次のstart_time）し、
+ * かつ同一住所グループに属するオーダーのみインジケーターを付与する。
+ *
+ * @returns Map<orderId, AddressGroupInfo>
+ */
+export function buildAdjacentAddressOrderMap(
+  helperRows: { helper: { id: string }; orders: Order[] }[],
+  customers: Map<string, Customer>,
+): Map<string, AddressGroupInfo> {
+  const customerGroupMap = buildAddressGroupMap(customers);
+  const result = new Map<string, AddressGroupInfo>();
+
+  for (const row of helperRows) {
+    const sorted = [...row.orders].sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const current = sorted[i];
+      const next = sorted[i + 1];
+
+      // 隣接チェック: 前のend_time === 次のstart_time
+      if (current.end_time !== next.start_time) continue;
+
+      // 同一住所グループチェック
+      const currentGroup = customerGroupMap.get(current.customer_id);
+      const nextGroup = customerGroupMap.get(next.customer_id);
+
+      if (currentGroup && nextGroup && currentGroup.index === nextGroup.index) {
+        result.set(current.id, currentGroup);
+        result.set(next.id, nextGroup);
+      }
+    }
   }
 
   return result;

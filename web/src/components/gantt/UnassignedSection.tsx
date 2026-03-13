@@ -8,8 +8,6 @@ import type { Order, Customer } from '@/types';
 import type { DragData, DropZoneStatus } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
-import { getAddressGroupColor } from '@/hooks/useAddressGroups';
-import type { AddressGroupInfo } from '@/hooks/useAddressGroups';
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
   idle: '',
@@ -23,7 +21,6 @@ interface UnassignedSectionProps {
   customers: Map<string, Customer>;
   onOrderClick?: (order: Order) => void;
   dropZoneStatus?: DropZoneStatus;
-  addressGroupMap?: Map<string, AddressGroupInfo>;
 }
 
 /** @deprecated フォールバック用。useServiceTypes() の short_label を優先 */
@@ -54,13 +51,11 @@ function UnassignedOrderItem({
   customers,
   onOrderClick,
   serviceLabel,
-  addressGroupInfo,
 }: {
   order: Order;
   customers: Map<string, Customer>;
   onOrderClick?: (order: Order) => void;
   serviceLabel: string;
-  addressGroupInfo?: AddressGroupInfo;
 }) {
   const customer = customers.get(order.customer_id);
   const name = customer
@@ -92,18 +87,6 @@ function UnassignedOrderItem({
       {...attributes}
       {...listeners}
     >
-      {addressGroupInfo && (
-        <span className="shrink-0 flex items-center gap-0.5" title={customer?.address ? `📍 ${customer.address}` : undefined}>
-          <span
-            className="w-2.5 h-2.5 rounded-full ring-1 ring-white"
-            style={{ background: getAddressGroupColor(addressGroupInfo.index) }}
-            aria-hidden="true"
-          />
-          <span className="text-[10px] leading-none">
-            {addressGroupInfo.type === 'facility' ? '🏢' : '🏠'}
-          </span>
-        </span>
-      )}
       <Badge variant="outline" className={cn('text-[10px] border', badgeColor)}>
         {serviceLabel}
       </Badge>
@@ -115,7 +98,7 @@ function UnassignedOrderItem({
   );
 }
 
-export function UnassignedSection({ orders, customers, onOrderClick, dropZoneStatus = 'idle', addressGroupMap }: UnassignedSectionProps) {
+export function UnassignedSection({ orders, customers, onOrderClick, dropZoneStatus = 'idle' }: UnassignedSectionProps) {
   const { serviceTypes } = useServiceTypes();
   const { setNodeRef, isOver } = useDroppable({
     id: 'unassigned-section',
@@ -147,7 +130,6 @@ export function UnassignedSection({ orders, customers, onOrderClick, dropZoneSta
             customers={customers}
             onOrderClick={onOrderClick}
             serviceLabel={serviceTypes.get(order.service_type)?.short_label ?? SERVICE_LABELS_FALLBACK[order.service_type] ?? order.service_type}
-            addressGroupInfo={addressGroupMap?.get(order.customer_id)}
           />
         ))}
         {orders.length === 0 && (
