@@ -24,7 +24,7 @@ import { useOrderEdit } from '@/hooks/useOrderEdit';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useUndoRedoKeyboard } from '@/hooks/useUndoRedoKeyboard';
 import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
-import { useAddressGroups } from '@/hooks/useAddressGroups';
+import { useAdjacentAddressGroups } from '@/hooks/useAddressGroups';
 import { checkConstraints } from '@/lib/constraints/checker';
 import { createConfirmEditCommand } from '@/lib/undo/commands';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
@@ -82,20 +82,8 @@ function SchedulePage() {
     [getDaySchedule, selectedDay, dayDate]
   );
 
-  // 当日オーダーがある顧客IDのSet（同一住所グループフィルタ用）
-  const activeCustomerIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of schedule.helperRows) {
-      for (const order of row.orders) {
-        ids.add(order.customer_id);
-      }
-    }
-    for (const order of schedule.unassignedOrders) {
-      ids.add(order.customer_id);
-    }
-    return ids;
-  }, [schedule]);
-  const addressGroupMap = useAddressGroups(customers, activeCustomerIds);
+  // 同じヘルパー行で隣接する同一住所ペアのみインジケーター表示
+  const addressGroupMap = useAdjacentAddressGroups(customers, schedule.helperRows);
 
   const violations = useMemo(
     () =>

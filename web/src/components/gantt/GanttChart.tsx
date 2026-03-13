@@ -117,7 +117,6 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
           customers={customers}
           onOrderClick={onOrderClick}
           dropZoneStatus={dropZoneStatuses?.get('unassigned-section')}
-          addressGroupMap={addressGroupMap}
         />
       </div>
     </GanttScaleProvider>
