@@ -9,6 +9,7 @@ import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
 import type { DragData } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
+import { getAddressGroupColor } from '@/hooks/useAddressGroups';
 
 interface GanttBarProps {
   order: Order;
@@ -23,9 +24,11 @@ interface GanttBarProps {
   staffCount?: number;
   /** 変更確認済みにするコールバック */
   onConfirmManualEdit?: (orderId: string) => void;
+  /** 同一住所グループインデックス（undefined = グループなし） */
+  addressGroupIndex?: number;
 }
 
-export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId, staffCount, onConfirmManualEdit }: GanttBarProps) {
+export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId, staffCount, onConfirmManualEdit, addressGroupIndex }: GanttBarProps) {
   const slotWidth = useSlotWidth();
   const startCol = timeToColumn(order.start_time);
   const endCol = timeToColumn(order.end_time);
@@ -46,6 +49,8 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
   const customerName = customer
     ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
     : order.customer_id;
+
+  const addressColor = addressGroupIndex != null ? getAddressGroupColor(addressGroupIndex) : undefined;
 
   const style = {
     left,
@@ -74,14 +79,22 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       )}
       style={style}
       onClick={() => !isDragging && onClick?.(order)}
-      title={
-        violationMessages && violationMessages.length > 0
-          ? `${customerName} ${order.start_time}-${order.end_time}\n---\n${violationMessages.join('\n')}`
-          : `${customerName} ${order.start_time}-${order.end_time}`
-      }
+      title={[
+        `${customerName} ${order.start_time}-${order.end_time}`,
+        customer?.address && addressGroupIndex != null ? `📍 ${customer.address}` : '',
+        violationMessages && violationMessages.length > 0 ? `---\n${violationMessages.join('\n')}` : '',
+      ].filter(Boolean).join('\n')}
       {...attributes}
       {...listeners}
     >
+      {/* 同一住所ストライプ — 左端4pxの色付きライン */}
+      {addressColor && (
+        <span
+          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg pointer-events-none"
+          style={{ background: addressColor }}
+          aria-hidden="true"
+        />
+      )}
       {/* 手動編集パルスドット — 右上に点滅する注意バッジ */}
       {isManuallyEdited && (
         <span

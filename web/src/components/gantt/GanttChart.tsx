@@ -29,9 +29,11 @@ interface GanttChartProps {
   dropMessage?: string | null;
   /** 変更確認済みにするコールバック */
   onConfirmManualEdit?: (orderId: string) => void;
+  /** 同一住所グループマップ */
+  addressGroupMap?: Map<string, number>;
 }
 
-export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes, dropMessage, onConfirmManualEdit }: GanttChartProps) {
+export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes, dropMessage, onConfirmManualEdit, addressGroupMap }: GanttChartProps) {
   // コールバックref: totalOrders が 0→>0 になりDOMが現れたタイミングで再測定できるよう
   // useRef + useLayoutEffect([]) の代わりに useState を使用する
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -87,6 +89,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
                 previewTimes={previewTimes}
                 dropMessage={dropMessage}
                 onConfirmManualEdit={onConfirmManualEdit}
+                addressGroupMap={addressGroupMap}
               />
             ))}
             {/* ドラッグ中の時間帯ハイライト（全行横断） */}
@@ -114,6 +117,7 @@ export function GanttChart({ schedule, customers, violations, onOrderClick, drop
           customers={customers}
           onOrderClick={onOrderClick}
           dropZoneStatus={dropZoneStatuses?.get('unassigned-section')}
+          addressGroupMap={addressGroupMap}
         />
       </div>
     </GanttScaleProvider>

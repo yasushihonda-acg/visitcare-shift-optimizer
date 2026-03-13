@@ -24,6 +24,7 @@ import { useOrderEdit } from '@/hooks/useOrderEdit';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useUndoRedoKeyboard } from '@/hooks/useUndoRedoKeyboard';
 import { useAssignmentDiff } from '@/hooks/useAssignmentDiff';
+import { useAddressGroups } from '@/hooks/useAddressGroups';
 import { checkConstraints } from '@/lib/constraints/checker';
 import { createConfirmEditCommand } from '@/lib/undo/commands';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
@@ -73,6 +74,7 @@ function SchedulePage() {
   );
 
   const { diffMap } = useAssignmentDiff(weekStart, allOrders);
+  const addressGroupMap = useAddressGroups(customers);
 
   const dayIndex = DAY_OF_WEEK_ORDER.indexOf(selectedDay);
   const dayDate = useMemo(() => addDays(weekStart, dayIndex), [weekStart, dayIndex]);
@@ -275,6 +277,7 @@ function SchedulePage() {
                 previewTimes={previewTimes}
                 dropMessage={dropMessage}
                 onConfirmManualEdit={handleConfirmManualEdit}
+                addressGroupMap={addressGroupMap}
               />
             </DndContext>
           )

@@ -30,6 +30,8 @@ interface GanttRowProps {
   dropMessage?: string | null;
   /** 変更確認済みにするコールバック */
   onConfirmManualEdit?: (orderId: string) => void;
+  /** 同一住所グループマップ */
+  addressGroupMap?: Map<string, number>;
 }
 
 /** ゴーストバー用の薄い背景色（サービスタイプ別） */
@@ -55,7 +57,7 @@ const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
 const SLOTS_PER_10MIN = 2;
 const TOTAL_10MIN_INTERVALS = (GANTT_END_HOUR - GANTT_START_HOUR) * 6; // 14h × 6 = 84
 
-export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder, previewTimes, dropMessage, onConfirmManualEdit }: GanttRowProps) {
+export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder, previewTimes, dropMessage, onConfirmManualEdit, addressGroupMap }: GanttRowProps) {
   const slotWidth = useSlotWidth();
   const pxPer10Min = SLOTS_PER_10MIN * slotWidth;
   const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
@@ -153,6 +155,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
               sourceHelperId={row.helper.id}
               staffCount={sc}
               onConfirmManualEdit={onConfirmManualEdit}
+              addressGroupIndex={addressGroupMap?.get(order.customer_id)}
             />
           );
         })}
