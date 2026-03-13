@@ -30,7 +30,7 @@ interface GanttChartProps {
   /** 変更確認済みにするコールバック */
   onConfirmManualEdit?: (orderId: string) => void;
   /** 同一住所グループマップ */
-  addressGroupMap?: Map<string, number>;
+  addressGroupMap?: Map<string, import('@/hooks/useAddressGroups').AddressGroupInfo>;
 }
 
 export function GanttChart({ schedule, customers, violations, onOrderClick, dropZoneStatuses, unavailability, activeOrder, onSlotWidthChange, previewTimes, dropMessage, onConfirmManualEdit, addressGroupMap }: GanttChartProps) {

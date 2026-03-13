@@ -10,6 +10,7 @@ import type { Order, Customer } from '@/types';
 import type { DragData } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
 import { getAddressGroupColor } from '@/hooks/useAddressGroups';
+import type { AddressGroupInfo } from '@/hooks/useAddressGroups';
 
 interface GanttBarProps {
   order: Order;
@@ -24,11 +25,11 @@ interface GanttBarProps {
   staffCount?: number;
   /** 変更確認済みにするコールバック */
   onConfirmManualEdit?: (orderId: string) => void;
-  /** 同一住所グループインデックス（undefined = グループなし） */
-  addressGroupIndex?: number;
+  /** 同一住所グループ情報（undefined = グループなし） */
+  addressGroupInfo?: AddressGroupInfo;
 }
 
-export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId, staffCount, onConfirmManualEdit, addressGroupIndex }: GanttBarProps) {
+export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, violationType, violationMessages, onClick, sourceHelperId, staffCount, onConfirmManualEdit, addressGroupInfo }: GanttBarProps) {
   const slotWidth = useSlotWidth();
   const startCol = timeToColumn(order.start_time);
   const endCol = timeToColumn(order.end_time);
@@ -50,12 +51,14 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
     ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
     : order.customer_id;
 
-  const addressColor = addressGroupIndex != null ? getAddressGroupColor(addressGroupIndex) : undefined;
+  const addressColor = addressGroupInfo ? getAddressGroupColor(addressGroupInfo.index) : undefined;
+  const addressIcon = addressGroupInfo?.type === 'facility' ? '🏢' : addressGroupInfo ? '🏠' : undefined;
 
   const style = {
     left,
     width: Math.max(width, slotWidth * 2),
     transform: CSS.Translate.toString(transform),
+    ...(addressColor ? { borderBottom: `3px solid ${addressColor}` } : {}),
   };
 
   return (
@@ -81,20 +84,13 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       onClick={() => !isDragging && onClick?.(order)}
       title={[
         `${customerName} ${order.start_time}-${order.end_time}`,
-        customer?.address && addressGroupIndex != null ? `📍 ${customer.address}` : '',
+        customer?.address && addressGroupInfo ? `📍 ${customer.address}` : '',
         violationMessages && violationMessages.length > 0 ? `---\n${violationMessages.join('\n')}` : '',
       ].filter(Boolean).join('\n')}
       {...attributes}
       {...listeners}
     >
-      {/* 同一住所ストライプ — 左端4pxの色付きライン */}
-      {addressColor && (
-        <span
-          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg pointer-events-none"
-          style={{ background: addressColor }}
-          aria-hidden="true"
-        />
-      )}
+      {/* 同一住所アンダーラインは style.borderBottom で適用 */}
       {/* 手動編集パルスドット — 右上に点滅する注意バッジ */}
       {isManuallyEdited && (
         <span
@@ -105,6 +101,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
       <span className="flex items-center gap-1">
         {order.status === 'completed' && <Check className="h-3 w-3 shrink-0" />}
         {order.status === 'cancelled' && <X className="h-3 w-3 shrink-0" />}
+        {addressIcon && <span className="shrink-0 text-[10px] leading-none drop-shadow-sm">{addressIcon}</span>}
         {customerName}
         {staffCount != null && staffCount > 1 && (
           <span className="shrink-0 ml-0.5 px-1 py-0.5 rounded text-[10px] font-bold leading-none bg-white/30 text-current">

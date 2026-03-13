@@ -36,7 +36,8 @@ describe('buildAddressGroupMap', () => {
     const result = buildAddressGroupMap(customers);
     expect(result.has('C001')).toBe(true);
     expect(result.has('C002')).toBe(true);
-    expect(result.get('C001')).toBe(result.get('C002'));
+    expect(result.get('C001')!.index).toBe(result.get('C002')!.index);
+    expect(result.get('C001')!.type).toBe('household');
     expect(result.has('C003')).toBe(false); // 単独 → 含まない
   });
 
@@ -46,7 +47,8 @@ describe('buildAddressGroupMap', () => {
       ['C002', makeCustomer('C002', { same_facility_customer_ids: ['C001'] })],
     ]);
     const result = buildAddressGroupMap(customers);
-    expect(result.get('C001')).toBe(result.get('C002'));
+    expect(result.get('C001')!.index).toBe(result.get('C002')!.index);
+    expect(result.get('C001')!.type).toBe('facility');
   });
 
   it('世帯と施設が混在するグループを統合する', () => {
@@ -57,8 +59,9 @@ describe('buildAddressGroupMap', () => {
     ]);
     const result = buildAddressGroupMap(customers);
     // C001, C002, C003 が全て同一グループ
-    expect(result.get('C001')).toBe(result.get('C002'));
-    expect(result.get('C002')).toBe(result.get('C003'));
+    expect(result.get('C001')!.index).toBe(result.get('C002')!.index);
+    expect(result.get('C002')!.index).toBe(result.get('C003')!.index);
+    expect(result.get('C001')!.type).toBe('mixed');
   });
 
   it('複数の独立グループに異なるインデックスを割り当てる', () => {
@@ -69,7 +72,7 @@ describe('buildAddressGroupMap', () => {
       ['C004', makeCustomer('C004', { same_household_customer_ids: ['C003'] })],
     ]);
     const result = buildAddressGroupMap(customers);
-    expect(result.get('C001')).not.toBe(result.get('C003'));
+    expect(result.get('C001')!.index).not.toBe(result.get('C003')!.index);
   });
 
   it('存在しない顧客IDへの参照を無視する', () => {
