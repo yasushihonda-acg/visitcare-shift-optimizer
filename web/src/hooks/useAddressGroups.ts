@@ -71,21 +71,15 @@ export function buildAddressGroupMap(customers: Map<string, Customer>): Map<stri
   const uf = new UnionFind();
   const customerIds = new Set(customers.keys());
 
-  // 世帯/施設の関係をそれぞれ記録
-  const householdEdges = new Set<string>(); // "rootA-rootB" 形式
-  const facilityEdges = new Set<string>();
-
   for (const [id, customer] of customers) {
     for (const relatedId of customer.same_household_customer_ids) {
       if (customerIds.has(relatedId)) {
         uf.union(id, relatedId);
-        householdEdges.add(id < relatedId ? `${id}-${relatedId}` : `${relatedId}-${id}`);
       }
     }
     for (const relatedId of customer.same_facility_customer_ids) {
       if (customerIds.has(relatedId)) {
         uf.union(id, relatedId);
-        facilityEdges.add(id < relatedId ? `${id}-${relatedId}` : `${relatedId}-${id}`);
       }
     }
   }
