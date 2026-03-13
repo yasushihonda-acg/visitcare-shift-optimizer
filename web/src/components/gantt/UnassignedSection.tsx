@@ -8,6 +8,7 @@ import type { Order, Customer } from '@/types';
 import type { DragData, DropZoneStatus } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
+import { getAddressGroupColor } from '@/hooks/useAddressGroups';
 
 const DROP_ZONE_STYLES: Record<DropZoneStatus, string> = {
   idle: '',
@@ -21,6 +22,7 @@ interface UnassignedSectionProps {
   customers: Map<string, Customer>;
   onOrderClick?: (order: Order) => void;
   dropZoneStatus?: DropZoneStatus;
+  addressGroupMap?: Map<string, number>;
 }
 
 /** @deprecated フォールバック用。useServiceTypes() の short_label を優先 */
@@ -51,11 +53,13 @@ function UnassignedOrderItem({
   customers,
   onOrderClick,
   serviceLabel,
+  addressGroupIndex,
 }: {
   order: Order;
   customers: Map<string, Customer>;
   onOrderClick?: (order: Order) => void;
   serviceLabel: string;
+  addressGroupIndex?: number;
 }) {
   const customer = customers.get(order.customer_id);
   const name = customer
@@ -87,6 +91,14 @@ function UnassignedOrderItem({
       {...attributes}
       {...listeners}
     >
+      {addressGroupIndex != null && (
+        <span
+          className="shrink-0 w-2.5 h-2.5 rounded-full ring-1 ring-white"
+          style={{ background: getAddressGroupColor(addressGroupIndex) }}
+          title={customer?.address ? `📍 ${customer.address}` : undefined}
+          aria-hidden="true"
+        />
+      )}
       <Badge variant="outline" className={cn('text-[10px] border', badgeColor)}>
         {serviceLabel}
       </Badge>
@@ -98,7 +110,7 @@ function UnassignedOrderItem({
   );
 }
 
-export function UnassignedSection({ orders, customers, onOrderClick, dropZoneStatus = 'idle' }: UnassignedSectionProps) {
+export function UnassignedSection({ orders, customers, onOrderClick, dropZoneStatus = 'idle', addressGroupMap }: UnassignedSectionProps) {
   const { serviceTypes } = useServiceTypes();
   const { setNodeRef, isOver } = useDroppable({
     id: 'unassigned-section',
@@ -130,6 +142,7 @@ export function UnassignedSection({ orders, customers, onOrderClick, dropZoneSta
             customers={customers}
             onOrderClick={onOrderClick}
             serviceLabel={serviceTypes.get(order.service_type)?.short_label ?? SERVICE_LABELS_FALLBACK[order.service_type] ?? order.service_type}
+            addressGroupIndex={addressGroupMap?.get(order.customer_id)}
           />
         ))}
         {orders.length === 0 && (
