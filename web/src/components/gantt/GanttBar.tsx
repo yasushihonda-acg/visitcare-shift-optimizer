@@ -9,7 +9,7 @@ import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
 import type { DragData } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
-import { getAddressGroupColor } from '@/hooks/useAddressGroups';
+import { ADDRESS_GROUP_COLOR } from '@/hooks/useAddressGroups';
 import type { AddressGroupInfo } from '@/hooks/useAddressGroups';
 
 interface GanttBarProps {
@@ -51,14 +51,14 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
     ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
     : order.customer_id;
 
-  const addressColor = addressGroupInfo ? getAddressGroupColor(addressGroupInfo.index) : undefined;
+  const addressColor = addressGroupInfo ? ADDRESS_GROUP_COLOR : undefined;
   const addressIcon = addressGroupInfo?.type === 'facility' ? '🏢' : addressGroupInfo ? '🏠' : undefined;
 
   const style = {
     left,
     width: Math.max(width, slotWidth * 2),
     transform: CSS.Translate.toString(transform),
-    ...(addressColor ? { borderBottom: `3px solid ${addressColor}` } : {}),
+    ...(addressColor ? { borderBottom: `5px solid ${addressColor}` } : {}),
   };
 
   return (
