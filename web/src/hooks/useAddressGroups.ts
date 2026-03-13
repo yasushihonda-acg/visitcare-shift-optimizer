@@ -1,15 +1,26 @@
 import { useMemo } from 'react';
 import type { Customer } from '@/types';
 
+/** グループ種別: 世帯 / 施設 / 混在 */
+export type AddressGroupType = 'household' | 'facility' | 'mixed';
+
+/** 同一住所グループの情報 */
+export interface AddressGroupInfo {
+  /** グループインデックス（色の決定に使用） */
+  index: number;
+  /** グループ種別 */
+  type: AddressGroupType;
+}
+
 /**
- * 同一住所グループのインデックスマップを計算するフック。
+ * 同一住所グループの情報マップを計算するフック。
  *
  * same_household_customer_ids / same_facility_customer_ids を Union-Find で
- * 統合し、2名以上のグループに 0,1,2… のインデックスを割り当てる。
+ * 統合し、2名以上のグループに情報を割り当てる。
  *
- * @returns addressGroupMap — Map<customerId, groupIndex>（単独顧客は含まない）
+ * @returns addressGroupMap — Map<customerId, AddressGroupInfo>（単独顧客は含まない）
  */
-export function useAddressGroups(customers: Map<string, Customer>): Map<string, number> {
+export function useAddressGroups(customers: Map<string, Customer>): Map<string, AddressGroupInfo> {
   return useMemo(() => buildAddressGroupMap(customers), [customers]);
 }
 
@@ -56,20 +67,25 @@ class UnionFind {
 }
 
 /** テスト用にエクスポート */
-export function buildAddressGroupMap(customers: Map<string, Customer>): Map<string, number> {
+export function buildAddressGroupMap(customers: Map<string, Customer>): Map<string, AddressGroupInfo> {
   const uf = new UnionFind();
   const customerIds = new Set(customers.keys());
 
+  // 世帯/施設の関係をそれぞれ記録
+  const householdEdges = new Set<string>(); // "rootA-rootB" 形式
+  const facilityEdges = new Set<string>();
+
   for (const [id, customer] of customers) {
-    // same_household / same_facility のメンバーを union
     for (const relatedId of customer.same_household_customer_ids) {
       if (customerIds.has(relatedId)) {
         uf.union(id, relatedId);
+        householdEdges.add(id < relatedId ? `${id}-${relatedId}` : `${relatedId}-${id}`);
       }
     }
     for (const relatedId of customer.same_facility_customer_ids) {
       if (customerIds.has(relatedId)) {
         uf.union(id, relatedId);
+        facilityEdges.add(id < relatedId ? `${id}-${relatedId}` : `${relatedId}-${id}`);
       }
     }
   }
@@ -83,13 +99,33 @@ export function buildAddressGroupMap(customers: Map<string, Customer>): Map<stri
     groups.set(root, members);
   }
 
-  // 2名以上のグループにインデックスを割り当て
-  const result = new Map<string, number>();
-  let groupIndex = 0;
-  for (const members of groups.values()) {
+  // 各グループの種別を判定
+  const groupTypes = new Map<string, AddressGroupType>();
+  for (const [root, members] of groups) {
     if (members.length < 2) continue;
+    let hasHousehold = false;
+    let hasFacility = false;
+    // メンバーペアがhousehold/facilityのどちらに属するか確認
     for (const id of members) {
-      result.set(id, groupIndex);
+      const customer = customers.get(id)!;
+      for (const relatedId of customer.same_household_customer_ids) {
+        if (customerIds.has(relatedId)) hasHousehold = true;
+      }
+      for (const relatedId of customer.same_facility_customer_ids) {
+        if (customerIds.has(relatedId)) hasFacility = true;
+      }
+    }
+    groupTypes.set(root, hasHousehold && hasFacility ? 'mixed' : hasHousehold ? 'household' : 'facility');
+  }
+
+  // 2名以上のグループに情報を割り当て
+  const result = new Map<string, AddressGroupInfo>();
+  let groupIndex = 0;
+  for (const [root, members] of groups) {
+    if (members.length < 2) continue;
+    const type = groupTypes.get(root)!;
+    for (const id of members) {
+      result.set(id, { index: groupIndex, type });
     }
     groupIndex++;
   }
@@ -97,16 +133,16 @@ export function buildAddressGroupMap(customers: Map<string, Customer>): Map<stri
   return result;
 }
 
-/** ストライプ色パレット（5色ローテーション） */
+/** アンダーライン色パレット（5色ローテーション） */
 export const ADDRESS_GROUP_COLORS = [
-  'oklch(0.72 0.18 330)',  // ローズ
-  'oklch(0.72 0.16 195)',  // シアン
+  'oklch(0.65 0.22 330)',  // ローズ
+  'oklch(0.65 0.18 195)',  // シアン
   'oklch(0.72 0.18 85)',   // イエロー
-  'oklch(0.65 0.16 145)',  // エメラルド
-  'oklch(0.68 0.14 275)',  // パープル
+  'oklch(0.58 0.18 145)',  // エメラルド
+  'oklch(0.60 0.18 275)',  // パープル
 ] as const;
 
-/** groupIndex → Tailwind互換のインラインスタイル色を返す */
+/** groupIndex → インラインスタイル色を返す */
 export function getAddressGroupColor(groupIndex: number): string {
   return ADDRESS_GROUP_COLORS[groupIndex % ADDRESS_GROUP_COLORS.length]!;
 }

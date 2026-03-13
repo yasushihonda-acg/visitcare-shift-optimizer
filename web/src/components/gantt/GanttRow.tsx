@@ -31,7 +31,7 @@ interface GanttRowProps {
   /** 変更確認済みにするコールバック */
   onConfirmManualEdit?: (orderId: string) => void;
   /** 同一住所グループマップ */
-  addressGroupMap?: Map<string, number>;
+  addressGroupMap?: Map<string, import('@/hooks/useAddressGroups').AddressGroupInfo>;
 }
 
 /** ゴーストバー用の薄い背景色（サービスタイプ別） */
@@ -155,7 +155,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
               sourceHelperId={row.helper.id}
               staffCount={sc}
               onConfirmManualEdit={onConfirmManualEdit}
-              addressGroupIndex={addressGroupMap?.get(order.customer_id)}
+              addressGroupInfo={addressGroupMap?.get(order.customer_id)}
             />
           );
         })}
