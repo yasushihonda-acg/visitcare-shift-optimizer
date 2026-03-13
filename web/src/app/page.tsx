@@ -74,7 +74,6 @@ function SchedulePage() {
   );
 
   const { diffMap } = useAssignmentDiff(weekStart, allOrders);
-  const addressGroupMap = useAddressGroups(customers);
 
   const dayIndex = DAY_OF_WEEK_ORDER.indexOf(selectedDay);
   const dayDate = useMemo(() => addDays(weekStart, dayIndex), [weekStart, dayIndex]);
@@ -82,6 +81,21 @@ function SchedulePage() {
     () => getDaySchedule(selectedDay, dayDate),
     [getDaySchedule, selectedDay, dayDate]
   );
+
+  // 当日オーダーがある顧客IDのSet（同一住所グループフィルタ用）
+  const activeCustomerIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of schedule.helperRows) {
+      for (const order of row.orders) {
+        ids.add(order.customer_id);
+      }
+    }
+    for (const order of schedule.unassignedOrders) {
+      ids.add(order.customer_id);
+    }
+    return ids;
+  }, [schedule]);
+  const addressGroupMap = useAddressGroups(customers, activeCustomerIds);
 
   const violations = useMemo(
     () =>

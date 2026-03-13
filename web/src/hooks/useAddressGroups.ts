@@ -18,10 +18,20 @@ export interface AddressGroupInfo {
  * same_household_customer_ids / same_facility_customer_ids を Union-Find で
  * 統合し、2名以上のグループに情報を割り当てる。
  *
+ * @param customers 全顧客マップ
+ * @param activeCustomerIds 当日オーダーがある顧客IDのSet（省略時はフィルタなし）。
+ *   指定した場合、グループメンバーのうち当日オーダーがある顧客が2名以上の
+ *   グループのみインジケーターを表示する。
  * @returns addressGroupMap — Map<customerId, AddressGroupInfo>（単独顧客は含まない）
  */
-export function useAddressGroups(customers: Map<string, Customer>): Map<string, AddressGroupInfo> {
-  return useMemo(() => buildAddressGroupMap(customers), [customers]);
+export function useAddressGroups(
+  customers: Map<string, Customer>,
+  activeCustomerIds?: Set<string>,
+): Map<string, AddressGroupInfo> {
+  return useMemo(
+    () => buildAddressGroupMap(customers, activeCustomerIds),
+    [customers, activeCustomerIds],
+  );
 }
 
 // ────────── Union-Find ──────────
@@ -67,7 +77,10 @@ class UnionFind {
 }
 
 /** テスト用にエクスポート */
-export function buildAddressGroupMap(customers: Map<string, Customer>): Map<string, AddressGroupInfo> {
+export function buildAddressGroupMap(
+  customers: Map<string, Customer>,
+  activeCustomerIds?: Set<string>,
+): Map<string, AddressGroupInfo> {
   const uf = new UnionFind();
   const customerIds = new Set(customers.keys());
 
@@ -113,12 +126,17 @@ export function buildAddressGroupMap(customers: Map<string, Customer>): Map<stri
   }
 
   // 2名以上のグループに情報を割り当て
+  // activeCustomerIds 指定時は、当日オーダーがあるメンバーが2名以上のグループのみ対象
   const result = new Map<string, AddressGroupInfo>();
   let groupIndex = 0;
   for (const [root, members] of groups) {
     if (members.length < 2) continue;
+    const activeMembers = activeCustomerIds
+      ? members.filter((id) => activeCustomerIds.has(id))
+      : members;
+    if (activeMembers.length < 2) continue;
     const type = groupTypes.get(root)!;
-    for (const id of members) {
+    for (const id of activeMembers) {
       result.set(id, { index: groupIndex, type });
     }
     groupIndex++;

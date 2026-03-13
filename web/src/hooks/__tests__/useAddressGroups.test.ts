@@ -91,6 +91,35 @@ describe('buildAddressGroupMap', () => {
     const result = buildAddressGroupMap(customers);
     expect(result.size).toBe(0);
   });
+
+  describe('activeCustomerIds フィルタ', () => {
+    const customers = new Map<string, Customer>([
+      ['C001', makeCustomer('C001', { same_household_customer_ids: ['C002'] })],
+      ['C002', makeCustomer('C002', { same_household_customer_ids: ['C001'] })],
+      ['C003', makeCustomer('C003', { same_household_customer_ids: ['C004'] })],
+      ['C004', makeCustomer('C004', { same_household_customer_ids: ['C003'] })],
+    ]);
+
+    it('両メンバーに当日オーダーがある場合のみ表示', () => {
+      const active = new Set(['C001', 'C002']); // C001+C002はペア、C003/C004は当日なし
+      const result = buildAddressGroupMap(customers, active);
+      expect(result.has('C001')).toBe(true);
+      expect(result.has('C002')).toBe(true);
+      expect(result.has('C003')).toBe(false);
+      expect(result.has('C004')).toBe(false);
+    });
+
+    it('ペアの片方のみ当日オーダー → グループ不成立', () => {
+      const active = new Set(['C001', 'C003']); // C001のみ(C002なし), C003のみ(C004なし)
+      const result = buildAddressGroupMap(customers, active);
+      expect(result.size).toBe(0);
+    });
+
+    it('activeCustomerIds 省略時は全グループ表示（後方互換）', () => {
+      const result = buildAddressGroupMap(customers);
+      expect(result.size).toBe(4);
+    });
+  });
 });
 
 describe('getAddressGroupColor', () => {
