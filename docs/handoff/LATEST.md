@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-13（PR #265 同一住所インジケーター偽陽性修正 マージ済み）
+**最終更新**: 2026-03-13（PR #266 同一住所インジケーターを隣接オーダー限定に変更 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -54,11 +54,16 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-03-13）
 
+- **fix (#266, 2026-03-13)** ✅: 同一住所インジケーターを隣接オーダー限定に変更
+  - 同じヘルパー行で時間的に隣接（end_time === start_time）するペアのみ表示
+  - 未割当セクションからはインジケーター削除
+  - `useAdjacentAddressGroups` フックに刷新（キー: customerId → orderId）
+  - テスト13件全パス
+
 - **fix (#265, 2026-03-13)** ✅: 同一住所インジケーターの偽陽性を修正
   - `useAddressGroups` に `activeCustomerIds` フィルタパラメータを追加
   - 当日オーダーがあるメンバーが2名以上のグループのみインジケーター表示
-  - AddressGroupInfo型（index + type: household/facility/mixed）で種別管理
-  - テスト12件（フィルタ関連3件追加）全パス
+  - テスト12件全パス
 
 - **feat (#263, 2026-03-13)** ✅: 同一住所の利用者をガントチャート上で視覚的に識別可能にする
   - GanttBar下部3pxアンダーラインで同一住所グループを色分け（5色ローテーション）
@@ -115,7 +120,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
 - **Firestore Rules**: **114件** pass ✅（PR #255でcancelled→pending許可テスト追加）
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #265 main push CI SUCCESS（最新）
+- **CI/CD**: PR #266 main push CI SUCCESS（最新）
 
 ## 重要なドキュメント
 
@@ -165,7 +170,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 ## GitHub Issuesサマリー
 
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: #265（偽陽性修正）、#264（偽陽性issue）、#263（同一住所インジケーター）、#260（同一住所issue）、#259（aria警告解消）、#258（トグルボタン化）
+- **クローズ済み（直近）**: #266（隣接限定）、#265（偽陽性修正）、#264（偽陽性issue）、#263（同一住所インジケーター）、#260（同一住所issue）、#259（aria警告解消）
 
 ## 参考資料（ローカルExcel）
 
