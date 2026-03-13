@@ -172,16 +172,5 @@ export function buildAdjacentAddressOrderMap(
   return result;
 }
 
-/** アンダーライン色パレット（5色ローテーション） */
-export const ADDRESS_GROUP_COLORS = [
-  'oklch(0.65 0.22 330)',  // ローズ
-  'oklch(0.65 0.18 195)',  // シアン
-  'oklch(0.72 0.18 85)',   // イエロー
-  'oklch(0.58 0.18 145)',  // エメラルド
-  'oklch(0.60 0.18 275)',  // パープル
-] as const;
-
-/** groupIndex → インラインスタイル色を返す */
-export function getAddressGroupColor(groupIndex: number): string {
-  return ADDRESS_GROUP_COLORS[groupIndex % ADDRESS_GROUP_COLORS.length]!;
-}
+/** 同一住所インジケーターの固定色（1色のみ） */
+export const ADDRESS_GROUP_COLOR = 'oklch(0.65 0.22 330)'; // ローズ

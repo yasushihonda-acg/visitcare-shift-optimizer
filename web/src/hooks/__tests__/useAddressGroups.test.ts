@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildAddressGroupMap, buildAdjacentAddressOrderMap, getAddressGroupColor, ADDRESS_GROUP_COLORS } from '../useAddressGroups';
+import { buildAddressGroupMap, buildAdjacentAddressOrderMap, ADDRESS_GROUP_COLOR } from '../useAddressGroups';
 import type { Customer, Order } from '@/types';
 
 function makeCustomer(id: string, overrides: Partial<Customer> = {}): Customer {
@@ -165,15 +165,9 @@ describe('buildAdjacentAddressOrderMap', () => {
   });
 });
 
-describe('getAddressGroupColor', () => {
-  it('インデックス0-4で異なる色を返す', () => {
-    const colors = [0, 1, 2, 3, 4].map(getAddressGroupColor);
-    const unique = new Set(colors);
-    expect(unique.size).toBe(5);
-  });
-
-  it('5以上のインデックスはローテーションする', () => {
-    expect(getAddressGroupColor(5)).toBe(ADDRESS_GROUP_COLORS[0]);
-    expect(getAddressGroupColor(6)).toBe(ADDRESS_GROUP_COLORS[1]);
+describe('ADDRESS_GROUP_COLOR', () => {
+  it('固定色が定義されている', () => {
+    expect(ADDRESS_GROUP_COLOR).toBeTruthy();
+    expect(typeof ADDRESS_GROUP_COLOR).toBe('string');
   });
 });
