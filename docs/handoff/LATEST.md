@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-13（PR #259 aria-describedby警告解消 マージ済み）
+**最終更新**: 2026-03-13（PR #265 同一住所インジケーター偽陽性修正 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -54,6 +54,18 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 
 ## 直近の実装（2026-03-13）
 
+- **fix (#265, 2026-03-13)** ✅: 同一住所インジケーターの偽陽性を修正
+  - `useAddressGroups` に `activeCustomerIds` フィルタパラメータを追加
+  - 当日オーダーがあるメンバーが2名以上のグループのみインジケーター表示
+  - AddressGroupInfo型（index + type: household/facility/mixed）で種別管理
+  - テスト12件（フィルタ関連3件追加）全パス
+
+- **feat (#263, 2026-03-13)** ✅: 同一住所の利用者をガントチャート上で視覚的に識別可能にする
+  - GanttBar下部3pxアンダーラインで同一住所グループを色分け（5色ローテーション）
+  - 🏠（世帯）/🏢（施設）アイコンをバー内・未割当セクションに表示
+  - Union-Findで same_household/same_facility を統合しグループ計算
+  - tooltipに住所情報を追記
+
 - **fix (#259, 2026-03-12)** ✅: Dialog/Sheetのaria-describedby警告を解消
   - `aria-describedby={undefined}` を SheetContent / DialogContent に追加
   - Radix UIコンソール警告（`Missing Description or aria-describedby`）を解消
@@ -103,7 +115,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
 - **Firestore Rules**: **114件** pass ✅（PR #255でcancelled→pending許可テスト追加）
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #259 main push CI SUCCESS（最新、7m32s）
+- **CI/CD**: PR #265 main push CI SUCCESS（最新）
 
 ## 重要なドキュメント
 
@@ -153,7 +165,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 ## GitHub Issuesサマリー
 
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: PR #259（aria警告解消）、PR #258（トグルボタン化）、PR #257（確認ダイアログ）、PR #256（復元ボタンUI）、PR #255（キャンセル復元機能）
+- **クローズ済み（直近）**: #265（偽陽性修正）、#264（偽陽性issue）、#263（同一住所インジケーター）、#260（同一住所issue）、#259（aria警告解消）、#258（トグルボタン化）
 
 ## 参考資料（ローカルExcel）
 
