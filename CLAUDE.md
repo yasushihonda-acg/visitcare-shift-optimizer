@@ -65,8 +65,6 @@ visitcare-shift-optimizer/
 | スキーマ文書 | `docs/schema/firestore-schema.md` | フィールド追加時に同期必須 |
 | Firestore操作 | `web/src/lib/firestore/` | `deleteField()` 規約 |
 | 最適化エンジン | `optimizer/src/optimizer/models/` | Pydantic。未知フィールド無視 |
-| Hooks/State | `web/src/hooks/` | undo/redo対応が必要な場合あり |
-| UI | `web/src/components/` | ガントチャート + 詳細パネル |
 
 ## 開発規約
 
