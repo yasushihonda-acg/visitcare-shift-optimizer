@@ -24,7 +24,7 @@ import {
 } from './ConstraintWeightsForm';
 import { checkAllowedStaff, type AllowedStaffWarning } from '@/lib/validation/allowed-staff-check';
 import { DAY_OF_WEEK_LABELS } from '@/types';
-import { patchOrder } from '@/lib/firestore/updateOrder';
+import { clearCompanionField } from '@/lib/firestore/updateOrder';
 
 interface OptimizeButtonProps {
   onHistoryClear?: () => void;
@@ -78,7 +78,7 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
   const clearCompanionSettings = async () => {
     const companionOrders = orders.filter((o) => o.companion_staff_id);
     await Promise.all(
-      companionOrders.map((o) => patchOrder(o.id, { companion_staff_id: null }))
+      companionOrders.map((o) => clearCompanionField(o.id))
     );
   };
 

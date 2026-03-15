@@ -201,12 +201,13 @@ function SchedulePage() {
         newAssignedStaffIds = [...new Set([...beforeState.assigned_staff_ids, companionStaffId])];
         newStaffCount = 2;
       } else {
-        // 同行解除: 旧同行者をassigned_staff_idsから除外
+        // 同行解除: 旧同行者をassigned_staff_idsから除外、staff_countは元に戻す
         const oldCompanion = beforeState.companion_staff_id;
         newAssignedStaffIds = oldCompanion
           ? beforeState.assigned_staff_ids.filter((id) => id !== oldCompanion)
           : beforeState.assigned_staff_ids;
-        newStaffCount = 1;
+        // 同行設定前が複数人担当だった場合を考慮（undoで復元されるため基本1）
+        newStaffCount = newAssignedStaffIds.length || 1;
       }
 
       rawHandleCompanionChange(orderId, companionStaffId, beforeState, newAssignedStaffIds, newStaffCount);

@@ -1,4 +1,4 @@
-import { doc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, writeBatch, deleteField } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { Order, OrderStatus } from '@/types';
 
@@ -122,10 +122,22 @@ export async function updateCompanion(
 ): Promise<void> {
   const orderRef = doc(getDb(), 'orders', orderId);
   await updateDoc(orderRef, {
-    companion_staff_id: companionStaffId,
+    companion_staff_id: companionStaffId ?? deleteField(),
     assigned_staff_ids: newAssignedStaffIds,
     staff_count: staffCount,
     manually_edited: true,
+    updated_at: serverTimestamp(),
+  });
+}
+
+/**
+ * 同行設定を一括クリアする（最適化後のクリーンアップ用）。
+ * フィールドをFirestoreから完全に削除する。
+ */
+export async function clearCompanionField(orderId: string): Promise<void> {
+  const ref = doc(getDb(), 'orders', orderId);
+  await updateDoc(ref, {
+    companion_staff_id: deleteField(),
     updated_at: serverTimestamp(),
   });
 }

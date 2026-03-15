@@ -243,9 +243,10 @@ export function OrderDetailPanel({
                 {order.companion_staff_id ? (
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">
-                      {helpers.get(order.companion_staff_id)
-                        ? `${helpers.get(order.companion_staff_id)!.name.family} ${helpers.get(order.companion_staff_id)!.name.given}`
-                        : order.companion_staff_id}
+                      {(() => {
+                        const ch = helpers.get(order.companion_staff_id!);
+                        return ch ? `${ch.name.family} ${ch.name.given}` : order.companion_staff_id;
+                      })()}
                     </Badge>
                     <Button
                       variant="outline"

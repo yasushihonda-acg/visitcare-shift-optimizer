@@ -54,9 +54,9 @@ vi.mock('sonner', () => ({
   },
 }));
 
-const mockPatchOrder = vi.fn();
+const mockClearCompanionField = vi.fn();
 vi.mock('@/lib/firestore/updateOrder', () => ({
-  patchOrder: (...args: unknown[]) => mockPatchOrder(...args),
+  clearCompanionField: (...args: unknown[]) => mockClearCompanionField(...args),
 }));
 
 // ── テストデータ ────────────────────────────────────────────────
@@ -201,7 +201,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
     vi.clearAllMocks();
     mockOrders.length = 0;
     mockCheckAllowedStaff.mockReturnValue([]);
-    mockPatchOrder.mockResolvedValue(undefined);
+    mockClearCompanionField.mockResolvedValue(undefined);
   });
 
   it('同行設定なし → 直接最適化ダイアログが開き、同行警告は表示されない', () => {
@@ -261,7 +261,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
     expect(screen.queryByText('同行設定のリセット確認')).not.toBeInTheDocument();
   });
 
-  it('最適化成功後に同行設定が companion_staff_id: null でクリアされる', async () => {
+  it('最適化成功後に同行設定がclearCompanionFieldでクリアされる', async () => {
     mockOrders.push(makeOrderWithCompanion('O1'));
     mockOrders.push(makeOrderWithCompanion('O2'));
     mockRunOptimize.mockResolvedValue({
@@ -278,10 +278,10 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
     fireEvent.click(screen.getByText('実行'));
 
     await waitFor(() => {
-      expect(mockPatchOrder).toHaveBeenCalledTimes(2);
+      expect(mockClearCompanionField).toHaveBeenCalledTimes(2);
     });
-    expect(mockPatchOrder).toHaveBeenCalledWith('O1', { companion_staff_id: null });
-    expect(mockPatchOrder).toHaveBeenCalledWith('O2', { companion_staff_id: null });
+    expect(mockClearCompanionField).toHaveBeenCalledWith('O1');
+    expect(mockClearCompanionField).toHaveBeenCalledWith('O2');
   });
 
   it('同行設定なしで最適化成功 → patchOrder は呼ばれない', async () => {
@@ -299,7 +299,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
     await waitFor(() => {
       expect(mockToastSuccess).toHaveBeenCalled();
     });
-    expect(mockPatchOrder).not.toHaveBeenCalled();
+    expect(mockClearCompanionField).not.toHaveBeenCalled();
   });
 
   it('最適化失敗時 → patchOrder は呼ばれない', async () => {
@@ -315,6 +315,6 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalled();
     });
-    expect(mockPatchOrder).not.toHaveBeenCalled();
+    expect(mockClearCompanionField).not.toHaveBeenCalled();
   });
 });
