@@ -125,6 +125,7 @@
 | end_time | string (HH:MM) | Yes | 終了時刻 |
 | service_type | `'physical_care' \| 'daily_living' \| 'mixed' \| 'prevention' \| 'private' \| 'disability' \| 'transport_support' \| 'severe_visiting'` | Yes | サービス種別 |
 | assigned_staff_ids | string[] | Yes | 割当スタッフID |
+| companion_staff_id | string | No | 同行（OJT）スタッフID。設定時は `assigned_staff_ids` にも含まれる。解除時はフィールドごと削除（`deleteField()`） |
 | staff_count | number | No | 必要スタッフ数（省略時は1。ServiceSlot.staff_count からも導出可能） |
 | status | `'pending' \| 'assigned' \| 'completed' \| 'cancelled'` | Yes | ステータス |
 | linked_order_id | string | No | 連続訪問リンク先オーダーID |

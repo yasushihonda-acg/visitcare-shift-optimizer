@@ -74,7 +74,12 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
     }
   };
 
-  /** 最適化後、同行設定をクリアする */
+  /**
+   * 最適化後、同行設定をクリアする。
+   * 最適化エンジンは update() で assigned_staff_ids/status/updated_at のみ書き換えるため、
+   * companion_staff_id はFirestoreに残留する。ここで明示的に削除する。
+   * assigned_staff_ids と staff_count は最適化エンジンが上書き済み。
+   */
   const clearCompanionSettings = async () => {
     const companionOrders = orders.filter((o) => o.companion_staff_id);
     await Promise.all(

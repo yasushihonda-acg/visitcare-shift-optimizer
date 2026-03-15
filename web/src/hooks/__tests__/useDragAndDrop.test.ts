@@ -77,7 +77,7 @@ function makeDefaultInput(overrides = {}) {
     helpers: new Map([['H001', { id: 'H001', name: { family: '田中', given: '太郎' } } as Helper]]),
     customers: new Map([['C001', { id: 'C001' } as Customer]]),
     unavailability: [],
-    day: 'mon' as DayOfWeek,
+    day: 'monday' as DayOfWeek,
     slotWidth: 60,
     ...overrides,
   };
