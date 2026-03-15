@@ -4,7 +4,7 @@ vi.mock('@/lib/firestore/updateOrder', () => ({
   patchOrder: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { createDragDropCommand, createStaffChangeCommand, createConfirmEditCommand } from '../commands';
+import { createDragDropCommand, createStaffChangeCommand, createCompanionChangeCommand, createConfirmEditCommand } from '../commands';
 import { patchOrder } from '@/lib/firestore/updateOrder';
 
 describe('createDragDropCommand', () => {
@@ -67,6 +67,32 @@ describe('createStaffChangeCommand', () => {
     await cmd.redo();
 
     expect(patchOrder).toHaveBeenCalledWith('o2', after);
+  });
+});
+
+describe('createCompanionChangeCommand', () => {
+  beforeEach(() => {
+    vi.mocked(patchOrder).mockResolvedValue(undefined);
+  });
+
+  it('undo() で同行設定前の状態を復元する', async () => {
+    const before = { companion_staff_id: null, assigned_staff_ids: ['h1'], staff_count: 1, manually_edited: false };
+    const after = { companion_staff_id: 'h2', assigned_staff_ids: ['h1', 'h2'], staff_count: 2, manually_edited: true };
+    const cmd = createCompanionChangeCommand({ orderId: 'o1', label: '同行設定', before, after });
+
+    await cmd.undo();
+
+    expect(patchOrder).toHaveBeenCalledWith('o1', before);
+  });
+
+  it('redo() で同行設定後の状態を適用する', async () => {
+    const before = { companion_staff_id: null, assigned_staff_ids: ['h1'], staff_count: 1, manually_edited: false };
+    const after = { companion_staff_id: 'h2', assigned_staff_ids: ['h1', 'h2'], staff_count: 2, manually_edited: true };
+    const cmd = createCompanionChangeCommand({ orderId: 'o1', label: '同行設定', before, after });
+
+    await cmd.redo();
+
+    expect(patchOrder).toHaveBeenCalledWith('o1', after);
   });
 });
 

@@ -2,7 +2,7 @@ import { patchOrder } from '@/lib/firestore/updateOrder';
 import type { Order } from '@/types';
 import type { UndoCommand } from './types';
 
-type OrderPatch = Partial<Pick<Order, 'assigned_staff_ids' | 'start_time' | 'end_time' | 'manually_edited'>>;
+type OrderPatch = Partial<Pick<Order, 'assigned_staff_ids' | 'companion_staff_id' | 'staff_count' | 'start_time' | 'end_time' | 'manually_edited'>>;
 
 /**
  * D&D移動コマンドを生成する。
@@ -30,6 +30,25 @@ export function createStaffChangeCommand(params: {
   label: string;
   before: { assigned_staff_ids: string[]; manually_edited: boolean };
   after: { assigned_staff_ids: string[]; manually_edited: boolean };
+}): UndoCommand {
+  return {
+    id: crypto.randomUUID(),
+    label: params.label,
+    undo: () => patchOrder(params.orderId, params.before),
+    redo: () => patchOrder(params.orderId, params.after),
+  };
+}
+
+type CompanionPatch = Pick<OrderPatch, 'companion_staff_id' | 'assigned_staff_ids' | 'staff_count' | 'manually_edited'>;
+
+/**
+ * 同行スタッフ変更コマンドを生成する。
+ */
+export function createCompanionChangeCommand(params: {
+  orderId: string;
+  label: string;
+  before: CompanionPatch;
+  after: CompanionPatch;
 }): UndoCommand {
   return {
     id: crypto.randomUUID(),

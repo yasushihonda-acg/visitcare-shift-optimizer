@@ -124,6 +124,7 @@ export interface Order {
   end_time: TimeString;
   service_type: ServiceType;
   assigned_staff_ids: string[];
+  companion_staff_id?: string | null;
   staff_count?: number;
   status: OrderStatus;
   linked_order_id?: string;

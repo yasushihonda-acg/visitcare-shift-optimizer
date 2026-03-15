@@ -24,6 +24,7 @@ import {
 } from './ConstraintWeightsForm';
 import { checkAllowedStaff, type AllowedStaffWarning } from '@/lib/validation/allowed-staff-check';
 import { DAY_OF_WEEK_LABELS } from '@/types';
+import { patchOrder } from '@/lib/firestore/updateOrder';
 
 interface OptimizeButtonProps {
   onHistoryClear?: () => void;
@@ -41,6 +42,9 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
   const [warnOpen, setWarnOpen] = useState(false);
   const [warnings, setWarnings] = useState<AllowedStaffWarning[]>([]);
 
+  const [companionWarnOpen, setCompanionWarnOpen] = useState(false);
+  const [companionCount, setCompanionCount] = useState(0);
+
   /** 最適化ボタン押下: 事前チェック → 警告 or 直接ダイアログ */
   const handleClickOptimize = () => {
     const found = checkAllowedStaff({ customers, helpers, orders, unavailability });
@@ -48,8 +52,34 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
       setWarnings(found);
       setWarnOpen(true);
     } else {
+      const companionOrders = orders.filter((o) => o.companion_staff_id);
+      if (companionOrders.length > 0) {
+        setCompanionCount(companionOrders.length);
+        setCompanionWarnOpen(true);
+      } else {
+        setOpen(true);
+      }
+    }
+  };
+
+  /** 警告ダイアログから最適化ダイアログへ遷移する際も同行チェックを挟む */
+  const handleProceedAfterStaffWarn = () => {
+    setWarnOpen(false);
+    const companionOrders = orders.filter((o) => o.companion_staff_id);
+    if (companionOrders.length > 0) {
+      setCompanionCount(companionOrders.length);
+      setCompanionWarnOpen(true);
+    } else {
       setOpen(true);
     }
+  };
+
+  /** 最適化後、同行設定をクリアする */
+  const clearCompanionSettings = async () => {
+    const companionOrders = orders.filter((o) => o.companion_staff_id);
+    await Promise.all(
+      companionOrders.map((o) => patchOrder(o.id, { companion_staff_id: null }))
+    );
   };
 
   const handleOptimize = async () => {
@@ -60,6 +90,7 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
         dry_run: false,
         ...weights,
       });
+      await clearCompanionSettings();
       toast.success(
         `最適化完了: ${result.assigned_count}/${result.total_orders}件割当 (${result.solve_time_seconds.toFixed(1)}秒)`
       );
@@ -83,7 +114,7 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
 
   return (
     <>
-    {/* ── 事前警告ダイアログ ── */}
+    {/* ── 事前警告ダイアログ（入れるスタッフ） ── */}
     <Dialog open={warnOpen} onOpenChange={setWarnOpen}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
@@ -116,9 +147,35 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
           </Button>
           <Button
             variant="destructive"
-            onClick={() => { setWarnOpen(false); setOpen(true); }}
+            onClick={handleProceedAfterStaffWarn}
           >
             警告を無視して実行
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* ── 同行設定リセット確認ダイアログ ── */}
+    <Dialog open={companionWarnOpen} onOpenChange={setCompanionWarnOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-amber-600">
+            <AlertTriangle className="h-5 w-5" />
+            同行設定のリセット確認
+          </DialogTitle>
+          <DialogDescription>
+            同行設定が{companionCount}件あります。最適化を実行すると同行設定はリセットされますがよろしいですか？
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => setCompanionWarnOpen(false)}>
+            キャンセル
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => { setCompanionWarnOpen(false); setOpen(true); }}
+          >
+            リセットして実行
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, MapPin, User, AlertTriangle, Pencil, Undo2, Ban, CheckCircle2 } from 'lucide-react';
+import { Clock, MapPin, User, Users, AlertTriangle, Pencil, Undo2, Ban, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sheet';
 import { StaffMultiSelect } from '@/components/masters/StaffMultiSelect';
 import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
+import { CompanionDialog } from '@/components/schedule/CompanionDialog';
 import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
 import type { Order, Customer, Helper } from '@/types';
 import type { Violation } from '@/lib/constraints/checker';
@@ -28,6 +29,7 @@ interface OrderDetailPanelProps {
   onClose: () => void;
   helpers?: Map<string, Helper>;
   onStaffChange?: (orderId: string, staffIds: string[], beforeState?: { assigned_staff_ids: string[]; manually_edited: boolean }) => void;
+  onCompanionChange?: (orderId: string, companionStaffId: string | null, beforeState: { companion_staff_id?: string | null; assigned_staff_ids: string[]; staff_count?: number; manually_edited: boolean }) => void;
   diff?: AssignmentDiff;
   saving?: boolean;
 }
@@ -79,10 +81,12 @@ export function OrderDetailPanel({
   onClose,
   helpers,
   onStaffChange,
+  onCompanionChange,
   diff,
   saving,
 }: OrderDetailPanelProps) {
   const [statusSaving, setStatusSaving] = useState(false);
+  const [companionDialogOpen, setCompanionDialogOpen] = useState(false);
   const { serviceTypes } = useServiceTypes();
 
   if (!order) return null;
@@ -200,9 +204,16 @@ export function OrderDetailPanel({
               <div className={saving ? 'opacity-50 pointer-events-none' : ''}>
                 <StaffMultiSelect
                   label="割当スタッフ"
-                  selected={order.assigned_staff_ids}
-                  onChange={(ids) => onStaffChange(order.id, ids, { assigned_staff_ids: order.assigned_staff_ids, manually_edited: order.manually_edited ?? false })}
+                  selected={order.assigned_staff_ids.filter(id => id !== order.companion_staff_id)}
+                  onChange={(ids) => {
+                    // 同行者がいる場合は常にassigned_staff_idsに含める
+                    const newIds = order.companion_staff_id
+                      ? [...new Set([...ids, order.companion_staff_id])]
+                      : ids;
+                    onStaffChange(order.id, newIds, { assigned_staff_ids: order.assigned_staff_ids, manually_edited: order.manually_edited ?? false });
+                  }}
                   helpers={helpers}
+                  excludeIds={order.companion_staff_id ? [order.companion_staff_id] : undefined}
                 />
               </div>
             ) : assignedHelpers.length > 0 ? (
@@ -220,6 +231,70 @@ export function OrderDetailPanel({
               <p className="text-sm text-muted-foreground pl-6">未割当</p>
             )}
           </div>
+
+          {/* 同行（OJT） */}
+          {onCompanionChange && helpers && customer && !isFinalized && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="h-4 w-4 text-primary" />
+                <h4 className="text-sm font-semibold">同行（OJT）</h4>
+              </div>
+              <div className="pl-6">
+                {order.companion_staff_id ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {helpers.get(order.companion_staff_id)
+                        ? `${helpers.get(order.companion_staff_id)!.name.family} ${helpers.get(order.companion_staff_id)!.name.given}`
+                        : order.companion_staff_id}
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setCompanionDialogOpen(true)}
+                      data-testid="companion-change-button"
+                    >
+                      変更
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setCompanionDialogOpen(true)}
+                    data-testid="companion-add-button"
+                  >
+                    <Users className="mr-1 h-3 w-3" />
+                    同行スタッフを設定
+                  </Button>
+                )}
+              </div>
+              <CompanionDialog
+                open={companionDialogOpen}
+                onOpenChange={setCompanionDialogOpen}
+                order={order}
+                customer={customer}
+                helpers={helpers}
+                onSetCompanion={(helperId) => {
+                  onCompanionChange(order.id, helperId, {
+                    companion_staff_id: order.companion_staff_id,
+                    assigned_staff_ids: order.assigned_staff_ids,
+                    staff_count: order.staff_count,
+                    manually_edited: order.manually_edited,
+                  });
+                }}
+                onRemoveCompanion={() => {
+                  onCompanionChange(order.id, null, {
+                    companion_staff_id: order.companion_staff_id,
+                    assigned_staff_ids: order.assigned_staff_ids,
+                    staff_count: order.staff_count,
+                    manually_edited: order.manually_edited,
+                  });
+                }}
+              />
+            </div>
+          )}
 
           {/* 制約違反 */}
           {violations.length > 0 && (

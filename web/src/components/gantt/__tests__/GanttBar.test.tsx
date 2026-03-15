@@ -1,17 +1,22 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GanttBar } from '../GanttBar';
 import type { Order } from '@/types';
 
 // --- Mocks ---
+const mockUseDraggable = vi.fn();
+
 vi.mock('@dnd-kit/core', () => ({
-  useDraggable: () => ({
-    attributes: {},
-    listeners: {},
-    setNodeRef: vi.fn(),
-    transform: null,
-    isDragging: false,
-  }),
+  useDraggable: (args: unknown) => {
+    mockUseDraggable(args);
+    return {
+      attributes: {},
+      listeners: {},
+      setNodeRef: vi.fn(),
+      transform: null,
+      isDragging: false,
+    };
+  },
 }));
 
 vi.mock('../GanttScaleContext', () => ({
@@ -161,5 +166,70 @@ describe('GanttBar - 変更確認チェックボタン', () => {
     render(<GanttBar order={order} sourceHelperId="h1" onConfirmManualEdit={onConfirm} />);
 
     expect(screen.queryByTestId('confirm-edit-order-1')).toBeNull();
+  });
+});
+
+describe('GanttBar - 同行スタッフ（OJT）のD&D制限', () => {
+  beforeEach(() => {
+    mockUseDraggable.mockClear();
+  });
+
+  it('companion_staff_id が sourceHelperId と一致するとき useDraggable に disabled:true が渡される', () => {
+    const order = makeOrder({ companion_staff_id: 'helper-companion' });
+    render(<GanttBar order={order} sourceHelperId="helper-companion" />);
+
+    expect(mockUseDraggable).toHaveBeenCalledWith(
+      expect.objectContaining({ disabled: true }),
+    );
+  });
+
+  it('companion_staff_id が sourceHelperId と一致しないとき useDraggable に disabled:true が渡されない（メインスタッフ行）', () => {
+    const order = makeOrder({ companion_staff_id: 'helper-companion' });
+    render(<GanttBar order={order} sourceHelperId="helper-main" />);
+
+    expect(mockUseDraggable).toHaveBeenCalledWith(
+      expect.objectContaining({ disabled: false }),
+    );
+  });
+
+  it('companion_staff_id が未設定のとき useDraggable に disabled:false が渡される', () => {
+    const order = makeOrder();
+    render(<GanttBar order={order} sourceHelperId="helper-main" />);
+
+    expect(mockUseDraggable).toHaveBeenCalledWith(
+      expect.objectContaining({ disabled: false }),
+    );
+  });
+
+  it('status: completed かつ companion_staff_id 一致のとき disabled:true（finalizedによる既存条件を維持）', () => {
+    const order = makeOrder({ status: 'completed', companion_staff_id: 'helper-companion' });
+    render(<GanttBar order={order} sourceHelperId="helper-companion" />);
+
+    expect(mockUseDraggable).toHaveBeenCalledWith(
+      expect.objectContaining({ disabled: true }),
+    );
+  });
+});
+
+describe('GanttBar - 同行スタッフアイコン表示', () => {
+  it('companion_staff_id が未設定 → Users アイコンが表示されない', () => {
+    const order = makeOrder({ companion_staff_id: undefined });
+    render(<GanttBar order={order} sourceHelperId="h1" />);
+
+    expect(screen.queryByLabelText('同行スタッフあり')).toBeNull();
+  });
+
+  it('companion_staff_id が空文字 → Users アイコンが表示されない', () => {
+    const order = makeOrder({ companion_staff_id: '' });
+    render(<GanttBar order={order} sourceHelperId="h1" />);
+
+    expect(screen.queryByLabelText('同行スタッフあり')).toBeNull();
+  });
+
+  it('companion_staff_id が設定済み → Users アイコンが表示される', () => {
+    const order = makeOrder({ companion_staff_id: 'helper-b' });
+    render(<GanttBar order={order} sourceHelperId="h1" />);
+
+    expect(screen.getByLabelText('同行スタッフあり')).toBeTruthy();
   });
 });

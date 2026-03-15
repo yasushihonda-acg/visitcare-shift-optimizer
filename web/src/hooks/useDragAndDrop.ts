@@ -166,6 +166,9 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
       const order = findOrder(dragData.orderId);
       if (!order) return;
 
+      // 同行スタッフ（OJT）行からのドラッグは無効（useDraggable disabled が抜けた場合の二重ガード）
+      if (order.companion_staff_id != null && dragData.sourceHelperId === order.companion_staff_id) return;
+
       // delta.x から時間シフトを計算
       const shiftMinutes = deltaToTimeShift(event.delta.x, slotWidth);
       const hasTimeShift = shiftMinutes !== 0;
