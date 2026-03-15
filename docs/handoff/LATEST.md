@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-13（PR #267 同一住所インジケーターを1色に統一しアンダーラインを太く マージ済み）
+**最終更新**: 2026-03-16（PR #269 同行（OJT）機能を実装 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -52,7 +52,15 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-03-13）
+## 直近の実装（2026-03-16）
+
+- **feat (#269, 2026-03-16)** ✅: 同行（OJT）機能を実装
+  - Order型に `companion_staff_id` フィールド追加、Firestore永続化（`deleteField()` で安全削除）
+  - CompanionDialog（単一選択+検索+研修ステータスバッジ）
+  - OrderDetailPanelに同行セクション統合、StaffMultiSelectから同行者除外
+  - Undo/Redo対応、D&D制限（同行者行はドラッグ不可）
+  - ガントバーにUsersアイコン表示
+  - 最適化前警告 + 成功後に同行設定一括クリア
 
 - **fix (#267, 2026-03-13)** ✅: 同一住所インジケーターを1色に統一しアンダーラインを太く
   - インジケーター色を単一カラー（青 `#3b82f6`）に統一（5色ローテーション廃止）
