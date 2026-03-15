@@ -49,6 +49,25 @@ visitcare-shift-optimizer/
 | travel_times | ~2,550 | 移動時間キャッシュ |
 | staff_unavailability | 随時 | 希望休 |
 
+## Firestore規約
+- オプショナルフィールドの解除 → `deleteField()` を使用（`null` 書き込み禁止。Python側が明示的フィールド読み取りのため `null` 残留は型不整合リスク）
+
+## 型の二重定義（shared/ ↔ web/）
+- `shared/types/` = 管理者SDK用（`last_name`/`first_name`、`Timestamp`、`T | undefined`）
+- `web/src/types/` = クライアントSDK用（`family`/`given`、`Date`、`T | null | undefined`）
+- 最適化エンジン（`optimizer/src/optimizer/models/`）= Python Pydantic。Firestoreから明示的フィールドのみ読み取り、未知フィールドは無視
+
+## データフローランドマーク（structural-integrity カスタマイズ）
+| レイヤー | ディレクトリ | 備考 |
+|---------|-------------|------|
+| 共有型 | `shared/types/` | Firestore管理者SDK準拠 |
+| クライアント型 | `web/src/types/` | 命名・nullabilityが shared と異なる |
+| スキーマ文書 | `docs/schema/firestore-schema.md` | フィールド追加時に同期必須 |
+| Firestore操作 | `web/src/lib/firestore/` | `deleteField()` 規約 |
+| 最適化エンジン | `optimizer/src/optimizer/models/` | Pydantic。未知フィールド無視 |
+| Hooks/State | `web/src/hooks/` | undo/redo対応が必要な場合あり |
+| UI | `web/src/components/` | ガントチャート + 詳細パネル |
+
 ## 開発規約
 
 ### コミット規約
