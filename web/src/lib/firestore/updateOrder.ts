@@ -1,4 +1,4 @@
-import { doc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, writeBatch, deleteField } from 'firebase/firestore';
 import { getDb } from '@/lib/firebase';
 import type { Order, OrderStatus } from '@/types';
 
@@ -104,10 +104,42 @@ export async function confirmManualEdit(orderId: string): Promise<void> {
  */
 export async function patchOrder(
   orderId: string,
-  fields: Partial<Pick<Order, 'assigned_staff_ids' | 'start_time' | 'end_time' | 'manually_edited'>>
+  fields: Partial<Pick<Order, 'assigned_staff_ids' | 'companion_staff_id' | 'staff_count' | 'start_time' | 'end_time' | 'manually_edited'>>
 ): Promise<void> {
   const ref = doc(getDb(), 'orders', orderId);
   await updateDoc(ref, { ...fields, updated_at: serverTimestamp() });
+}
+
+/**
+ * 同行（OJT）スタッフを設定/解除する。
+ * companion_staff_id + assigned_staff_ids + staff_count を原子的に更新。
+ */
+export async function updateCompanion(
+  orderId: string,
+  companionStaffId: string | null,
+  newAssignedStaffIds: string[],
+  staffCount: number,
+): Promise<void> {
+  const orderRef = doc(getDb(), 'orders', orderId);
+  await updateDoc(orderRef, {
+    companion_staff_id: companionStaffId ?? deleteField(),
+    assigned_staff_ids: newAssignedStaffIds,
+    staff_count: staffCount,
+    manually_edited: true,
+    updated_at: serverTimestamp(),
+  });
+}
+
+/**
+ * 同行設定を一括クリアする（最適化後のクリーンアップ用）。
+ * フィールドをFirestoreから完全に削除する。
+ */
+export async function clearCompanionField(orderId: string): Promise<void> {
+  const ref = doc(getDb(), 'orders', orderId);
+  await updateDoc(ref, {
+    companion_staff_id: deleteField(),
+    updated_at: serverTimestamp(),
+  });
 }
 
 /**

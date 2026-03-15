@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-13（PR #266 同一住所インジケーターを隣接オーダー限定に変更 マージ済み）
+**最終更新**: 2026-03-13（PR #267 同一住所インジケーターを1色に統一しアンダーラインを太く マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -53,6 +53,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-03-13）
+
+- **fix (#267, 2026-03-13)** ✅: 同一住所インジケーターを1色に統一しアンダーラインを太く
+  - インジケーター色を単一カラー（青 `#3b82f6`）に統一（5色ローテーション廃止）
+  - アンダーラインの太さを 3px → 4px に変更
 
 - **fix (#266, 2026-03-13)** ✅: 同一住所インジケーターを隣接オーダー限定に変更
   - 同じヘルパー行で時間的に隣接（end_time === start_time）するペアのみ表示
@@ -120,7 +124,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
 - **Firestore Rules**: **114件** pass ✅（PR #255でcancelled→pending許可テスト追加）
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #266 main push CI SUCCESS（最新）
+- **CI/CD**: PR #267 main push CI SUCCESS（最新）
 
 ## 重要なドキュメント
 
@@ -170,7 +174,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 ## GitHub Issuesサマリー
 
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: #266（隣接限定）、#265（偽陽性修正）、#264（偽陽性issue）、#263（同一住所インジケーター）、#260（同一住所issue）、#259（aria警告解消）
+- **クローズ済み（直近）**: #267（1色統一・アンダーライン太く）、#266（隣接限定）、#265（偽陽性修正）、#264（偽陽性issue）、#263（同一住所インジケーター）、#260（同一住所issue）
 
 ## 参考資料（ローカルExcel）
 

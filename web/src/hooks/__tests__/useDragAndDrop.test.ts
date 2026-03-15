@@ -244,4 +244,97 @@ describe('useDragAndDrop', () => {
 
     expect(mockToastError).toHaveBeenCalledWith('更新に失敗しました');
   });
+
+  describe('同行スタッフ（OJT）のD&D制限', () => {
+    it('handleDragEnd: companion_staff_id === sourceHelperId のとき何も更新しない（同行側ガード）', async () => {
+      const order = makeOrder({ id: 'O001', companion_staff_id: 'H001' });
+      const input = makeDefaultInput({
+        helperRows: [
+          { helper: { id: 'H001' } as Helper, orders: [order] },
+          { helper: { id: 'H002' } as Helper, orders: [] },
+        ],
+        helpers: new Map([
+          ['H001', { id: 'H001' } as Helper],
+          ['H002', { id: 'H002' } as Helper],
+        ]),
+      });
+
+      const { result } = renderHook(() => useDragAndDrop(input));
+
+      await act(async () => {
+        await result.current.handleDragEnd({
+          active: {
+            id: 'O001',
+            data: { current: { orderId: 'O001', sourceHelperId: 'H001' } },
+          },
+          over: { id: 'H002' },
+          delta: { x: 0, y: 0 },
+        } as unknown as DragEndEvent);
+      });
+
+      expect(mockUpdateOrderAssignment).not.toHaveBeenCalled();
+      expect(mockUpdateOrderAssignmentAndTime).not.toHaveBeenCalled();
+      expect(mockToastError).not.toHaveBeenCalled();
+      expect(mockToastSuccess).not.toHaveBeenCalled();
+    });
+
+    it('handleDragEnd: companion_staff_id !== sourceHelperId のとき通常処理（メイン側は制限されない）', async () => {
+      const order = makeOrder({ id: 'O001', companion_staff_id: 'H002' });
+      const input = makeDefaultInput({
+        helperRows: [
+          { helper: { id: 'H001' } as Helper, orders: [order] },
+          { helper: { id: 'H002' } as Helper, orders: [] },
+        ],
+        helpers: new Map([
+          ['H001', { id: 'H001' } as Helper],
+          ['H002', { id: 'H002', name: { family: '鈴木', given: '花子' } } as Helper],
+        ]),
+      });
+
+      const { result } = renderHook(() => useDragAndDrop(input));
+
+      await act(async () => {
+        await result.current.handleDragEnd({
+          active: {
+            id: 'O001',
+            data: { current: { orderId: 'O001', sourceHelperId: 'H001' } },
+          },
+          over: { id: 'H002' },
+          delta: { x: 0, y: 0 },
+        } as unknown as DragEndEvent);
+      });
+
+      // メイン側（H001）からのドラッグは companion_staff_id(H002) と一致しないため制限されない
+      expect(mockValidateDrop).toHaveBeenCalled();
+    });
+
+    it('handleDragEnd: companion_staff_id が未設定のとき通常処理', async () => {
+      const order = makeOrder({ id: 'O001' }); // companion_staff_id なし
+      const input = makeDefaultInput({
+        helperRows: [
+          { helper: { id: 'H001' } as Helper, orders: [order] },
+          { helper: { id: 'H002' } as Helper, orders: [] },
+        ],
+        helpers: new Map([
+          ['H001', { id: 'H001' } as Helper],
+          ['H002', { id: 'H002', name: { family: '鈴木', given: '花子' } } as Helper],
+        ]),
+      });
+
+      const { result } = renderHook(() => useDragAndDrop(input));
+
+      await act(async () => {
+        await result.current.handleDragEnd({
+          active: {
+            id: 'O001',
+            data: { current: { orderId: 'O001', sourceHelperId: 'H001' } },
+          },
+          over: { id: 'H002' },
+          delta: { x: 0, y: 0 },
+        } as unknown as DragEndEvent);
+      });
+
+      expect(mockValidateDrop).toHaveBeenCalled();
+    });
+  });
 });

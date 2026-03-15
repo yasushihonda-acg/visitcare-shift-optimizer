@@ -54,7 +54,7 @@ function SchedulePage() {
   const { canUndo, canRedo, undo, redo, pushCommand, clearHistory, undoLabel, redoLabel } = useUndoRedo();
   useUndoRedoKeyboard({ undo, redo, canUndo, canRedo });
 
-  const { saving, handleStaffChange } = useOrderEdit({ onCommand: pushCommand });
+  const { saving, handleStaffChange, handleCompanionChange: rawHandleCompanionChange } = useOrderEdit({ onCommand: pushCommand });
   const { serviceTypes } = useServiceTypes();
 
   const allOrders = useMemo(() => {
@@ -181,6 +181,39 @@ function SchedulePage() {
     setSelectedOrderId(order.id);
     setDetailOpen(true);
   };
+
+  const handleCompanionChange = useCallback(
+    (
+      orderId: string,
+      companionStaffId: string | null,
+      beforeState: {
+        companion_staff_id?: string | null;
+        assigned_staff_ids: string[];
+        staff_count?: number;
+        manually_edited: boolean;
+      },
+    ) => {
+      let newAssignedStaffIds: string[];
+      let newStaffCount: number;
+
+      if (companionStaffId) {
+        // 同行設定: assigned_staff_idsに追加
+        newAssignedStaffIds = [...new Set([...beforeState.assigned_staff_ids, companionStaffId])];
+        newStaffCount = 2;
+      } else {
+        // 同行解除: 旧同行者をassigned_staff_idsから除外、staff_countは元に戻す
+        const oldCompanion = beforeState.companion_staff_id;
+        newAssignedStaffIds = oldCompanion
+          ? beforeState.assigned_staff_ids.filter((id) => id !== oldCompanion)
+          : beforeState.assigned_staff_ids;
+        // 同行設定前が複数人担当だった場合を考慮（undoで復元されるため基本1）
+        newStaffCount = newAssignedStaffIds.length || 1;
+      }
+
+      rawHandleCompanionChange(orderId, companionStaffId, beforeState, newAssignedStaffIds, newStaffCount);
+    },
+    [rawHandleCompanionChange],
+  );
 
   const handleConfirmManualEdit = useCallback(async (orderId: string) => {
     const cmd = createConfirmEditCommand(orderId);
@@ -312,6 +345,7 @@ function SchedulePage() {
         onClose={() => setDetailOpen(false)}
         helpers={helpers}
         onStaffChange={handleStaffChange}
+        onCompanionChange={handleCompanionChange}
         diff={selectedOrder ? diffMap.get(selectedOrder.id) : undefined}
         saving={saving}
       />

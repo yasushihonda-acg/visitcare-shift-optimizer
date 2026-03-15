@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, X } from 'lucide-react';
+import { Check, Users, X } from 'lucide-react';
 import { timeToColumn, getServiceColor } from './constants';
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
@@ -38,12 +38,14 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
 
   const isFinalized = order.status === 'completed' || order.status === 'cancelled';
   const isManuallyEdited = !isFinalized && order.manually_edited;
+  const isCompanionRow =
+    order.companion_staff_id != null && sourceHelperId === order.companion_staff_id;
 
   const dragData: DragData = { orderId: order.id, sourceHelperId };
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `order-${order.id}`,
     data: dragData,
-    disabled: isFinalized,
+    disabled: isFinalized || isCompanionRow,
   });
 
   const colors = getServiceColor(order.service_type);
@@ -107,6 +109,9 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
           <span className="shrink-0 ml-0.5 px-1 py-0.5 rounded text-[10px] font-bold leading-none bg-white/30 text-current">
             {order.assigned_staff_ids.length}/{staffCount}
           </span>
+        )}
+        {order.companion_staff_id && (
+          <Users className="shrink-0 w-3 h-3" aria-label="同行スタッフあり" />
         )}
         {isManuallyEdited && onConfirmManualEdit && (
           <span

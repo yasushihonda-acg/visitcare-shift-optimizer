@@ -5,6 +5,7 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   updateDoc: vi.fn().mockResolvedValue(undefined),
   serverTimestamp: vi.fn(() => 'SERVER_TIMESTAMP'),
+  deleteField: vi.fn(() => 'DELETE_FIELD'),
   writeBatch: vi.fn(() => ({
     update: vi.fn(),
     commit: vi.fn().mockResolvedValue(undefined),
@@ -15,7 +16,7 @@ vi.mock('@/lib/firebase', () => ({
   getDb: vi.fn(() => ({})),
 }));
 
-import { updateOrderStatus, bulkUpdateOrderStatus, isValidTransition, isOrderStatus, patchOrder } from '../updateOrder';
+import { updateOrderStatus, bulkUpdateOrderStatus, isValidTransition, isOrderStatus, patchOrder, updateCompanion, clearCompanionField } from '../updateOrder';
 import { doc, updateDoc } from 'firebase/firestore';
 
 describe('updateOrderStatus - 状態遷移バリデーション', () => {
@@ -174,5 +175,61 @@ describe('bulkUpdateOrderStatus', () => {
     ];
     const count = await bulkUpdateOrderStatus(orders, 'completed');
     expect(count).toBe(0);
+  });
+});
+
+describe('updateCompanion', () => {
+  beforeEach(() => {
+    vi.mocked(doc).mockReturnValue({} as ReturnType<typeof doc>);
+    vi.mocked(updateDoc).mockResolvedValue(undefined);
+  });
+
+  it('同行者を設定する場合、全フィールドを原子的に更新する', async () => {
+    const mockRef = { id: 'orders/o1' };
+    vi.mocked(doc).mockReturnValue(mockRef as ReturnType<typeof doc>);
+
+    await updateCompanion('o1', 'h2', ['h1', 'h2'], 2);
+
+    expect(updateDoc).toHaveBeenCalledWith(mockRef, {
+      companion_staff_id: 'h2',
+      assigned_staff_ids: ['h1', 'h2'],
+      staff_count: 2,
+      manually_edited: true,
+      updated_at: 'SERVER_TIMESTAMP',
+    });
+  });
+
+  it('同行者を解除する場合、companion_staff_idにdeleteField()を使用する', async () => {
+    const mockRef = { id: 'orders/o1' };
+    vi.mocked(doc).mockReturnValue(mockRef as ReturnType<typeof doc>);
+
+    await updateCompanion('o1', null, ['h1'], 1);
+
+    expect(updateDoc).toHaveBeenCalledWith(mockRef, {
+      companion_staff_id: 'DELETE_FIELD',
+      assigned_staff_ids: ['h1'],
+      staff_count: 1,
+      manually_edited: true,
+      updated_at: 'SERVER_TIMESTAMP',
+    });
+  });
+});
+
+describe('clearCompanionField', () => {
+  beforeEach(() => {
+    vi.mocked(doc).mockReturnValue({} as ReturnType<typeof doc>);
+    vi.mocked(updateDoc).mockResolvedValue(undefined);
+  });
+
+  it('companion_staff_idをdeleteField()で削除する', async () => {
+    const mockRef = { id: 'orders/o1' };
+    vi.mocked(doc).mockReturnValue(mockRef as ReturnType<typeof doc>);
+
+    await clearCompanionField('o1');
+
+    expect(updateDoc).toHaveBeenCalledWith(mockRef, {
+      companion_staff_id: 'DELETE_FIELD',
+      updated_at: 'SERVER_TIMESTAMP',
+    });
   });
 });
