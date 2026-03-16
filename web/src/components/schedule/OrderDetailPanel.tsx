@@ -16,6 +16,7 @@ import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
 import { CompanionDialog } from '@/components/schedule/CompanionDialog';
 import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
 import type { Order, Customer, Helper } from '@/types';
+import type { CompanionBeforeState } from '@/hooks/useOrderEdit';
 import type { Violation } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
@@ -29,7 +30,7 @@ interface OrderDetailPanelProps {
   onClose: () => void;
   helpers?: Map<string, Helper>;
   onStaffChange?: (orderId: string, staffIds: string[], beforeState?: { assigned_staff_ids: string[]; manually_edited: boolean }) => void;
-  onCompanionChange?: (orderId: string, companionStaffId: string | null, beforeState: { companion_staff_id?: string | null; assigned_staff_ids: string[]; staff_count?: number; manually_edited: boolean }) => void;
+  onCompanionChange?: (orderId: string, companionStaffId: string | null, beforeState: CompanionBeforeState) => void;
   diff?: AssignmentDiff;
   saving?: boolean;
 }
@@ -233,7 +234,18 @@ export function OrderDetailPanel({
           </div>
 
           {/* 同行（OJT） */}
-          {onCompanionChange && helpers && customer && !isFinalized && (
+          {onCompanionChange && helpers && customer && !isFinalized && (() => {
+            const companionHelper = order.companion_staff_id ? helpers.get(order.companion_staff_id) : undefined;
+            const companionName = companionHelper
+              ? `${companionHelper.name.family} ${companionHelper.name.given}`
+              : order.companion_staff_id;
+            const beforeState: CompanionBeforeState = {
+              companion_staff_id: order.companion_staff_id,
+              assigned_staff_ids: order.assigned_staff_ids,
+              staff_count: order.staff_count,
+              manually_edited: order.manually_edited,
+            };
+            return (
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Users className="h-4 w-4 text-primary" />
@@ -242,12 +254,7 @@ export function OrderDetailPanel({
               <div className="pl-6">
                 {order.companion_staff_id ? (
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary">
-                      {(() => {
-                        const ch = helpers.get(order.companion_staff_id!);
-                        return ch ? `${ch.name.family} ${ch.name.given}` : order.companion_staff_id;
-                      })()}
-                    </Badge>
+                    <Badge variant="secondary">{companionName}</Badge>
                     <Button
                       variant="outline"
                       size="sm"
@@ -277,25 +284,12 @@ export function OrderDetailPanel({
                 order={order}
                 customer={customer}
                 helpers={helpers}
-                onSetCompanion={(helperId) => {
-                  onCompanionChange(order.id, helperId, {
-                    companion_staff_id: order.companion_staff_id,
-                    assigned_staff_ids: order.assigned_staff_ids,
-                    staff_count: order.staff_count,
-                    manually_edited: order.manually_edited,
-                  });
-                }}
-                onRemoveCompanion={() => {
-                  onCompanionChange(order.id, null, {
-                    companion_staff_id: order.companion_staff_id,
-                    assigned_staff_ids: order.assigned_staff_ids,
-                    staff_count: order.staff_count,
-                    manually_edited: order.manually_edited,
-                  });
-                }}
+                onSetCompanion={(helperId) => onCompanionChange(order.id, helperId, beforeState)}
+                onRemoveCompanion={() => onCompanionChange(order.id, null, beforeState)}
               />
             </div>
-          )}
+            );
+          })()}
 
           {/* 制約違反 */}
           {violations.length > 0 && (

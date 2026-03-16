@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,16 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
   const [warnings, setWarnings] = useState<AllowedStaffWarning[]>([]);
 
   const [companionWarnOpen, setCompanionWarnOpen] = useState(false);
-  const [companionCount, setCompanionCount] = useState(0);
+  const companionOrders = useMemo(() => orders.filter((o) => o.companion_staff_id), [orders]);
+
+  /** 同行チェック → 警告表示 or 最適化ダイアログ直接表示 */
+  const proceedWithCompanionCheck = () => {
+    if (companionOrders.length > 0) {
+      setCompanionWarnOpen(true);
+    } else {
+      setOpen(true);
+    }
+  };
 
   /** 最適化ボタン押下: 事前チェック → 警告 or 直接ダイアログ */
   const handleClickOptimize = () => {
@@ -52,26 +61,14 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
       setWarnings(found);
       setWarnOpen(true);
     } else {
-      const companionOrders = orders.filter((o) => o.companion_staff_id);
-      if (companionOrders.length > 0) {
-        setCompanionCount(companionOrders.length);
-        setCompanionWarnOpen(true);
-      } else {
-        setOpen(true);
-      }
+      proceedWithCompanionCheck();
     }
   };
 
   /** 警告ダイアログから最適化ダイアログへ遷移する際も同行チェックを挟む */
   const handleProceedAfterStaffWarn = () => {
     setWarnOpen(false);
-    const companionOrders = orders.filter((o) => o.companion_staff_id);
-    if (companionOrders.length > 0) {
-      setCompanionCount(companionOrders.length);
-      setCompanionWarnOpen(true);
-    } else {
-      setOpen(true);
-    }
+    proceedWithCompanionCheck();
   };
 
   /**
@@ -81,7 +78,6 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
    * assigned_staff_ids と staff_count は最適化エンジンが上書き済み。
    */
   const clearCompanionSettings = async () => {
-    const companionOrders = orders.filter((o) => o.companion_staff_id);
     await Promise.all(
       companionOrders.map((o) => clearCompanionField(o.id))
     );
@@ -169,7 +165,7 @@ export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonPro
             同行設定のリセット確認
           </DialogTitle>
           <DialogDescription>
-            同行設定が{companionCount}件あります。最適化を実行すると同行設定はリセットされますがよろしいですか？
+            同行設定が{companionOrders.length}件あります。最適化を実行すると同行設定はリセットされますがよろしいですか？
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">

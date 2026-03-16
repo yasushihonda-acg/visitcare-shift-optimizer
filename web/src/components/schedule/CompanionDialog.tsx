@@ -89,10 +89,6 @@ export function CompanionDialog({
     handleOpenChange(false);
   };
 
-  const getTrainingStatus = (helper: Helper): TrainingStatus | null => {
-    return helper.customer_training_status?.[order.customer_id] ?? null;
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[70vh] max-w-sm">
@@ -143,7 +139,7 @@ export function CompanionDialog({
         {/* 候補一覧（単一選択：ラジオ） */}
         <div className="max-h-60 overflow-y-auto space-y-1">
           {filtered.map((h) => {
-            const training = getTrainingStatus(h);
+            const training = h.customer_training_status?.[order.customer_id] as TrainingStatus | undefined ?? null;
             return (
               <label
                 key={h.id}

@@ -6,8 +6,36 @@ import { updateOrderAssignment, updateCompanion } from '@/lib/firestore/updateOr
 import { createStaffChangeCommand, createCompanionChangeCommand } from '@/lib/undo/commands';
 import type { UndoCommand } from '@/lib/undo/types';
 
+export interface CompanionBeforeState {
+  companion_staff_id?: string | null;
+  assigned_staff_ids: string[];
+  staff_count?: number;
+  manually_edited: boolean;
+}
+
 interface UseOrderEditInput {
   onCommand?: (cmd: UndoCommand) => void;
+}
+
+/** 同行設定/解除時の新しいassigned_staff_idsとstaff_countを計算する */
+function computeCompanionUpdate(
+  companionStaffId: string | null,
+  beforeState: CompanionBeforeState,
+): { newAssignedStaffIds: string[]; newStaffCount: number } {
+  if (companionStaffId) {
+    return {
+      newAssignedStaffIds: [...new Set([...beforeState.assigned_staff_ids, companionStaffId])],
+      newStaffCount: 2,
+    };
+  }
+  const oldCompanion = beforeState.companion_staff_id;
+  const newAssignedStaffIds = oldCompanion
+    ? beforeState.assigned_staff_ids.filter((id) => id !== oldCompanion)
+    : beforeState.assigned_staff_ids;
+  return {
+    newAssignedStaffIds,
+    newStaffCount: newAssignedStaffIds.length || 1,
+  };
 }
 
 export function useOrderEdit({ onCommand }: UseOrderEditInput = {}) {
@@ -45,16 +73,9 @@ export function useOrderEdit({ onCommand }: UseOrderEditInput = {}) {
     async (
       orderId: string,
       companionStaffId: string | null,
-      beforeState: {
-        companion_staff_id?: string | null;
-        assigned_staff_ids: string[];
-        staff_count?: number;
-        manually_edited: boolean;
-      },
-      /** 同行設定時の新しいassigned_staff_ids */
-      newAssignedStaffIds: string[],
-      newStaffCount: number,
+      beforeState: CompanionBeforeState,
     ) => {
+      const { newAssignedStaffIds, newStaffCount } = computeCompanionUpdate(companionStaffId, beforeState);
       setSaving(true);
       try {
         await updateCompanion(orderId, companionStaffId, newAssignedStaffIds, newStaffCount);
