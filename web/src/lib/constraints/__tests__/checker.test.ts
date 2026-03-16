@@ -764,4 +764,57 @@ describe('checkConstraints', () => {
       expect(v3.filter((v) => v.type === 'overlap').length).toBe(2);
     });
   });
+
+  describe('同行スタッフの違反メッセージ修飾', () => {
+    it('companion_staff_id のスタッフは違反メッセージに「（同行）」が付く', () => {
+      const helpers = new Map([
+        ['H001', makeHelper({ id: 'H001' })],
+        ['H002', makeHelper({ id: 'H002', name: { family: '加藤', given: '花子' } })],
+      ]);
+      const customers = new Map([['C001', makeCustomer({ preferred_staff_ids: ['H999'] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder({
+          assigned_staff_ids: ['H001', 'H002'],
+          companion_staff_id: 'H002',
+          staff_count: 2,
+        })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      const companionViolation = violations.find(
+        (v) => v.type === 'preferred_staff' && v.staffId === 'H002'
+      );
+      expect(companionViolation).toBeDefined();
+      expect(companionViolation!.message).toContain('加藤（同行）');
+    });
+
+    it('通常スタッフの違反メッセージには「（同行）」が付かない', () => {
+      const helpers = new Map([
+        ['H001', makeHelper({ id: 'H001' })],
+        ['H002', makeHelper({ id: 'H002', name: { family: '加藤', given: '花子' } })],
+      ]);
+      const customers = new Map([['C001', makeCustomer({ preferred_staff_ids: ['H999'] })]]);
+      const result = checkConstraints({
+        orders: [makeOrder({
+          assigned_staff_ids: ['H001', 'H002'],
+          companion_staff_id: 'H002',
+          staff_count: 2,
+        })],
+        helpers,
+        customers,
+        unavailability: [],
+        day: 'monday',
+      });
+      const violations = result.get('O001') ?? [];
+      const normalViolation = violations.find(
+        (v) => v.type === 'preferred_staff' && v.staffId === 'H001'
+      );
+      expect(normalViolation).toBeDefined();
+      expect(normalViolation!.message).toContain('田中');
+      expect(normalViolation!.message).not.toContain('（同行）');
+    });
+  });
 });

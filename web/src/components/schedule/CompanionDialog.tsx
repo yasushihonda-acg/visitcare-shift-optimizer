@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Search, Users, X } from 'lucide-react';
+import { ClipboardList, Search, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +54,14 @@ export function CompanionDialog({
     ? helpers.get(order.companion_staff_id)
     : null;
 
+  // 「教える方」= 割当済みスタッフから同行者を除いたスタッフ
+  const teachingStaff = useMemo(() => {
+    return order.assigned_staff_ids
+      .filter((id) => id !== order.companion_staff_id)
+      .map((id) => helpers.get(id))
+      .filter((h): h is Helper => h != null);
+  }, [order.assigned_staff_ids, order.companion_staff_id, helpers]);
+
   const candidates = useMemo(
     () => getCompanionCandidates({ order, customer, helpers }),
     [order, customer, helpers],
@@ -101,6 +109,23 @@ export function CompanionDialog({
             研修目的で一時的に同行するスタッフを選択してください
           </DialogDescription>
         </DialogHeader>
+
+        {/* 教える方（担当スタッフ）表示 */}
+        {teachingStaff.length > 0 && (
+          <div className="rounded-md border p-2 bg-blue-50/50" data-testid="teaching-staff">
+            <div className="flex items-center gap-1.5 mb-1">
+              <ClipboardList className="h-4 w-4 text-blue-600" />
+              <span className="text-xs font-medium text-blue-700">教える方（担当スタッフ）</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {teachingStaff.map((h) => (
+                <Badge key={h.id} variant="secondary" className="text-xs">
+                  {h.name.family} {h.name.given}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 現在の同行者表示 */}
         {currentCompanion && (
