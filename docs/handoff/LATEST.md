@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-16（PR #269 同行（OJT）機能を実装 マージ済み）
+**最終更新**: 2026-03-16（PR #273 /simplify品質ゲート対応 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -53,6 +53,11 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-03-16）
+
+- **refactor (#273, 2026-03-16)** ✅: /simplify品質ゲート対応（-53行コード削減）
+  - commands.ts 3関数→共通ファクトリ統合、同行計算ロジックをuseOrderEditに吸収
+  - OptimizeButton同行チェック重複除去、OrderDetailPanel IIFE除去
+  - 既存負債をIssue化: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション)
 
 - **feat (#269, 2026-03-16)** ✅: 同行（OJT）機能を実装
   - Order型に `companion_staff_id` フィールド追加、Firestore永続化（`deleteField()` で安全削除）
