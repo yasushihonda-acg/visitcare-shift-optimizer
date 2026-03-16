@@ -4,7 +4,7 @@ import {
   assertFails,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
@@ -599,6 +599,32 @@ describe('認証済みユーザー - orders update', () => {
         assigned_staff_ids: ['helper-2'],
         start_time: '2026-02-16T10:00:00+09:00',
         end_time: '2026-02-16T11:00:00+09:00',
+        manually_edited: true,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('companion_staff_id + staff_count を含む更新ができる（同行設定）', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-1'), {
+        companion_staff_id: 'helper-2',
+        assigned_staff_ids: ['helper-1', 'helper-2'],
+        staff_count: 2,
+        manually_edited: true,
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('companion_staff_id のみ削除する更新ができる（同行解除）', async () => {
+    const authed = testEnv.authenticatedContext('user-1');
+    await assertSucceeds(
+      updateDoc(doc(authed.firestore(), 'orders', 'order-1'), {
+        companion_staff_id: deleteField(),
+        assigned_staff_ids: ['helper-1'],
+        staff_count: 1,
         manually_edited: true,
         updated_at: serverTimestamp(),
       })
