@@ -314,6 +314,8 @@ function SchedulePage() {
         onCompanionChange={handleCompanionChange}
         diff={selectedOrder ? diffMap.get(selectedOrder.id) : undefined}
         saving={saving}
+        unavailability={unavailability}
+        day={selectedDay}
       />
     </div>
   );

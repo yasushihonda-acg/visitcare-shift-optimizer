@@ -15,7 +15,7 @@ import { StaffMultiSelect } from '@/components/masters/StaffMultiSelect';
 import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
 import { CompanionDialog } from '@/components/schedule/CompanionDialog';
 import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
-import type { Order, Customer, Helper } from '@/types';
+import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek } from '@/types';
 import type { CompanionBeforeState } from '@/hooks/useOrderEdit';
 import type { Violation } from '@/lib/constraints/checker';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
@@ -33,6 +33,8 @@ interface OrderDetailPanelProps {
   onCompanionChange?: (orderId: string, companionStaffId: string | null, beforeState: CompanionBeforeState) => void;
   diff?: AssignmentDiff;
   saving?: boolean;
+  unavailability?: StaffUnavailability[];
+  day?: DayOfWeek;
 }
 
 
@@ -85,6 +87,8 @@ export function OrderDetailPanel({
   onCompanionChange,
   diff,
   saving,
+  unavailability,
+  day,
 }: OrderDetailPanelProps) {
   const [statusSaving, setStatusSaving] = useState(false);
   const [companionDialogOpen, setCompanionDialogOpen] = useState(false);
@@ -286,6 +290,8 @@ export function OrderDetailPanel({
                 helpers={helpers}
                 onSetCompanion={(helperId) => onCompanionChange(order.id, helperId, beforeState)}
                 onRemoveCompanion={() => onCompanionChange(order.id, null, beforeState)}
+                unavailability={unavailability}
+                day={day}
               />
             </div>
             );

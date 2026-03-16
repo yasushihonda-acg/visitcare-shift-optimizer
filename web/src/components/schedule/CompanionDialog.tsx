@@ -14,7 +14,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { getCompanionCandidates } from '@/lib/companion/filter';
-import type { Order, Customer, Helper, TrainingStatus } from '@/types';
+import type { Order, Customer, Helper, TrainingStatus, StaffUnavailability, DayOfWeek } from '@/types';
 
 const TRAINING_STATUS_LABELS: Record<TrainingStatus, string> = {
   not_visited: '未訪問',
@@ -36,6 +36,8 @@ interface CompanionDialogProps {
   helpers: Map<string, Helper>;
   onSetCompanion: (helperId: string) => void;
   onRemoveCompanion: () => void;
+  unavailability?: StaffUnavailability[];
+  day?: DayOfWeek;
 }
 
 export function CompanionDialog({
@@ -46,6 +48,8 @@ export function CompanionDialog({
   helpers,
   onSetCompanion,
   onRemoveCompanion,
+  unavailability,
+  day,
 }: CompanionDialogProps) {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -63,8 +67,8 @@ export function CompanionDialog({
   }, [order.assigned_staff_ids, order.companion_staff_id, helpers]);
 
   const candidates = useMemo(
-    () => getCompanionCandidates({ order, customer, helpers }),
-    [order, customer, helpers],
+    () => getCompanionCandidates({ order, customer, helpers, unavailability, day }),
+    [order, customer, helpers, unavailability, day],
   );
 
   const filtered = useMemo(() => {
