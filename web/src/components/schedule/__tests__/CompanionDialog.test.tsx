@@ -143,6 +143,54 @@ describe('CompanionDialog', () => {
     expect(onRemoveCompanion).toHaveBeenCalled();
   });
 
+  it('「教える方」に担当スタッフ名が表示される', () => {
+    const order = makeOrder({ assigned_staff_ids: ['h1'] });
+    const customer = makeCustomer();
+
+    render(
+      <CompanionDialog
+        open={true}
+        onOpenChange={() => {}}
+        order={order}
+        customer={customer}
+        helpers={helpers}
+        onSetCompanion={() => {}}
+        onRemoveCompanion={() => {}}
+      />,
+    );
+
+    const section = screen.getByTestId('teaching-staff');
+    expect(section).toBeInTheDocument();
+    expect(section).toHaveTextContent('教える方');
+    expect(section).toHaveTextContent('山田 太郎');
+  });
+
+  it('同行者は「教える方」に含まれない', () => {
+    const order = makeOrder({
+      assigned_staff_ids: ['h1', 'h2'],
+      companion_staff_id: 'h2',
+    });
+    const customer = makeCustomer();
+
+    render(
+      <CompanionDialog
+        open={true}
+        onOpenChange={() => {}}
+        order={order}
+        customer={customer}
+        helpers={helpers}
+        onSetCompanion={() => {}}
+        onRemoveCompanion={() => {}}
+      />,
+    );
+
+    const section = screen.getByTestId('teaching-staff');
+    // h1（山田）は教える方として表示される
+    expect(section).toHaveTextContent('山田 太郎');
+    // h2（鈴木）は同行者なので教える方には含まれない
+    expect(section).not.toHaveTextContent('鈴木 花子');
+  });
+
   it('openがfalseのとき描画されない', () => {
     render(
       <CompanionDialog

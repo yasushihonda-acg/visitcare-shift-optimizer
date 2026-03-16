@@ -80,6 +80,11 @@ export function checkConstraints(input: CheckInput): ViolationMap {
       const helper = input.helpers.get(staffId);
       if (!helper) continue;
 
+      const isCompanion = staffId === order.companion_staff_id;
+      const staffLabel = isCompanion
+        ? `${helper.name.family}（同行）`
+        : helper.name.family;
+
       // NGスタッフ
       if (customer?.ng_staff_ids?.includes(staffId)) {
         addViolation({
@@ -87,7 +92,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
           staffId,
           type: 'ng_staff',
           severity: 'error',
-          message: `NGスタッフ ${helper.name.family} が割当済み`,
+          message: `NGスタッフ ${staffLabel} が割当済み`,
         });
       }
 
@@ -114,7 +119,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
             staffId,
             type: 'training',
             severity: 'warning',
-            message: `${helper.name.family} は未訪問（複数人体制のため同行可能）`,
+            message: `${staffLabel} は未訪問（複数人体制のため同行可能）`,
           });
         } else {
           addViolation({
@@ -122,7 +127,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
             staffId,
             type: 'training',
             severity: 'error',
-            message: `${helper.name.family} は未訪問（研修未開始）`,
+            message: `${staffLabel} は未訪問（研修未開始）`,
           });
         }
       } else if (trainingStatus === 'training') {
@@ -131,7 +136,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
           staffId,
           type: 'training',
           severity: 'warning',
-          message: `${helper.name.family} は研修中（同行必要）`,
+          message: `${staffLabel} は研修中（同行必要）`,
         });
       }
 
@@ -142,7 +147,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
           staffId,
           type: 'preferred_staff',
           severity: 'warning',
-          message: `${helper.name.family} は推奨スタッフ外`,
+          message: `${staffLabel} は推奨スタッフ外`,
         });
       }
 
@@ -155,7 +160,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
           staffId,
           type: 'qualification',
           severity: 'error',
-          message: `${helper.name.family} は身体介護の資格なし`,
+          message: `${staffLabel} は身体介護の資格なし`,
         });
       }
 
@@ -169,7 +174,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
             staffId,
             type: 'outside_hours',
             severity: 'warning',
-            message: `${helper.name.family} の勤務時間外`,
+            message: `${staffLabel} の勤務時間外`,
           });
         } else {
           const withinAny = availability.some(
@@ -181,7 +186,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
               staffId,
               type: 'outside_hours',
               severity: 'warning',
-              message: `${helper.name.family} の勤務時間外`,
+              message: `${staffLabel} の勤務時間外`,
             });
           }
         }
@@ -198,7 +203,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
               staffId,
               type: 'unavailability',
               severity: 'error',
-              message: `${helper.name.family} は希望休（終日）`,
+              message: `${staffLabel} は希望休（終日）`,
             });
           } else if (
             slot.start_time && slot.end_time &&
@@ -209,7 +214,7 @@ export function checkConstraints(input: CheckInput): ViolationMap {
               staffId,
               type: 'unavailability',
               severity: 'error',
-              message: `${helper.name.family} は希望休（${slot.start_time}-${slot.end_time}）`,
+              message: `${staffLabel} は希望休（${slot.start_time}-${slot.end_time}）`,
             });
           }
         }
