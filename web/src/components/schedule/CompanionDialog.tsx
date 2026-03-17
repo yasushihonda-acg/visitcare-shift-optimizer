@@ -15,18 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { getCompanionCandidates } from '@/lib/companion/filter';
 import type { Order, Customer, Helper, TrainingStatus, StaffUnavailability, DayOfWeek } from '@/types';
-
-const TRAINING_STATUS_LABELS: Record<TrainingStatus, string> = {
-  not_visited: '未訪問',
-  training: '同行研修中',
-  independent: '自立',
-};
-
-const TRAINING_STATUS_VARIANT: Record<TrainingStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  not_visited: 'outline',
-  training: 'destructive',
-  independent: 'secondary',
-};
+import { TRAINING_STATUS_LABELS, TRAINING_STATUS_VARIANT } from '@/lib/labels/training-status';
 
 interface CompanionDialogProps {
   open: boolean;

@@ -82,7 +82,7 @@ describe('StaffMultiSelect', () => {
         preferred_staff_ids: ['h2'],
       });
       render(
-        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} customerId="cust-1" />
+        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} />
       );
       fireEvent.click(screen.getByRole('button', { name: /選択/ }));
 
@@ -104,7 +104,7 @@ describe('StaffMultiSelect', () => {
         allowed_staff_ids: ['h1', 'h2'],
       });
       render(
-        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} customerId="cust-1" />
+        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} />
       );
       fireEvent.click(screen.getByRole('button', { name: /選択/ }));
 
@@ -124,7 +124,7 @@ describe('StaffMultiSelect', () => {
         ng_staff_ids: ['h2'],
       });
       render(
-        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} customerId="cust-1" />
+        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} />
       );
       fireEvent.click(screen.getByRole('button', { name: /選択/ }));
 
@@ -143,7 +143,7 @@ describe('StaffMultiSelect', () => {
         gender_requirement: 'female',
       });
       render(
-        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} customerId="cust-1" />
+        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} />
       );
       fireEvent.click(screen.getByRole('button', { name: /選択/ }));
 
@@ -159,7 +159,7 @@ describe('StaffMultiSelect', () => {
         gender_requirement: 'female',
       });
       render(
-        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} customerId="cust-1" />
+        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} />
       );
       fireEvent.click(screen.getByRole('button', { name: /選択/ }));
 
@@ -174,7 +174,7 @@ describe('StaffMultiSelect', () => {
         gender_requirement: 'any',
       });
       render(
-        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} customerId="cust-1" />
+        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} />
       );
       fireEvent.click(screen.getByRole('button', { name: /選択/ }));
 
@@ -192,7 +192,7 @@ describe('StaffMultiSelect', () => {
       );
       const customer = makeCustomer();
       render(
-        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} customerId="cust-1" />
+        <StaffMultiSelect {...defaultProps} helpers={helpers} customer={customer} />
       );
       fireEvent.click(screen.getByRole('button', { name: /選択/ }));
 

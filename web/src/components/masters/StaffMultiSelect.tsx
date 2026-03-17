@@ -15,21 +15,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { Helper, Customer, TrainingStatus } from '@/types';
+import type { Helper, Customer, TrainingStatus, GenderRequirement } from '@/types';
+import { TRAINING_STATUS_LABELS, TRAINING_STATUS_VARIANT } from '@/lib/labels/training-status';
 
-const TRAINING_STATUS_LABELS: Record<TrainingStatus, string> = {
-  not_visited: '未訪問',
-  training: '同行研修中',
-  independent: '自立',
-};
-
-const TRAINING_STATUS_VARIANT: Record<TrainingStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  not_visited: 'outline',
-  training: 'destructive',
-  independent: 'secondary',
-};
-
-const GENDER_LABELS: Record<string, string> = {
+const GENDER_LABELS: Record<Exclude<GenderRequirement, 'any'>, string> = {
   female: '女性専用',
   male: '男性専用',
 };
@@ -50,10 +39,8 @@ interface StaffMultiSelectProps {
   excludeIds?: string[];
   /** true のとき、選択ボタンとダイアログのみ描画（Badge一覧を非表示にする） */
   triggerOnly?: boolean;
-  /** グループ分け・性別フィルタ用 */
+  /** グループ分け・性別フィルタ・訪問実績表示用 */
   customer?: Customer;
-  /** 訪問実績表示用 */
-  customerId?: string;
 }
 
 export function StaffMultiSelect({
@@ -64,7 +51,6 @@ export function StaffMultiSelect({
   excludeIds = [],
   triggerOnly = false,
   customer,
-  customerId,
 }: StaffMultiSelectProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -162,8 +148,8 @@ export function StaffMultiSelect({
     : null;
 
   const renderStaffRow = (h: Helper) => {
-    const training = customerId
-      ? (h.customer_training_status?.[customerId] as TrainingStatus | undefined) ?? null
+    const training = customer
+      ? (h.customer_training_status?.[customer.id] as TrainingStatus | undefined) ?? null
       : null;
     return (
       <label
@@ -190,29 +176,20 @@ export function StaffMultiSelect({
   };
 
   const renderStaffList = () => {
-    if (groupedHelpers) {
-      return (
-        <>
-          {groupedHelpers.map(({ group, label: groupLabel, items }) => (
-            <div key={group}>
-              <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {groupLabel}
-              </div>
-              {items.map(renderStaffRow)}
+    const items = groupedHelpers
+      ? groupedHelpers.map(({ group, label: groupLabel, items: groupItems }) => (
+          <div key={group}>
+            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              {groupLabel}
             </div>
-          ))}
-          {filteredHelpers.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground py-4">
-              該当なし
-            </p>
-          )}
-        </>
-      );
-    }
+            {groupItems.map(renderStaffRow)}
+          </div>
+        ))
+      : filteredHelpers.map(renderStaffRow);
 
     return (
       <>
-        {filteredHelpers.map(renderStaffRow)}
+        {items}
         {filteredHelpers.length === 0 && (
           <p className="text-center text-sm text-muted-foreground py-4">
             該当なし
