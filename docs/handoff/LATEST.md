@@ -194,16 +194,17 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 
 ## 次のアクション（優先度順）
 
-1. **本番Firestoreへのサービス種別再投入**: `cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts`（PR #253対応、105種全復元）
-2. **allowed_staff_ids の本番運用確認**: 意図しない Infeasible が発生しないか確認。必要なら `seed/scripts/rollback-allowed-staff.ts` でロールバック
-3. **E2Eテスト拡充**（任意）:
+1. ~~**本番Firestoreへのサービス種別再投入**~~: ✅ 確認済み（105件投入済み、2026-03-17確認）
+2. **allowed_staff_ids の本番運用確認**: 次回最適化実行時に Infeasible が発生しないか確認。必要なら `seed/scripts/rollback-allowed-staff.ts` でロールバック
+3. **技術負債**: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション) — 全てP2 refactor
+4. **E2Eテスト拡充**（任意）:
    - 基本予定一覧詳細シート（行クリック詳細シート）E2E
    - 変更確認チェックボタン（アンバーリング→緑確認ボタン→解除）E2E
-4. **次フェーズ方針決定**: Phase 6（モバイル対応・PWA化・オフライン対応）等を検討
+5. **次フェーズ方針決定**: Phase 6（モバイル対応・PWA化・オフライン対応）等を検討
 
 ## GitHub Issuesサマリー
 
-- **オープンIssue**: 0件
+- **オープンIssue**: 3件（#270, #271, #272 — 全てP2 refactor）
 - **クローズ済み（直近）**: #279（割当スタッフUI改善）、#277（CompanionDialog性別フィルタ）、#276（同行候補から希望休・勤務時間外除外）、#274（CompanionDialog「教える方」表示）、#273（/simplify品質ゲート）、#269（同行OJT機能）
 
 ## 参考資料（ローカルExcel）
