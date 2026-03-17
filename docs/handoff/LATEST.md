@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-17（PR #277 同行候補に性別制限フィルタ追加 マージ済み）
+**最終更新**: 2026-03-17（PR #279 割当スタッフ選択UIにグループ分け・性別フィルタ・訪問実績バッジを追加 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -53,6 +53,11 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-03-17）
+
+- **feat (#279, 2026-03-17)** ✅: 割当スタッフ選択UIにグループ分け・性別フィルタ・訪問実績バッジを追加
+  - StaffMultiSelect に「担当経験あり」「その他」グループ分けを実装
+  - `customer.gender_requirement` に基づく性別フィルタをStaffMultiSelectにも適用
+  - 過去訪問実績がある（または現在担当中の）スタッフにバッジ表示
 
 - **fix (#277, 2026-03-17)** ✅: 同行スタッフ候補リストに性別制限フィルタを追加
   - `customer.gender_requirement` に基づき CompanionDialog の候補一覧をフィルタ
@@ -149,7 +154,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
 - **Firestore Rules**: **114件** pass ✅（PR #255でcancelled→pending許可テスト追加）
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #267 main push CI SUCCESS（最新）
+- **CI/CD**: PR #279 main push CI SUCCESS（7m21s、最新）
 
 ## 重要なドキュメント
 
@@ -199,7 +204,7 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 ## GitHub Issuesサマリー
 
 - **オープンIssue**: 0件
-- **クローズ済み（直近）**: #267（1色統一・アンダーライン太く）、#266（隣接限定）、#265（偽陽性修正）、#264（偽陽性issue）、#263（同一住所インジケーター）、#260（同一住所issue）
+- **クローズ済み（直近）**: #279（割当スタッフUI改善）、#277（CompanionDialog性別フィルタ）、#276（同行候補から希望休・勤務時間外除外）、#274（CompanionDialog「教える方」表示）、#273（/simplify品質ゲート）、#269（同行OJT機能）
 
 ## 参考資料（ローカルExcel）
 
