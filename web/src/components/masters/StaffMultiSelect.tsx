@@ -84,7 +84,8 @@ export function StaffMultiSelect({
 
     // customer指定時: NGスタッフ除外 + 性別フィルタ
     if (customer) {
-      list = list.filter((h) => !customer.ng_staff_ids.includes(h.id));
+      const ngIds = customer.ng_staff_ids ?? [];
+      list = list.filter((h) => !ngIds.includes(h.id));
       const gr = customer.gender_requirement;
       if (gr && gr !== 'any') {
         list = list.filter((h) => h.gender === gr);
@@ -108,8 +109,10 @@ export function StaffMultiSelect({
     if (!customer) return null;
 
     const groups: { group: StaffGroup; label: string; items: Helper[] }[] = [];
-    const preferred = filteredHelpers.filter((h) => customer.preferred_staff_ids.includes(h.id));
-    const hasAllowed = customer.allowed_staff_ids.length > 0;
+    const preferredIds = customer.preferred_staff_ids ?? [];
+    const allowedIds = customer.allowed_staff_ids ?? [];
+    const preferred = filteredHelpers.filter((h) => preferredIds.includes(h.id));
+    const hasAllowed = allowedIds.length > 0;
 
     const sortByName = (a: Helper, b: Helper) =>
       `${a.name.family}${a.name.given}`.localeCompare(`${b.name.family}${b.name.given}`, 'ja');
@@ -120,20 +123,20 @@ export function StaffMultiSelect({
 
     if (hasAllowed) {
       const allowed = filteredHelpers.filter(
-        (h) => customer.allowed_staff_ids.includes(h.id) && !customer.preferred_staff_ids.includes(h.id)
+        (h) => allowedIds.includes(h.id) && !preferredIds.includes(h.id)
       );
       if (allowed.length > 0) {
         groups.push({ group: 'allowed', label: GROUP_LABELS.allowed, items: allowed.sort(sortByName) });
       }
       const other = filteredHelpers.filter(
-        (h) => !customer.allowed_staff_ids.includes(h.id) && !customer.preferred_staff_ids.includes(h.id)
+        (h) => !allowedIds.includes(h.id) && !preferredIds.includes(h.id)
       );
       if (other.length > 0) {
         groups.push({ group: 'other', label: GROUP_LABELS.other, items: other.sort(sortByName) });
       }
     } else {
       const other = filteredHelpers.filter(
-        (h) => !customer.preferred_staff_ids.includes(h.id)
+        (h) => !preferredIds.includes(h.id)
       );
       if (other.length > 0) {
         groups.push({ group: 'other', label: GROUP_LABELS.other, items: other.sort(sortByName) });
