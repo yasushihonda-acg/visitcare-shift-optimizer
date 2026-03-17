@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-17（PR #276 同行スタッフ候補フィルタ修正 マージ済み）
+**最終更新**: 2026-03-17（PR #277 同行候補に性別制限フィルタ追加 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -53,6 +53,10 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
 ## 直近の実装（2026-03-17）
+
+- **fix (#277, 2026-03-17)** ✅: 同行スタッフ候補リストに性別制限フィルタを追加
+  - `customer.gender_requirement` に基づき CompanionDialog の候補一覧をフィルタ
+  - 性別制限がある利用者では条件を満たさないスタッフが選択肢に表示されなくなった
 
 - **fix (#276, 2026-03-17)** ✅: 同行スタッフ候補から希望休・勤務時間外のスタッフを除外
   - CompanionDialog の候補一覧から、当日希望休 or 勤務時間外のスタッフをフィルタ
