@@ -3,7 +3,7 @@ import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek } from '@/
 
 /**
  * 同行（OJT）候補ヘルパーを返す。
- * 除外: NG / 割当済み / (allowed非空時) allowed + preferred / 希望休 / 勤務時間外
+ * 除外: NG / 割当済み / (allowed非空時) allowed + preferred / 性別制限 / 希望休 / 勤務時間外
  */
 export function getCompanionCandidates(input: {
   order: Order;
@@ -26,8 +26,13 @@ export function getCompanionCandidates(input: {
     for (const id of customer.preferred_staff_ids) excludeIds.add(id);
   }
 
+  // 性別制限
+  const genderReq = customer.gender_requirement;
+  const hasGenderFilter = genderReq && genderReq !== 'any';
+
   const candidates = Array.from(helpers.values())
     .filter(h => !excludeIds.has(h.id))
+    .filter(h => !hasGenderFilter || h.gender === genderReq)
     .filter(h => !isUnavailable(h, order, unavailability))
     .filter(h => !isOutsideWorkingHours(h, order, day));
 

@@ -184,6 +184,68 @@ describe('getCompanionCandidates', () => {
     });
   });
 
+  describe('性別制限による除外', () => {
+    it('gender_requirement=female → 男性スタッフを除外する', () => {
+      const hMale = makeHelper('h2', '鈴木', { gender: 'male' });
+      const hFemale = makeHelper('h3', '佐藤', { gender: 'female' });
+      const helpersGender = new Map<string, Helper>([
+        ['h1', h1],
+        ['h2', hMale],
+        ['h3', hFemale],
+      ]);
+      const order = makeOrder({ assigned_staff_ids: ['h1'] });
+      const customer = makeCustomer({ gender_requirement: 'female' });
+
+      const result = getCompanionCandidates({ order, customer, helpers: helpersGender });
+
+      expect(result.map(h => h.id)).not.toContain('h2');
+      expect(result.map(h => h.id)).toContain('h3');
+    });
+
+    it('gender_requirement=male → 女性スタッフを除外する', () => {
+      const hMale = makeHelper('h2', '鈴木', { gender: 'male' });
+      const hFemale = makeHelper('h3', '佐藤', { gender: 'female' });
+      const helpersGender = new Map<string, Helper>([
+        ['h1', h1],
+        ['h2', hMale],
+        ['h3', hFemale],
+      ]);
+      const order = makeOrder({ assigned_staff_ids: ['h1'] });
+      const customer = makeCustomer({ gender_requirement: 'male' });
+
+      const result = getCompanionCandidates({ order, customer, helpers: helpersGender });
+
+      expect(result.map(h => h.id)).toContain('h2');
+      expect(result.map(h => h.id)).not.toContain('h3');
+    });
+
+    it('gender_requirement=any → 性別フィルタなし', () => {
+      const hMale = makeHelper('h2', '鈴木', { gender: 'male' });
+      const hFemale = makeHelper('h3', '佐藤', { gender: 'female' });
+      const helpersGender = new Map<string, Helper>([
+        ['h1', h1],
+        ['h2', hMale],
+        ['h3', hFemale],
+      ]);
+      const order = makeOrder({ assigned_staff_ids: ['h1'] });
+      const customer = makeCustomer({ gender_requirement: 'any' });
+
+      const result = getCompanionCandidates({ order, customer, helpers: helpersGender });
+
+      expect(result.map(h => h.id)).toContain('h2');
+      expect(result.map(h => h.id)).toContain('h3');
+    });
+
+    it('gender_requirement未設定 → 性別フィルタなし', () => {
+      const order = makeOrder({ assigned_staff_ids: ['h1'] });
+      const customer = makeCustomer();
+
+      const result = getCompanionCandidates({ order, customer, helpers });
+
+      expect(result).toHaveLength(3);
+    });
+  });
+
   describe('勤務時間外による除外', () => {
     it('該当曜日に勤務時間がないスタッフを除外する', () => {
       const h2WithAvail = makeHelper('h2', '鈴木', {

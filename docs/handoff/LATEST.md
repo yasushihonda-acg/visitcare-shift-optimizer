@@ -1,6 +1,6 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-16（PR #273 /simplify品質ゲート対応 マージ済み）
+**最終更新**: 2026-03-17（PR #276 同行スタッフ候補フィルタ修正 マージ済み）
 **現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
 
 ## 完了済みフェーズ
@@ -52,7 +52,15 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-03-16）
+## 直近の実装（2026-03-17）
+
+- **fix (#276, 2026-03-17)** ✅: 同行スタッフ候補から希望休・勤務時間外のスタッフを除外
+  - CompanionDialog の候補一覧から、当日希望休 or 勤務時間外のスタッフをフィルタ
+  - 不適切な同行者が誤って選択されるリスクを解消
+
+- **fix (#274, 2026-03-16)** ✅: CompanionDialogに「教える方」表示追加 & 制約違反に「（同行）」付与
+  - CompanionDialog で選択済みの同行者に「教える方」ラベルを表示
+  - 最適化結果の制約違反メッセージに「（同行）」を付与して識別しやすく改善
 
 - **refactor (#273, 2026-03-16)** ✅: /simplify品質ゲート対応（-53行コード削減）
   - commands.ts 3関数→共通ファクトリ統合、同行計算ロジックをuseOrderEditに吸収
@@ -131,7 +139,7 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - Frontend: NotifyConfirmDialog, NotifyChangesButton, 通知設定ページ, Header通知メニュー 削除
   - 維持: `chat_sender.py`, `/notify/chat-reminder`, `ChatReminderDialog.tsx`
 
-## 最新テスト結果サマリー（2026-03-12）
+## 最新テスト結果サマリー（2026-03-17）
 
 - **Optimizer**: 297件 pass ✅
 - **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
