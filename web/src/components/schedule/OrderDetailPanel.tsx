@@ -219,6 +219,7 @@ export function OrderDetailPanel({
                   }}
                   helpers={helpers}
                   excludeIds={order.companion_staff_id ? [order.companion_staff_id] : undefined}
+                  customer={customer}
                 />
               </div>
             ) : assignedHelpers.length > 0 ? (
