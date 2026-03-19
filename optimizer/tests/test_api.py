@@ -990,3 +990,76 @@ class TestApplyIrregularPatternsLogic:
 
         assert result.cancelled_count == 0
         assert len(result.excluded_customers) == 0
+
+
+class TestOrderChangeNotifyEndpoint:
+    """POST /notify/order-change のテスト"""
+
+    @patch("optimizer.api.routes.send_chat_dms")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_successful_notify(
+        self,
+        mock_get_db: MagicMock,
+        mock_send: MagicMock,
+    ) -> None:
+        db = MagicMock()
+        mock_get_db.return_value = db
+
+        # ヘルパードキュメントモック
+        helper_doc = MagicMock()
+        helper_doc.exists = True
+        helper_doc.to_dict.return_value = {"email": "h003@example.com"}
+        db.collection.return_value.document.return_value.get.return_value = helper_doc
+
+        mock_send.return_value = (1, [{"email": "h003@example.com", "success": True}])
+
+        response = client.post(
+            "/notify/order-change",
+            json={
+                "order_id": "ORD001",
+                "change_type": "reassigned",
+                "affected_staff_ids": ["H003"],
+                "customer_name": "田中 太郎",
+                "date": "2026-02-11",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["messages_sent"] == 1
+        assert data["total_targets"] == 1
+        assert data["results"][0]["success"] is True
+
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_no_email_returns_zero_sent(
+        self,
+        mock_get_db: MagicMock,
+    ) -> None:
+        db = MagicMock()
+        mock_get_db.return_value = db
+
+        # ヘルパーにemailがない
+        helper_doc = MagicMock()
+        helper_doc.exists = True
+        helper_doc.to_dict.return_value = {}
+        db.collection.return_value.document.return_value.get.return_value = helper_doc
+
+        response = client.post(
+            "/notify/order-change",
+            json={
+                "order_id": "ORD001",
+                "change_type": "cancelled",
+                "affected_staff_ids": ["H003"],
+                "customer_name": "田中 太郎",
+                "date": "2026-02-11",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["messages_sent"] == 0
+
+    def test_missing_required_fields_returns_422(self) -> None:
+        response = client.post(
+            "/notify/order-change",
+            json={"order_id": "ORD001"},
+        )
+        assert response.status_code == 422

@@ -315,3 +315,41 @@ class IrregularPatternExclusion(BaseModel):
 class ApplyIrregularPatternsResponse(BaseModel):
     cancelled_count: int = Field(description="除外（キャンセル）したオーダー数")
     excluded_customers: list[IrregularPatternExclusion] = Field(description="除外された利用者リスト")
+
+
+# ---------------------------------------------------------------------------
+# オーダー変更通知
+# ---------------------------------------------------------------------------
+
+
+class OrderChangeNotifyRequest(BaseModel):
+    order_id: str = Field(..., description="変更対象のオーダーID")
+    change_type: str = Field(
+        ...,
+        description="変更種別: reassigned / time_changed / cancelled",
+    )
+    affected_staff_ids: list[str] = Field(
+        ..., min_length=1, description="通知対象のスタッフIDリスト",
+    )
+    customer_name: str = Field(..., description="利用者名（通知メッセージ用）")
+    date: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="オーダー日付 YYYY-MM-DD",
+    )
+    message: str | None = Field(
+        default=None,
+        description="カスタムメッセージ（省略時はデフォルトテンプレート使用）",
+    )
+
+
+class OrderChangeNotifyResultItem(BaseModel):
+    staff_id: str
+    email: str
+    success: bool
+
+
+class OrderChangeNotifyResponse(BaseModel):
+    messages_sent: int = Field(description="送信成功件数")
+    total_targets: int = Field(description="送信対象件数")
+    results: list[OrderChangeNotifyResultItem]

@@ -455,3 +455,42 @@ export async function applyIrregularPatterns(params: {
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// オーダー変更通知
+// ---------------------------------------------------------------------------
+
+export interface OrderChangeNotifyResultItem {
+  staff_id: string;
+  email: string;
+  success: boolean;
+}
+
+export interface OrderChangeNotifyResponse {
+  messages_sent: number;
+  total_targets: number;
+  results: OrderChangeNotifyResultItem[];
+}
+
+export async function notifyOrderChange(params: {
+  order_id: string;
+  change_type: string;
+  affected_staff_ids: string[];
+  customer_name: string;
+  date: string;
+  message?: string;
+}): Promise<OrderChangeNotifyResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/notify/order-change`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}
