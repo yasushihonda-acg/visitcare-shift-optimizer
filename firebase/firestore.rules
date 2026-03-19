@@ -124,7 +124,10 @@ service cloud.firestore {
 
     function isValidSettings() {
       let data = request.resource.data;
-      return data.sender_email is string;
+      // settings/notification: sender_email必須
+      // settings/cura_import: spreadsheet_id必須
+      return (data.keys().hasAny(['sender_email']) && data.sender_email is string)
+          || (data.keys().hasAny(['spreadsheet_id']) && data.spreadsheet_id is string);
     }
 
     // ── コレクションルール ──────────────────────────

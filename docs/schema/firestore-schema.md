@@ -192,6 +192,13 @@ cancelled → pending（キャンセル取消・復元）
 | sender_email | string | Yes | メール通知の送信元アドレス |
 | updated_at | Timestamp | Yes | 更新日時 |
 
+### settings/cura_import
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| spreadsheet_id | string | Yes | CURAノートのスプレッドシートID |
+| updated_at | Timestamp | Yes | 更新日時 |
+
 ### セキュリティルール
 
 - read: 認証済みユーザー全員
