@@ -51,11 +51,15 @@ export function NoteImportButton({ onComplete }: NoteImportButtonProps) {
 
   // 初回マウント時にFirestoreから設定を読み込み
   useEffect(() => {
-    getCuraImportSettings().then((s) => {
-      if (s?.spreadsheet_id) {
-        setSavedSpreadsheetId(s.spreadsheet_id);
-      }
-    });
+    getCuraImportSettings()
+      .then((s) => {
+        if (s?.spreadsheet_id) {
+          setSavedSpreadsheetId(s.spreadsheet_id);
+        }
+      })
+      .catch(() => {
+        // テスト環境やFirebase未初期化時は無視
+      });
   }, []);
 
   const fetchPreview = useCallback(
