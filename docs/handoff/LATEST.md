@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-20（Phase 6c完了 / Phase 6d待機中）
-**現在のフェーズ**: Phase 6b-6c完了、routes.py分割済み、Phase 6dはふせんスプレッドシート構造の提供待ち
+**最終更新**: 2026-03-20（技術負債解消完了 / Phase 6d待機中）
+**現在のフェーズ**: Phase 6b-6c完了、技術負債3件解消済み、Phase 6dはふせんスプレッドシート構造の提供待ち
 
 ## 完了済みフェーズ
 
@@ -56,10 +56,28 @@ optimizer/api/
 - `UnavailabilityApplyButton.tsx` — 休み反映ボタン
 - `DailyChecklist.tsx` — 翌日チェックリスト（ヘルパー別テーブル表示）
 
+## 直近の実装（2026-03-20 後半）
+
+### 技術負債解消（#310-#312）
+
+| PR | Issue | 内容 |
+|----|-------|------|
+| #310 | #270 | timeToMinutes を `web/src/utils/time.ts` に統合（7箇所→1箇所） |
+| #311 | #271 | ヘルパー/利用者名フォーマットを `web/src/utils/name.ts` に統合（40箇所→4関数） |
+| #312 | #272 | OptimizeButton の Firestore 二重サブスクリプション解消（props渡しに変更） |
+
+### 新規共通ユーティリティ
+
+```
+web/src/utils/
+├── time.ts    — timeToMinutes()
+└── name.ts    — formatFullName(), formatCompactName(), formatDisplayName(), formatFullNameKana()
+```
+
 ## 最新テスト結果サマリー（2026-03-20）
 
 - **Optimizer**: 372件 pass
-- **Web (Next.js)**: 1,076件 pass
+- **Web (Next.js)**: 1,086件 pass（+10件: time/nameユーティリティテスト追加）
 - **TypeScript型チェック**: tsc --noEmit PASS
 - **Firestore Rules**: 114件 pass
 
@@ -69,16 +87,12 @@ optimizer/api/
 2. **Phase 6d-1 (#299)**: ふせんスプレッドシート読み取り — **ユーザーからのシート構造情報が必要**
 3. **Phase 6d-2 (#300)**: ふせん差分適用 — 6d-1依存
 4. **email通知チャネル**: ADR-016 Gmail API DWD設定完了後に `POST /notify/next-day` の email channel を実装
-5. **技術負債**: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション) — 全てP2
-6. **#289**: service_typesマスタ追加 → #301で解決済み（Issueクローズ漏れ）
 
 ## GitHub Issuesサマリー
 
-- **オープンIssue**: 7件
+- **オープンIssue**: 3件
   - Phase 6d: #299, #300
   - Phase 6a本番テスト: #290
-  - service_types: #289（#301で解決済み、要クローズ）
-  - 技術負債: #270, #271, #272
 
 ## データアクセス方法
 
