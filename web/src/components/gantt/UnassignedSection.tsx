@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { PackageOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Order, Customer } from '@/types';
+import { formatDisplayName } from '@/utils/name';
 import type { DragData, DropZoneStatus } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
 import { useServiceTypes } from '@/hooks/useServiceTypes';
@@ -59,7 +60,7 @@ function UnassignedOrderItem({
 }) {
   const customer = customers.get(order.customer_id);
   const name = customer
-    ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
+    ? formatDisplayName(customer.name)
     : order.customer_id;
 
   const dragData: DragData = { orderId: order.id, sourceHelperId: null };

@@ -8,6 +8,7 @@ import { TOTAL_SLOTS, HELPER_NAME_WIDTH_PX, GANTT_START_HOUR, GANTT_END_HOUR, ca
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer, StaffUnavailability, DayOfWeek } from '@/types';
 import { getStaffCount } from '@/lib/dnd/staffCount';
+import { formatDisplayName } from '@/utils/name';
 import type { HelperScheduleRow } from '@/hooks/useScheduleData';
 import type { ViolationMap } from '@/lib/constraints/checker';
 import type { DropZoneStatus } from '@/lib/dnd/types';
@@ -60,7 +61,7 @@ const TOTAL_10MIN_INTERVALS = (GANTT_END_HOUR - GANTT_START_HOUR) * 6; // 14h ×
 export const GanttRow = memo(function GanttRow({ row, customers, violations, onOrderClick, dropZoneStatus = 'idle', index, unavailability, day, dayDate, activeOrder, previewTimes, dropMessage, onConfirmManualEdit, addressGroupMap }: GanttRowProps) {
   const slotWidth = useSlotWidth();
   const pxPer10Min = SLOTS_PER_10MIN * slotWidth;
-  const helperName = row.helper.name.short ?? `${row.helper.name.family}${row.helper.name.given}`;
+  const helperName = formatDisplayName(row.helper.name);
 
   const staffUnavailSlots = unavailability
     .filter((u) => u.staff_id === row.helper.id)
@@ -169,7 +170,7 @@ export const GanttRow = memo(function GanttRow({ row, customers, violations, onO
           const ghostColor = GHOST_COLORS[activeOrder.service_type] ?? GHOST_COLORS.physical_care;
           const customerName = customers.get(activeOrder.customer_id);
           const ghostLabel = customerName
-            ? (customerName.name.short ?? `${customerName.name.family}${customerName.name.given}`)
+            ? formatDisplayName(customerName.name)
             : '';
 
           // 10分単位（2スロット）にスナップ

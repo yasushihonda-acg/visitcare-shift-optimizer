@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatFullName } from '@/utils/name';
 import type { Customer } from '@/types';
 
 interface CustomerMultiSelectProps {
@@ -95,7 +96,7 @@ export function CustomerMultiSelect({
             const c = customers.get(id);
             return (
               <Badge key={id} variant="secondary" className="gap-1 pr-1">
-                {c ? `${c.name.family} ${c.name.given}` : id}
+                {c ? formatFullName(c.name) : id}
                 <button
                   type="button"
                   onClick={() => removeCustomer(id)}
@@ -139,7 +140,7 @@ export function CustomerMultiSelect({
                   onCheckedChange={() => toggleCustomer(c.id)}
                 />
                 <span className="text-sm">
-                  {c.name.family} {c.name.given}
+                  {formatFullName(c.name)}
                 </span>
                 <span className="text-xs text-muted-foreground ml-auto truncate max-w-[150px]">
                   {c.address}

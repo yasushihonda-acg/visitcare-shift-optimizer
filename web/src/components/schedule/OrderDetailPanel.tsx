@@ -15,6 +15,7 @@ import { StaffMultiSelect } from '@/components/masters/StaffMultiSelect';
 import { AssignmentDiffBadge } from '@/components/schedule/AssignmentDiffBadge';
 import { CompanionDialog } from '@/components/schedule/CompanionDialog';
 import { updateOrderStatus, isOrderStatus } from '@/lib/firestore/updateOrder';
+import { formatFullName } from '@/utils/name';
 import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek } from '@/types';
 import type { CompanionBeforeState } from '@/hooks/useOrderEdit';
 import type { Violation } from '@/lib/constraints/checker';
@@ -97,7 +98,7 @@ export function OrderDetailPanel({
   if (!order) return null;
 
   const customerName = customer
-    ? `${customer.name.family} ${customer.name.given}`
+    ? formatFullName(customer.name)
     : order.customer_id;
 
   const isFinalized = order.status === 'completed' || order.status === 'cancelled';
@@ -226,7 +227,7 @@ export function OrderDetailPanel({
               <ul className="space-y-1.5 pl-6">
                 {assignedHelpers.map((h) => (
                   <li key={h.id} className="flex items-center gap-2 text-sm">
-                    <span>{h.name.family} {h.name.given}</span>
+                    <span>{formatFullName(h.name)}</span>
                     {h.can_physical_care && (
                       <Badge variant="secondary" className="text-[10px] bg-[oklch(0.55_0.15_225)]/10 text-[oklch(0.45_0.15_225)]">身体可</Badge>
                     )}
@@ -242,7 +243,7 @@ export function OrderDetailPanel({
           {onCompanionChange && helpers && customer && !isFinalized && (() => {
             const companionHelper = order.companion_staff_id ? helpers.get(order.companion_staff_id) : undefined;
             const companionName = companionHelper
-              ? `${companionHelper.name.family} ${companionHelper.name.given}`
+              ? formatFullName(companionHelper.name)
               : order.companion_staff_id;
             const beforeState: CompanionBeforeState = {
               companion_staff_id: order.companion_staff_id,

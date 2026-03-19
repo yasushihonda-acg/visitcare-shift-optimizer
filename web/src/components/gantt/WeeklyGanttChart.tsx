@@ -5,6 +5,7 @@ import { addDays, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getServiceColor, GANTT_START_HOUR, GANTT_END_HOUR } from './constants';
 import { timeToMinutes } from '@/utils/time';
+import { formatDisplayName } from '@/utils/name';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 import type { DayOfWeek, Helper, Customer, Order, StaffUnavailability } from '@/types';
 import type { DaySchedule } from '@/hooks/useScheduleData';
@@ -72,7 +73,7 @@ function WeeklyMiniBar({ order, customer, dayColWidth, onDayClick }: WeeklyMiniB
 
   const colors = getServiceColor(order.service_type);
   const customerName = customer
-    ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
+    ? formatDisplayName(customer.name)
     : order.customer_id;
 
   return (
@@ -142,7 +143,7 @@ function WeeklyHelperRow({
   weekStart,
   onDayClick,
 }: WeeklyHelperRowProps) {
-  const helperName = helper.name.short ?? `${helper.name.family}${helper.name.given}`;
+  const helperName = formatDisplayName(helper.name);
 
   return (
     <div className="flex border-b" style={{ height: ROW_HEIGHT }}>

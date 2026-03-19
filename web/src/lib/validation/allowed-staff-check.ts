@@ -1,5 +1,6 @@
 import type { Customer, Helper, Order, StaffUnavailability, DayOfWeek } from '@/types';
 import { timeToMinutes } from '@/utils/time';
+import { formatDisplayName } from '@/utils/name';
 
 export interface AllowedStaffWarning {
   customer_id: string;
@@ -103,14 +104,14 @@ export function checkAllowedStaff(input: CheckAllowedStaffInput): AllowedStaffWa
     if (feasible.length === 0) {
       warnings.push({
         customer_id: customer.id,
-        customer_name: customer.name.short ?? `${customer.name.family}${customer.name.given}`,
+        customer_name: formatDisplayName(customer.name),
         order_id: order.id,
         date: order.date,
         day_of_week: dayOfWeek,
         start_time: order.start_time,
         end_time: order.end_time,
         allowed_helper_names: allowedHelpers.map(
-          (h) => h.name.short ?? `${h.name.family}${h.name.given}`,
+          (h) => formatDisplayName(h.name),
         ),
       });
     }

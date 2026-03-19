@@ -7,6 +7,7 @@ import { Check, Users, X } from 'lucide-react';
 import { timeToColumn, getServiceColor } from './constants';
 import { useSlotWidth } from './GanttScaleContext';
 import type { Order, Customer } from '@/types';
+import { formatDisplayName } from '@/utils/name';
 import type { DragData } from '@/lib/dnd/types';
 import { cn } from '@/lib/utils';
 import { ADDRESS_GROUP_COLOR } from '@/hooks/useAddressGroups';
@@ -50,7 +51,7 @@ export const GanttBar = memo(function GanttBar({ order, customer, hasViolation, 
 
   const colors = getServiceColor(order.service_type);
   const customerName = customer
-    ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
+    ? formatDisplayName(customer.name)
     : order.customer_id;
 
   const addressColor = addressGroupInfo ? ADDRESS_GROUP_COLOR : undefined;

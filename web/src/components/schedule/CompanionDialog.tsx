@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { getCompanionCandidates } from '@/lib/companion/filter';
+import { formatFullName } from '@/utils/name';
 import type { Order, Customer, Helper, TrainingStatus, StaffUnavailability, DayOfWeek } from '@/types';
 import { TRAINING_STATUS_LABELS, TRAINING_STATUS_VARIANT } from '@/lib/labels/training-status';
 
@@ -113,7 +114,7 @@ export function CompanionDialog({
             <div className="flex flex-wrap gap-1.5">
               {teachingStaff.map((h) => (
                 <Badge key={h.id} variant="secondary" className="text-xs">
-                  {h.name.family} {h.name.given}
+                  {formatFullName(h.name)}
                 </Badge>
               ))}
             </div>
@@ -126,7 +127,7 @@ export function CompanionDialog({
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">
-                現在の同行者: {currentCompanion.name.family} {currentCompanion.name.given}
+                現在の同行者: {formatFullName(currentCompanion.name)}
               </span>
             </div>
             <Button
@@ -174,7 +175,7 @@ export function CompanionDialog({
                   className="h-4 w-4 text-primary"
                 />
                 <span className="text-sm">
-                  {h.name.family} {h.name.given}
+                  {formatFullName(h.name)}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {h.qualifications.join(', ') || '-'}

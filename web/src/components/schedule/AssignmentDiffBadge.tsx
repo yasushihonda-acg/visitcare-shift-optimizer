@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import type { Helper } from '@/types';
 import type { AssignmentDiff } from '@/hooks/useAssignmentDiff';
+import { formatFullName } from '@/utils/name';
 
 interface AssignmentDiffBadgeProps {
   diff: AssignmentDiff;
@@ -11,7 +12,7 @@ interface AssignmentDiffBadgeProps {
 
 function staffName(id: string, helpers: Map<string, Helper>): string {
   const h = helpers.get(id);
-  return h ? `${h.name.family} ${h.name.given}` : id;
+  return h ? formatFullName(h.name) : id;
 }
 
 export function AssignmentDiffBadge({ diff, helpers }: AssignmentDiffBadgeProps) {

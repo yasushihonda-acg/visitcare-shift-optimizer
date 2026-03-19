@@ -34,6 +34,7 @@ import {
   updateStaffUnavailability,
   deleteStaffUnavailability,
 } from '@/lib/firestore/staff-unavailability';
+import { formatFullName } from '@/utils/name';
 import type { Helper, StaffUnavailability } from '@/types';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 
@@ -155,7 +156,7 @@ export function UnavailabilityEditDialog({
               <SelectContent>
                 {helperList.map((h) => (
                   <SelectItem key={h.id} value={h.id}>
-                    {h.name.family} {h.name.given}
+                    {formatFullName(h.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
