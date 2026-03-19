@@ -380,3 +380,35 @@ class DailyChecklistResponse(BaseModel):
     date: str
     total_orders: int = Field(description="対象オーダー数")
     staff_checklists: list[StaffChecklist]
+
+
+# ---------------------------------------------------------------------------
+# 翌日通知
+# ---------------------------------------------------------------------------
+
+
+class NextDayNotifyRequest(BaseModel):
+    date: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="通知対象日 YYYY-MM-DD",
+    )
+    channel: str = Field(
+        default="chat",
+        description="通知チャネル: chat / email（emailは未実装）",
+    )
+
+
+class NextDayNotifyResultItem(BaseModel):
+    staff_id: str
+    staff_name: str
+    email: str
+    success: bool
+    orders_count: int
+
+
+class NextDayNotifyResponse(BaseModel):
+    date: str
+    messages_sent: int = Field(description="送信成功件数")
+    total_targets: int = Field(description="送信対象件数")
+    results: list[NextDayNotifyResultItem]

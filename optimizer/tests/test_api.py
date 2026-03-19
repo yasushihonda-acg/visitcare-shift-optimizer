@@ -1154,3 +1154,104 @@ class TestDailyChecklistEndpoint:
     def test_invalid_date_returns_422(self) -> None:
         response = client.get("/checklist/next-day?date=bad-date")
         assert response.status_code == 422
+
+
+class TestNextDayNotifyEndpoint:
+    """POST /notify/next-day のテスト"""
+
+    @patch("optimizer.api.routes.send_chat_dm")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_successful_notify(
+        self,
+        mock_get_db: MagicMock,
+        mock_send_dm: MagicMock,
+    ) -> None:
+        from datetime import datetime, timezone, timedelta
+        JST = timezone(timedelta(hours=9))
+
+        db = MagicMock()
+        mock_get_db.return_value = db
+        mock_send_dm.return_value = True
+
+        # オーダー
+        order_doc = MagicMock()
+        order_doc.to_dict.return_value = {
+            "customer_id": "C001",
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "status": "assigned",
+            "assigned_staff_ids": ["H003"],
+        }
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([order_doc])
+
+        # ヘルパー
+        helper_doc = MagicMock()
+        helper_doc.exists = True
+        helper_doc.to_dict.return_value = {
+            "name": {"family": "佐藤", "given": "花子"},
+            "email": "h003@example.com",
+        }
+
+        # 利用者
+        customer_doc = MagicMock()
+        customer_doc.exists = True
+        customer_doc.to_dict.return_value = {
+            "name": {"family": "田中", "given": "太郎"},
+        }
+
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "orders":
+                return order_query
+            mock_col = MagicMock()
+            if name == "helpers":
+                mock_col.document.return_value.get.return_value = helper_doc
+            elif name == "customers":
+                mock_col.document.return_value.get.return_value = customer_doc
+            return mock_col
+
+        db.collection.side_effect = collection_side_effect
+
+        response = client.post(
+            "/notify/next-day",
+            json={"date": "2026-02-11"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["messages_sent"] == 1
+        assert data["total_targets"] == 1
+        assert data["results"][0]["staff_name"] == "佐藤 花子"
+        assert data["results"][0]["success"] is True
+        mock_send_dm.assert_called_once()
+
+    def test_email_channel_returns_422(self) -> None:
+        response = client.post(
+            "/notify/next-day",
+            json={"date": "2026-02-11", "channel": "email"},
+        )
+        assert response.status_code == 422
+        assert "未実装" in response.json()["detail"]
+
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_no_orders_returns_empty(
+        self,
+        mock_get_db: MagicMock,
+    ) -> None:
+        db = MagicMock()
+        mock_get_db.return_value = db
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([])
+        db.collection.return_value = order_query
+
+        response = client.post(
+            "/notify/next-day",
+            json={"date": "2026-02-11"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["messages_sent"] == 0
+        assert data["total_targets"] == 0
