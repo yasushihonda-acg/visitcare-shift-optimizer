@@ -261,3 +261,93 @@ export async function sendChatReminder(params: {
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// CURAノート インポート
+// ---------------------------------------------------------------------------
+
+export interface NoteImportTimeRange {
+  start: string;
+  end: string | null;
+}
+
+export interface NoteImportMatchedOrder {
+  order_id: string;
+  customer_id: string;
+  customer_name: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  service_type: string;
+  status: string;
+}
+
+export interface NoteImportAction {
+  post_id: string;
+  action_type: string;
+  status: string;
+  customer_name: string | null;
+  matched_customer_id: string | null;
+  matched_order: NoteImportMatchedOrder | null;
+  description: string;
+  raw_content: string;
+  date_from: string;
+  date_to: string;
+  time_range: NoteImportTimeRange | null;
+  new_time_range: NoteImportTimeRange | null;
+  confidence: number;
+}
+
+export interface NoteImportPreviewResponse {
+  spreadsheet_id: string;
+  total_notes: number;
+  actions: NoteImportAction[];
+  ready_count: number;
+  review_count: number;
+  unmatched_count: number;
+  skipped_count: number;
+}
+
+export interface NoteImportApplyResponse {
+  applied_count: number;
+  marked_count: number;
+  total_requested: number;
+}
+
+export async function importNotesPreview(
+  spreadsheetId: string,
+): Promise<NoteImportPreviewResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/import/notes`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ spreadsheet_id: spreadsheetId }),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}
+
+export async function importNotesApply(params: {
+  spreadsheet_id: string;
+  post_ids: string[];
+  mark_as_handled?: boolean;
+}): Promise<NoteImportApplyResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/import/notes/apply`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}

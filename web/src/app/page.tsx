@@ -10,6 +10,7 @@ import { useWelcomeDialog } from '@/components/onboarding/useWelcomeDialog';
 import { DayTabs } from '@/components/schedule/DayTabs';
 import { ViewModeToggle } from '@/components/schedule/ViewModeToggle';
 import { StatsBar } from '@/components/schedule/StatsBar';
+import { NoteImportButton } from '@/components/schedule/NoteImportButton';
 import { OptimizeButton } from '@/components/schedule/OptimizeButton';
 import { ResetButton } from '@/components/schedule/ResetButton';
 import { BulkCompleteButton } from '@/components/schedule/BulkCompleteButton';
@@ -232,6 +233,7 @@ function SchedulePage() {
             onRedo={redo}
           />
           {viewMode === 'day' && <BulkCompleteButton schedule={schedule} />}
+          <NoteImportButton />
           <ResetButton onHistoryClear={clearHistory} />
           <OptimizeButton onHistoryClear={clearHistory} onComplete={handleOptimizeComplete} />
         </div>
