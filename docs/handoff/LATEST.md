@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-17（PR #279 割当スタッフ選択UIにグループ分け・性別フィルタ・訪問実績バッジを追加 マージ済み）
-**現在のフェーズ**: Phase 0-5b 完了 → 実績確認・月次レポート・Google Sheetsエクスポート（本番動作確認済み）
+**最終更新**: 2026-03-19（Phase 6a: CURAノート取込・基本シフト反映自動化 実装中）
+**現在のフェーズ**: Phase 6a 実装中（ノート取込→差分検出→プレビュー→Firestore反映）
 
 ## 完了済みフェーズ
 
@@ -52,7 +52,19 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 - 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
 
-## 直近の実装（2026-03-17）
+## 直近の実装（2026-03-19）
+
+- **feat (Phase 6a, 2026-03-19)**: CURAノート取込・基本シフト反映自動化
+  - CURAノートスプレッドシート読み取り（Google Sheets API）: `sheets_reader.py`
+  - 自由テキスト解析（正規表現ベース）: `note_parser.py` — 利用者名・時刻・アクション種別を抽出
+  - 差分検出・Firestoreオーダーマッチング: `note_diff.py`
+  - APIエンドポイント: `POST /import/notes`（プレビュー）、`POST /import/notes/apply`（適用）
+  - フロントエンドUI: `NoteImportButton.tsx`（スプレッドシート入力）、`NoteImportPreview.tsx`（プレビューダイアログ）
+  - テスト: 35件追加（note_parser 22件 + note_diff 13件）全PASS
+  - ADR-017、マッピング定義 `docs/schema/cura-note-mapping.md`
+  - GitHub Issues: #280-#284
+
+## 過去の実装（2026-03-17）
 
 - **feat (#279, 2026-03-17)** ✅: 割当スタッフ選択UIにグループ分け・性別フィルタ・訪問実績バッジを追加
   - StaffMultiSelect に「担当経験あり」「その他」グループ分けを実装
@@ -148,13 +160,15 @@ cd optimizer && .venv/bin/pytest tests/ -v  # pytest
   - Frontend: NotifyConfirmDialog, NotifyChangesButton, 通知設定ページ, Header通知メニュー 削除
   - 維持: `chat_sender.py`, `/notify/chat-reminder`, `ChatReminderDialog.tsx`
 
-## 最新テスト結果サマリー（2026-03-17）
+## 最新テスト結果サマリー（2026-03-19）
 
-- **Optimizer**: 297件 pass ✅
-- **Web (Next.js)**: **986件以上** pass ✅（PR #255/256でVitest累計増加）
-- **Firestore Rules**: **114件** pass ✅（PR #255でcancelled→pending許可テスト追加）
+- **Optimizer**: 332件 pass ✅（+35件: note_parser/note_diff テスト追加）
+- **Web (Next.js)**: **986件以上** pass ✅
+- **TypeScript型チェック**: tsc --noEmit PASS ✅
+- **Python mypy**: Success, no issues ✅
+- **ESLint**: PASS ✅
+- **Firestore Rules**: **114件** pass ✅
 - **E2E Tests (Playwright)**: **73テスト以上** pass ✅
-- **CI/CD**: PR #279 main push CI SUCCESS（7m21s、最新）
 
 ## 重要なドキュメント
 
@@ -194,18 +208,18 @@ cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-
 
 ## 次のアクション（優先度順）
 
-1. ~~**本番Firestoreへのサービス種別再投入**~~: ✅ 確認済み（105件投入済み、2026-03-17確認）
-2. **allowed_staff_ids の本番運用確認**: 次回最適化実行時に Infeasible が発生しないか確認。必要なら `seed/scripts/rollback-allowed-staff.ts` でロールバック
-3. **技術負債**: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション) — 全てP2 refactor
-4. **E2Eテスト拡充**（任意）:
-   - 基本予定一覧詳細シート（行クリック詳細シート）E2E
-   - 変更確認チェックボタン（アンバーリング→緑確認ボタン→解除）E2E
-5. **次フェーズ方針決定**: Phase 6（モバイル対応・PWA化・オフライン対応）等を検討
+1. **Phase 6a 本番テスト**: ノート取込を本番環境で検証（少量データ）
+2. **Phase 6b**: 当週シフト作成プロセスの効率化（基本シフト→当週シフト一括複製、休み希望自動反映）
+3. **Phase 6c**: 当日対応の効率化（変更通知自動送信、夜間チェックリスト生成）
+4. **Phase 6d**: ふせん取込・自動作成後反映
+5. **技術負債**: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション) — 全てP2 refactor
 
 ## GitHub Issuesサマリー
 
-- **オープンIssue**: 3件（#270, #271, #272 — 全てP2 refactor）
-- **クローズ済み（直近）**: #279（割当スタッフUI改善）、#277（CompanionDialog性別フィルタ）、#276（同行候補から希望休・勤務時間外除外）、#274（CompanionDialog「教える方」表示）、#273（/simplify品質ゲート）、#269（同行OJT機能）
+- **オープンIssue**: 8件
+  - Phase 6a: #280（マッピング定義）、#281（sheets_reader）、#282（note_diff）、#283（API+UI）、#284（テスト検証）
+  - 技術負債: #270, #271, #272 — 全てP2 refactor
+- **クローズ済み（直近）**: #279（割当スタッフUI改善）、#277（CompanionDialog性別フィルタ）
 
 ## 参考資料（ローカルExcel）
 

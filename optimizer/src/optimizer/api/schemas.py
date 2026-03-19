@@ -157,3 +157,76 @@ class ChatReminderResponse(BaseModel):
     messages_sent: int = Field(description="送信成功件数")
     total_targets: int = Field(description="送信対象件数")
     results: list[ChatReminderResultItem]
+
+
+# ---------------------------------------------------------------------------
+# CURAノート インポート
+# ---------------------------------------------------------------------------
+
+
+class NoteImportRequest(BaseModel):
+    spreadsheet_id: str = Field(
+        ...,
+        description="CURAノートのスプレッドシートID",
+    )
+
+
+class NoteImportTimeRange(BaseModel):
+    start: str = Field(description="開始時刻 HH:MM")
+    end: str | None = Field(default=None, description="終了時刻 HH:MM")
+
+
+class NoteImportMatchedOrder(BaseModel):
+    order_id: str
+    customer_id: str
+    customer_name: str
+    date: str
+    start_time: str
+    end_time: str
+    service_type: str
+    status: str
+
+
+class NoteImportActionResponse(BaseModel):
+    post_id: str
+    action_type: str = Field(description="cancel/update_time/add_visit/add_meeting/add/staff_unavailability/unknown")
+    status: str = Field(description="ready/needs_review/unmatched/skipped")
+    customer_name: str | None = None
+    matched_customer_id: str | None = None
+    matched_order: NoteImportMatchedOrder | None = None
+    description: str
+    raw_content: str
+    date_from: str
+    date_to: str = ""
+    time_range: NoteImportTimeRange | None = None
+    new_time_range: NoteImportTimeRange | None = None
+    confidence: float = 1.0
+
+
+class NoteImportPreviewResponse(BaseModel):
+    spreadsheet_id: str
+    total_notes: int = Field(description="読み取ったノート数")
+    actions: list[NoteImportActionResponse]
+    ready_count: int = Field(description="自動適用可能な件数")
+    review_count: int = Field(description="要確認の件数")
+    unmatched_count: int = Field(description="未マッチの件数")
+    skipped_count: int = Field(description="スキップの件数")
+
+
+class NoteImportApplyRequest(BaseModel):
+    spreadsheet_id: str = Field(description="スプレッドシートID")
+    post_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        description="適用するノートの投稿IDリスト",
+    )
+    mark_as_handled: bool = Field(
+        default=True,
+        description="適用後にスプレッドシートの対応可否を1に更新するか",
+    )
+
+
+class NoteImportApplyResponse(BaseModel):
+    applied_count: int = Field(description="Firestoreに反映したアクション数")
+    marked_count: int = Field(description="スプレッドシートで対応済みにした行数")
+    total_requested: int = Field(description="リクエストされたアクション数")
