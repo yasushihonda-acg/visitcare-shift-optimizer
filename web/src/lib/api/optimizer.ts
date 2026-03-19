@@ -494,3 +494,46 @@ export async function notifyOrderChange(params: {
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// 翌日チェックリスト
+// ---------------------------------------------------------------------------
+
+export interface ChecklistOrderItem {
+  order_id: string;
+  customer_id: string;
+  customer_name: string;
+  start_time: string;
+  end_time: string;
+  service_type: string;
+  status: string;
+}
+
+export interface StaffChecklist {
+  staff_id: string;
+  staff_name: string;
+  orders: ChecklistOrderItem[];
+}
+
+export interface DailyChecklistResponse {
+  date: string;
+  total_orders: number;
+  staff_checklists: StaffChecklist[];
+}
+
+export async function fetchDailyChecklist(
+  date: string,
+): Promise<DailyChecklistResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/checklist/next-day?date=${encodeURIComponent(date)}`, {
+      method: 'GET',
+      headers,
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}

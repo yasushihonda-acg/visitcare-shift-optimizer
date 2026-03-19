@@ -3,7 +3,7 @@
 import logging
 import os
 import re
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, timezone
 
 import google.auth  # type: ignore[import-untyped]
 from google.cloud import firestore as firestore_client  # type: ignore[import-untyped]
@@ -49,6 +49,8 @@ from optimizer.api.schemas import (
     ApplyUnavailabilityRequest,
     ApplyUnavailabilityResponse,
     AssignmentResponse,
+    ChecklistOrderItem,
+    DailyChecklistResponse,
     DuplicateWeekRequest,
     DuplicateWeekResponse,
     ErrorResponse,
@@ -76,6 +78,7 @@ from optimizer.api.schemas import (
     OrderChangeNotifyRequest,
     OrderChangeNotifyResponse,
     OrderChangeNotifyResultItem,
+    StaffChecklist,
     UnavailabilityRemovalItem,
 )
 from optimizer.data.firestore_loader import (
@@ -1125,4 +1128,145 @@ def notify_order_change(
         messages_sent=sent_count,
         total_targets=len(req.affected_staff_ids),
         results=results,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 翌日チェックリスト
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/checklist/next-day",
+    response_model=DailyChecklistResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def get_daily_checklist(
+    date_param: str = Query(
+        ..., alias="date",
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="チェックリスト対象日 YYYY-MM-DD",
+    ),
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> DailyChecklistResponse:
+    """指定日のオーダーをヘルパー別にグルーピングしたチェックリストを返す"""
+    from optimizer.data.firestore_loader import _ts_to_date_str
+
+    try:
+        target_date = date.fromisoformat(date_param)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    JST = timezone(timedelta(hours=9))
+    target_dt = datetime(target_date.year, target_date.month, target_date.day, tzinfo=JST)
+    # 翌日の00:00まで
+    target_dt_end = target_dt + timedelta(days=1)
+
+    try:
+        db = get_firestore_client()
+
+        # 対象日のオーダーを取得（pending + assigned）
+        order_docs = list(
+            db.collection("orders")
+            .where("date", ">=", target_dt)
+            .where("date", "<", target_dt_end)
+            .where("status", "in", ["pending", "assigned"])
+            .stream()
+        )
+
+        if not order_docs:
+            return DailyChecklistResponse(
+                date=date_param,
+                total_orders=0,
+                staff_checklists=[],
+            )
+
+        # ヘルパー名とcustomer名の取得
+        helper_names: dict[str, str] = {}
+        customer_names: dict[str, str] = {}
+
+        # ヘルパー名キャッシュ
+        helper_ids_needed: set[str] = set()
+        customer_ids_needed: set[str] = set()
+
+        orders_data: list[dict] = []
+        for doc in order_docs:
+            d = doc.to_dict()
+            if d is None:
+                continue
+            d["_id"] = doc.id
+            orders_data.append(d)
+            for sid in d.get("assigned_staff_ids", []):
+                helper_ids_needed.add(sid)
+            customer_ids_needed.add(d.get("customer_id", ""))
+
+        # ヘルパー名を一括取得
+        for sid in helper_ids_needed:
+            hdoc = db.collection("helpers").document(sid).get()
+            if hdoc.exists:
+                hd = hdoc.to_dict() or {}
+                name = hd.get("name", {})
+                helper_names[sid] = f"{name.get('family', '')} {name.get('given', '')}"
+
+        # 利用者名を一括取得
+        for cid in customer_ids_needed:
+            if not cid:
+                continue
+            cdoc = db.collection("customers").document(cid).get()
+            if cdoc.exists:
+                cd = cdoc.to_dict() or {}
+                name = cd.get("name", {})
+                customer_names[cid] = f"{name.get('family', '')} {name.get('given', '')}"
+
+        # ヘルパー別にグルーピング
+        staff_orders: dict[str, list[ChecklistOrderItem]] = {}
+        unassigned_orders: list[ChecklistOrderItem] = []
+
+        for d in orders_data:
+            cid = d.get("customer_id", "")
+            item = ChecklistOrderItem(
+                order_id=d["_id"],
+                customer_id=cid,
+                customer_name=customer_names.get(cid, ""),
+                start_time=d.get("start_time", ""),
+                end_time=d.get("end_time", ""),
+                service_type=d.get("service_type", ""),
+                status=d.get("status", ""),
+            )
+
+            assigned = d.get("assigned_staff_ids", [])
+            if not assigned:
+                unassigned_orders.append(item)
+            else:
+                for sid in assigned:
+                    staff_orders.setdefault(sid, []).append(item)
+
+        # 時間順ソート
+        checklists: list[StaffChecklist] = []
+        for sid in sorted(staff_orders.keys()):
+            orders = sorted(staff_orders[sid], key=lambda o: o.start_time)
+            checklists.append(StaffChecklist(
+                staff_id=sid,
+                staff_name=helper_names.get(sid, sid),
+                orders=orders,
+            ))
+
+        # 未割当オーダー
+        if unassigned_orders:
+            checklists.append(StaffChecklist(
+                staff_id="",
+                staff_name="未割当",
+                orders=sorted(unassigned_orders, key=lambda o: o.start_time),
+            ))
+
+    except Exception as e:
+        logger.error("チェックリスト生成失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"チェックリスト生成エラー: {e}"
+        ) from e
+
+    return DailyChecklistResponse(
+        date=date_param,
+        total_orders=len(orders_data),
+        staff_checklists=checklists,
     )
