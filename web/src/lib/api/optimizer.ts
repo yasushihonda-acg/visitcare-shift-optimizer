@@ -421,3 +421,37 @@ export async function applyUnavailability(params: {
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// 不定期パターン自動判定
+// ---------------------------------------------------------------------------
+
+export interface IrregularPatternExclusion {
+  customer_id: string;
+  customer_name: string;
+  pattern_type: string;
+  description: string;
+}
+
+export interface ApplyIrregularPatternsResponse {
+  cancelled_count: number;
+  excluded_customers: IrregularPatternExclusion[];
+}
+
+export async function applyIrregularPatterns(params: {
+  week_start_date: string;
+}): Promise<ApplyIrregularPatternsResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/orders/apply-irregular-patterns`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}

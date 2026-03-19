@@ -422,3 +422,150 @@ def apply_unavailability_to_orders(
         reverted_to_pending=reverted,
         removals=removals,
     )
+
+
+@dataclass
+class IrregularPatternExclusionInfo:
+    """不定期パターンによる除外1件の情報"""
+    customer_id: str
+    customer_name: str
+    pattern_type: str
+    description: str
+
+
+@dataclass
+class ApplyIrregularPatternsResult:
+    """不定期パターン適用の結果"""
+    cancelled_count: int
+    excluded_customers: list[IrregularPatternExclusionInfo]
+
+
+def _get_week_of_month(d: date) -> int:
+    """日付の月内週番号（0-based）を返す。seedスクリプトと同じロジック。"""
+    return (d.day - 1) // 7
+
+
+def _should_exclude_customer(
+    patterns: list[dict[str, Any]],
+    target_week_start: date,
+) -> tuple[bool, str, str]:
+    """不定期パターンに基づき、対象週でサービスを除外すべきか判定。
+
+    Returns:
+        (exclude, pattern_type, description) タプル
+    """
+    for p in patterns:
+        ptype = p.get("type", "")
+        desc = p.get("description", "")
+
+        if ptype == "temporary_stop":
+            return True, ptype, desc
+
+        if ptype in ("biweekly", "monthly"):
+            active_weeks = p.get("active_weeks", [])
+            if isinstance(active_weeks, str):
+                active_weeks = [int(w.strip()) for w in active_weeks.split(",") if w.strip()]
+            if not active_weeks:
+                continue
+            week_of_month = _get_week_of_month(target_week_start)
+            if week_of_month not in active_weeks:
+                return True, ptype, desc
+
+    return False, "", ""
+
+
+def apply_irregular_patterns(
+    db: firestore.Client,
+    week_start: date,
+) -> ApplyIrregularPatternsResult:
+    """対象週の不定期パターンを評価し、該当オーダーをキャンセルする
+
+    Args:
+        db: Firestoreクライアント
+        week_start: 対象週の開始日（月曜日）
+
+    Returns:
+        ApplyIrregularPatternsResult
+    """
+    JST = timezone(timedelta(hours=9))
+    week_start_dt = datetime(
+        week_start.year, week_start.month, week_start.day, tzinfo=JST,
+    )
+
+    # 不定期パターンを持つ利用者を取得
+    customer_docs = list(db.collection("customers").stream())
+
+    # customer_id → (exclude, pattern_type, description, customer_name)
+    exclude_map: dict[str, tuple[str, str, str]] = {}
+    for doc in customer_docs:
+        d = doc.to_dict()
+        if d is None:
+            continue
+        patterns = d.get("irregular_patterns", [])
+        if not patterns:
+            continue
+        exclude, ptype, desc = _should_exclude_customer(patterns, week_start)
+        if exclude:
+            name = d.get("name", {})
+            customer_name = f"{name.get('family', '')} {name.get('given', '')}"
+            exclude_map[doc.id] = (ptype, desc, customer_name)
+
+    if not exclude_map:
+        logger.info("不定期パターンによる除外対象なし (week=%s)", week_start)
+        return ApplyIrregularPatternsResult(0, [])
+
+    # 対象週のオーダーを取得
+    order_docs = list(
+        db.collection("orders")
+        .where("week_start_date", "==", week_start_dt)
+        .where("status", "in", ["pending", "assigned"])
+        .stream()
+    )
+
+    # 除外対象のオーダーをフィルタ
+    orders_to_cancel: list[Any] = []
+    for doc in order_docs:
+        d = doc.to_dict()
+        if d is None:
+            continue
+        cid = d.get("customer_id", "")
+        if cid in exclude_map:
+            orders_to_cancel.append(doc)
+
+    if not orders_to_cancel:
+        exclusions = [
+            IrregularPatternExclusionInfo(
+                customer_id=cid, customer_name=name,
+                pattern_type=ptype, description=desc,
+            )
+            for cid, (ptype, desc, name) in exclude_map.items()
+        ]
+        return ApplyIrregularPatternsResult(0, exclusions)
+
+    # バッチキャンセル
+    BATCH_LIMIT = 500
+    cancelled = 0
+    for i in range(0, len(orders_to_cancel), BATCH_LIMIT):
+        batch = db.batch()
+        chunk = orders_to_cancel[i : i + BATCH_LIMIT]
+        for doc in chunk:
+            batch.update(doc.reference, {
+                "status": "cancelled",
+                "updated_at": SERVER_TIMESTAMP,
+            })
+        batch.commit()
+        cancelled += len(chunk)
+
+    exclusions = [
+        IrregularPatternExclusionInfo(
+            customer_id=cid, customer_name=name,
+            pattern_type=ptype, description=desc,
+        )
+        for cid, (ptype, desc, name) in exclude_map.items()
+    ]
+
+    logger.info(
+        "不定期パターン適用完了: cancelled=%d, excluded_customers=%d (week=%s)",
+        cancelled, len(exclusions), week_start,
+    )
+    return ApplyIrregularPatternsResult(cancelled, exclusions)

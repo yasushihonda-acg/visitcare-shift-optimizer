@@ -289,3 +289,29 @@ class ApplyUnavailabilityResponse(BaseModel):
     removals_count: int = Field(description="解除したスタッフ割当数")
     reverted_to_pending: int = Field(description="pendingに戻したオーダー数")
     removals: list[UnavailabilityRemovalItem] = Field(description="解除した割当の詳細")
+
+
+# ---------------------------------------------------------------------------
+# 不定期パターン自動判定
+# ---------------------------------------------------------------------------
+
+
+class ApplyIrregularPatternsRequest(BaseModel):
+    week_start_date: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="対象週の開始日（月曜日）YYYY-MM-DD",
+        examples=["2026-02-09"],
+    )
+
+
+class IrregularPatternExclusion(BaseModel):
+    customer_id: str
+    customer_name: str
+    pattern_type: str
+    description: str
+
+
+class ApplyIrregularPatternsResponse(BaseModel):
+    cancelled_count: int = Field(description="除外（キャンセル）したオーダー数")
+    excluded_customers: list[IrregularPatternExclusion] = Field(description="除外された利用者リスト")
