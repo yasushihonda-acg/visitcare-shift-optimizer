@@ -57,8 +57,9 @@ export function NoteImportButton({ onComplete }: NoteImportButtonProps) {
           setSavedSpreadsheetId(s.spreadsheet_id);
         }
       })
-      .catch(() => {
-        // テスト環境やFirebase未初期化時は無視
+      .catch((err: unknown) => {
+        // テスト環境やFirebase未初期化時は無視、本番エラーはログ
+        console.warn('CURAインポート設定の読み込みに失敗:', err);
       });
   }, []);
 
@@ -136,6 +137,13 @@ export function NoteImportButton({ onComplete }: NoteImportButtonProps) {
               ? `（シート: ${result.marked_count}件を対応済みに更新）`
               : ''),
         );
+
+        // シート更新失敗の警告（Firestore反映は成功しているが、次回取込で重複する可能性）
+        if (result.applied_count > 0 && result.marked_count === 0) {
+          toast.warning(
+            'スプレッドシートの対応可否更新に失敗しました。次回取込で重複する場合があります。',
+          );
+        }
 
         setPreviewOpen(false);
         setPreview(null);
