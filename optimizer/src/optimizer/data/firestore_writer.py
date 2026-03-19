@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -250,3 +251,174 @@ def duplicate_week_orders(
         created, source_week_start, target_week_start,
     )
     return created, 0
+
+
+@dataclass
+class UnavailabilityRemoval:
+    """休み希望による割当解除1件の情報"""
+    order_id: str
+    staff_id: str
+    customer_id: str
+    date: str
+    start_time: str
+    end_time: str
+
+
+@dataclass
+class ApplyUnavailabilityResult:
+    """休み希望反映の結果"""
+    orders_modified: int
+    removals_count: int
+    reverted_to_pending: int
+    removals: list[UnavailabilityRemoval]
+
+
+def _times_overlap(
+    order_start: str, order_end: str,
+    unavail_start: str, unavail_end: str,
+) -> bool:
+    """HH:MM形式の時間範囲が重複するか判定"""
+    return order_start < unavail_end and order_end > unavail_start
+
+
+def apply_unavailability_to_orders(
+    db: firestore.Client,
+    week_start: date,
+) -> ApplyUnavailabilityResult:
+    """対象週の休み希望をオーダーに反映し、該当スタッフの割当を解除する
+
+    Args:
+        db: Firestoreクライアント
+        week_start: 対象週の開始日（月曜日）
+
+    Returns:
+        ApplyUnavailabilityResult
+    """
+    JST = timezone(timedelta(hours=9))
+    week_start_dt = datetime(
+        week_start.year, week_start.month, week_start.day, tzinfo=JST,
+    )
+
+    # 休み希望を取得
+    unavail_docs = list(
+        db.collection("staff_unavailability")
+        .where("week_start_date", "==", week_start_dt)
+        .stream()
+    )
+
+    if not unavail_docs:
+        logger.info("休み希望が0件 (week=%s)", week_start)
+        return ApplyUnavailabilityResult(0, 0, 0, [])
+
+    # 休み希望をパース: {(staff_id, date_str)} → list[slot]
+    from optimizer.data.firestore_loader import _ts_to_date_str
+
+    staff_unavail: dict[str, list[dict[str, Any]]] = {}  # staff_id → slots
+    for doc in unavail_docs:
+        d = doc.to_dict()
+        if d is None:
+            continue
+        staff_id = d["staff_id"]
+        for slot in d.get("unavailable_slots", []):
+            slot_date = _ts_to_date_str(slot["date"])
+            staff_unavail.setdefault(staff_id, []).append({
+                "date": slot_date,
+                "all_day": slot.get("all_day", True),
+                "start_time": slot.get("start_time"),
+                "end_time": slot.get("end_time"),
+            })
+
+    # 対象週のオーダーを取得（assigned のみ: 割当済みで解除対象）
+    order_docs = list(
+        db.collection("orders")
+        .where("week_start_date", "==", week_start_dt)
+        .where("status", "==", "assigned")
+        .stream()
+    )
+
+    if not order_docs:
+        logger.info("assigned オーダーが0件 (week=%s)", week_start)
+        return ApplyUnavailabilityResult(0, 0, 0, [])
+
+    # マッチング: 各オーダーのassigned_staff_idsから休み希望のスタッフを除外
+    removals: list[UnavailabilityRemoval] = []
+    updates: dict[str, dict[str, Any]] = {}  # order_id → update fields
+
+    for doc in order_docs:
+        d = doc.to_dict()
+        if d is None:
+            continue
+        order_id = doc.id
+        order_date = _ts_to_date_str(d["date"])
+        assigned = list(d.get("assigned_staff_ids", []))
+        order_start = d.get("start_time", "")
+        order_end = d.get("end_time", "")
+
+        staff_to_remove: list[str] = []
+        for staff_id in assigned:
+            if staff_id not in staff_unavail:
+                continue
+            for slot in staff_unavail[staff_id]:
+                if slot["date"] != order_date:
+                    continue
+                # 終日 or 時間帯重複チェック
+                if slot["all_day"] or _times_overlap(
+                    order_start, order_end,
+                    slot.get("start_time", "00:00"),
+                    slot.get("end_time", "23:59"),
+                ):
+                    staff_to_remove.append(staff_id)
+                    break
+
+        if not staff_to_remove:
+            continue
+
+        new_assigned = [s for s in assigned if s not in staff_to_remove]
+        new_status = "pending" if not new_assigned else "assigned"
+
+        updates[order_id] = {
+            "assigned_staff_ids": new_assigned,
+            "status": new_status,
+            "updated_at": SERVER_TIMESTAMP,
+        }
+
+        for sid in staff_to_remove:
+            removals.append(UnavailabilityRemoval(
+                order_id=order_id,
+                staff_id=sid,
+                customer_id=d.get("customer_id", ""),
+                date=order_date,
+                start_time=order_start,
+                end_time=order_end,
+            ))
+
+    if not updates:
+        return ApplyUnavailabilityResult(0, 0, 0, [])
+
+    # バッチ書き込み
+    BATCH_LIMIT = 500
+    modified = 0
+    reverted = 0
+    update_list = list(updates.items())
+
+    for i in range(0, len(update_list), BATCH_LIMIT):
+        batch = db.batch()
+        chunk = update_list[i : i + BATCH_LIMIT]
+        for order_id, fields in chunk:
+            ref = db.collection("orders").document(order_id)
+            batch.update(ref, fields)
+            if fields["status"] == "pending":
+                reverted += 1
+        batch.commit()
+        modified += len(chunk)
+
+    logger.info(
+        "休み希望反映完了: modified=%d, removals=%d, reverted=%d (week=%s)",
+        modified, len(removals), reverted, week_start,
+    )
+    return ApplyUnavailabilityResult(
+        orders_modified=modified,
+        removals_count=len(removals),
+        reverted_to_pending=reverted,
+        removals=removals,
+    )

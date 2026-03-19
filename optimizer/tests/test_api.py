@@ -542,3 +542,271 @@ class TestDuplicateWeekEndpoint:
             json={"source_week_start": "2026-02-09"},
         )
         assert response.status_code == 422
+
+
+class TestApplyUnavailabilityEndpoint:
+    """POST /orders/apply-unavailability のテスト"""
+
+    @patch("optimizer.api.routes.apply_unavailability_to_orders")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_successful_apply(
+        self,
+        mock_get_db: MagicMock,
+        mock_apply: MagicMock,
+    ) -> None:
+        from optimizer.data.firestore_writer import (
+            ApplyUnavailabilityResult,
+            UnavailabilityRemoval,
+        )
+        mock_get_db.return_value = MagicMock()
+        mock_apply.return_value = ApplyUnavailabilityResult(
+            orders_modified=3,
+            removals_count=4,
+            reverted_to_pending=1,
+            removals=[
+                UnavailabilityRemoval(
+                    order_id="ORD001", staff_id="H003",
+                    customer_id="C001", date="2026-02-11",
+                    start_time="09:00", end_time="10:00",
+                ),
+            ],
+        )
+
+        response = client.post(
+            "/orders/apply-unavailability",
+            json={"week_start_date": "2026-02-09"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["orders_modified"] == 3
+        assert data["removals_count"] == 4
+        assert data["reverted_to_pending"] == 1
+        assert len(data["removals"]) == 1
+        assert data["removals"][0]["staff_id"] == "H003"
+
+    def test_not_monday_returns_422(self) -> None:
+        response = client.post(
+            "/orders/apply-unavailability",
+            json={"week_start_date": "2026-02-10"},
+        )
+        assert response.status_code == 422
+        assert "月曜日ではありません" in response.json()["detail"]
+
+    @patch("optimizer.api.routes.apply_unavailability_to_orders")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_no_modifications(
+        self,
+        mock_get_db: MagicMock,
+        mock_apply: MagicMock,
+    ) -> None:
+        from optimizer.data.firestore_writer import ApplyUnavailabilityResult
+        mock_get_db.return_value = MagicMock()
+        mock_apply.return_value = ApplyUnavailabilityResult(0, 0, 0, [])
+
+        response = client.post(
+            "/orders/apply-unavailability",
+            json={"week_start_date": "2026-02-09"},
+        )
+        assert response.status_code == 200
+        assert response.json()["orders_modified"] == 0
+
+
+class TestApplyUnavailabilityLogic:
+    """apply_unavailability_to_orders のユニットテスト"""
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_removes_unavailable_staff_from_orders(self) -> None:
+        from datetime import datetime, timezone, timedelta
+        from optimizer.data.firestore_writer import apply_unavailability_to_orders
+
+        JST = timezone(timedelta(hours=9))
+
+        # 休み希望: H003は水曜終日休み
+        unavail_doc = MagicMock()
+        unavail_doc.to_dict.return_value = {
+            "staff_id": "H003",
+            "unavailable_slots": [
+                {
+                    "date": datetime(2026, 2, 11, tzinfo=JST),  # 水曜
+                    "all_day": True,
+                }
+            ],
+        }
+
+        # 割当済みオーダー: H003が水曜に割当
+        order_doc = MagicMock()
+        order_doc.id = "ORD001"
+        order_doc.to_dict.return_value = {
+            "customer_id": "C001",
+            "date": datetime(2026, 2, 11, tzinfo=JST),  # 水曜
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "assigned_staff_ids": ["H003"],
+            "status": "assigned",
+        }
+
+        db = MagicMock()
+        batch = MagicMock()
+        db.batch.return_value = batch
+
+        # staff_unavailability クエリ
+        unavail_query = MagicMock()
+        unavail_query.where.return_value = unavail_query
+        unavail_query.stream.return_value = iter([unavail_doc])
+
+        # orders クエリ
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([order_doc])
+
+        call_count = {"n": 0}
+        def collection_side_effect(name: str) -> MagicMock:
+            call_count["n"] += 1
+            if name == "staff_unavailability":
+                return unavail_query
+            return order_query
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        result = apply_unavailability_to_orders(db, date(2026, 2, 9))
+
+        assert result.orders_modified == 1
+        assert result.removals_count == 1
+        assert result.reverted_to_pending == 1
+        assert result.removals[0].staff_id == "H003"
+
+        # バッチ更新が呼ばれたか
+        batch.update.assert_called_once()
+        update_args = batch.update.call_args[0][1]
+        assert update_args["assigned_staff_ids"] == []
+        assert update_args["status"] == "pending"
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_partial_day_overlap(self) -> None:
+        """部分休みが時間帯重複するオーダーのみ解除"""
+        from datetime import datetime, timezone, timedelta
+        from optimizer.data.firestore_writer import apply_unavailability_to_orders
+
+        JST = timezone(timedelta(hours=9))
+
+        unavail_doc = MagicMock()
+        unavail_doc.to_dict.return_value = {
+            "staff_id": "H008",
+            "unavailable_slots": [
+                {
+                    "date": datetime(2026, 2, 11, tzinfo=JST),
+                    "all_day": False,
+                    "start_time": "09:00",
+                    "end_time": "12:00",
+                }
+            ],
+        }
+
+        # 重複するオーダー (10:00-11:00)
+        order_overlap = MagicMock()
+        order_overlap.id = "ORD-OVERLAP"
+        order_overlap.to_dict.return_value = {
+            "customer_id": "C001",
+            "date": datetime(2026, 2, 11, tzinfo=JST),
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "assigned_staff_ids": ["H008"],
+            "status": "assigned",
+        }
+
+        # 重複しないオーダー (14:00-15:00)
+        order_no_overlap = MagicMock()
+        order_no_overlap.id = "ORD-OK"
+        order_no_overlap.to_dict.return_value = {
+            "customer_id": "C002",
+            "date": datetime(2026, 2, 11, tzinfo=JST),
+            "start_time": "14:00",
+            "end_time": "15:00",
+            "assigned_staff_ids": ["H008"],
+            "status": "assigned",
+        }
+
+        db = MagicMock()
+        batch = MagicMock()
+        db.batch.return_value = batch
+
+        unavail_query = MagicMock()
+        unavail_query.where.return_value = unavail_query
+        unavail_query.stream.return_value = iter([unavail_doc])
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([order_overlap, order_no_overlap])
+
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "staff_unavailability":
+                return unavail_query
+            return order_query
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        result = apply_unavailability_to_orders(db, date(2026, 2, 9))
+
+        # 重複するオーダーのみ解除
+        assert result.orders_modified == 1
+        assert result.removals_count == 1
+        assert result.removals[0].order_id == "ORD-OVERLAP"
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_multi_staff_partial_removal(self) -> None:
+        """2人割当のオーダーから1人だけ除外 → assignedのまま"""
+        from datetime import datetime, timezone, timedelta
+        from optimizer.data.firestore_writer import apply_unavailability_to_orders
+
+        JST = timezone(timedelta(hours=9))
+
+        unavail_doc = MagicMock()
+        unavail_doc.to_dict.return_value = {
+            "staff_id": "H003",
+            "unavailable_slots": [
+                {"date": datetime(2026, 2, 11, tzinfo=JST), "all_day": True}
+            ],
+        }
+
+        order_doc = MagicMock()
+        order_doc.id = "ORD-MULTI"
+        order_doc.to_dict.return_value = {
+            "customer_id": "C001",
+            "date": datetime(2026, 2, 11, tzinfo=JST),
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "assigned_staff_ids": ["H003", "H005"],
+            "status": "assigned",
+        }
+
+        db = MagicMock()
+        batch = MagicMock()
+        db.batch.return_value = batch
+
+        unavail_query = MagicMock()
+        unavail_query.where.return_value = unavail_query
+        unavail_query.stream.return_value = iter([unavail_doc])
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([order_doc])
+
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "staff_unavailability":
+                return unavail_query
+            return order_query
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        result = apply_unavailability_to_orders(db, date(2026, 2, 9))
+
+        assert result.orders_modified == 1
+        assert result.removals_count == 1
+        assert result.reverted_to_pending == 0  # まだH005がいるのでassignedのまま
+
+        update_args = batch.update.call_args[0][1]
+        assert update_args["assigned_staff_ids"] == ["H005"]
+        assert update_args["status"] == "assigned"
