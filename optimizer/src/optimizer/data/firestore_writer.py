@@ -13,6 +13,8 @@ from optimizer.models import Assignment, OptimizationRunRecord
 
 logger = logging.getLogger(__name__)
 
+_FIRESTORE_BATCH_LIMIT = 500
+
 
 def write_assignments(
     db: firestore.Client,
@@ -27,7 +29,7 @@ def write_assignments(
         return 0
 
     # Firestore batch write（最大500件/batch）
-    BATCH_LIMIT = 500
+    BATCH_LIMIT = _FIRESTORE_BATCH_LIMIT
     updated = 0
 
     for i in range(0, len(assignments), BATCH_LIMIT):
@@ -101,7 +103,7 @@ def reset_assignments(
     if not docs:
         return 0
 
-    BATCH_LIMIT = 500
+    BATCH_LIMIT = _FIRESTORE_BATCH_LIMIT
     reset_count = 0
 
     for i in range(0, len(docs), BATCH_LIMIT):
@@ -235,7 +237,7 @@ def duplicate_week_orders(
             order_data["linked_order_id"] = id_mapping[original_linked]
 
     # バッチ書き込み
-    BATCH_LIMIT = 500
+    BATCH_LIMIT = _FIRESTORE_BATCH_LIMIT
     created = 0
     for i in range(0, len(new_orders), BATCH_LIMIT):
         batch = db.batch()
@@ -311,7 +313,7 @@ def apply_unavailability_to_orders(
         return ApplyUnavailabilityResult(0, 0, 0, [])
 
     # 休み希望をパース: {(staff_id, date_str)} → list[slot]
-    from optimizer.data.firestore_loader import _ts_to_date_str
+    from optimizer.data.firestore_loader import ts_to_date_str
 
     staff_unavail: dict[str, list[dict[str, Any]]] = {}  # staff_id → slots
     for doc in unavail_docs:
@@ -320,7 +322,7 @@ def apply_unavailability_to_orders(
             continue
         staff_id = d["staff_id"]
         for slot in d.get("unavailable_slots", []):
-            slot_date = _ts_to_date_str(slot["date"])
+            slot_date = ts_to_date_str(slot["date"])
             staff_unavail.setdefault(staff_id, []).append({
                 "date": slot_date,
                 "all_day": slot.get("all_day", True),
@@ -349,7 +351,7 @@ def apply_unavailability_to_orders(
         if d is None:
             continue
         order_id = doc.id
-        order_date = _ts_to_date_str(d["date"])
+        order_date = ts_to_date_str(d["date"])
         assigned = list(d.get("assigned_staff_ids", []))
         order_start = d.get("start_time", "")
         order_end = d.get("end_time", "")
@@ -396,7 +398,7 @@ def apply_unavailability_to_orders(
         return ApplyUnavailabilityResult(0, 0, 0, [])
 
     # バッチ書き込み
-    BATCH_LIMIT = 500
+    BATCH_LIMIT = _FIRESTORE_BATCH_LIMIT
     modified = 0
     reverted = 0
     update_list = list(updates.items())
@@ -492,7 +494,8 @@ def apply_irregular_patterns(
         week_start.year, week_start.month, week_start.day, tzinfo=JST,
     )
 
-    # 不定期パターンを持つ利用者を取得
+    # TODO: 全利用者フルスキャン。利用者数が増えた場合、
+    # irregular_patternsの有無でフィルタするComposite Indexの追加を検討。
     customer_docs = list(db.collection("customers").stream())
 
     # customer_id → (exclude, pattern_type, description, customer_name)
@@ -543,7 +546,7 @@ def apply_irregular_patterns(
         return ApplyIrregularPatternsResult(0, exclusions)
 
     # バッチキャンセル
-    BATCH_LIMIT = 500
+    BATCH_LIMIT = _FIRESTORE_BATCH_LIMIT
     cancelled = 0
     for i in range(0, len(orders_to_cancel), BATCH_LIMIT):
         batch = db.batch()

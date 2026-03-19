@@ -36,7 +36,7 @@ OFFSET_TO_DAY_OF_WEEK: dict[int, DayOfWeek] = {
 }
 
 
-def _ts_to_date_str(ts: datetime | object) -> str:
+def ts_to_date_str(ts: datetime | object) -> str:
     """Firestore Timestamp/datetime → 'YYYY-MM-DD' (JST)"""
     JST = timezone(timedelta(hours=9))
     if isinstance(ts, datetime):
@@ -208,7 +208,7 @@ def load_orders(
         d = doc.to_dict()
         if d is None:
             continue
-        order_date_str = _ts_to_date_str(d["date"])
+        order_date_str = ts_to_date_str(d["date"])
         dow = _date_to_day_of_week(order_date_str)
 
         # staff_count: Firestoreにあればそれを使う、なければcustomer weekly_servicesから導出
@@ -292,7 +292,7 @@ def load_staff_unavailabilities(
             continue
         slots = [
             UnavailableSlot(
-                date=_ts_to_date_str(s["date"]),
+                date=ts_to_date_str(s["date"]),
                 all_day=s.get("all_day", True),
                 start_time=s.get("start_time"),
                 end_time=s.get("end_time"),
@@ -378,7 +378,7 @@ def load_monthly_orders(
             {
                 "id": doc.id,
                 "customer_id": d.get("customer_id", ""),
-                "date": _ts_to_date_str(d["date"]),
+                "date": ts_to_date_str(d["date"]),
                 "start_time": d.get("start_time", ""),
                 "end_time": d.get("end_time", ""),
                 "service_type": d.get("service_type", ""),

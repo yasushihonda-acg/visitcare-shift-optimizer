@@ -1,5 +1,7 @@
 """APIリクエスト/レスポンススキーマ"""
 
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -324,9 +326,9 @@ class ApplyIrregularPatternsResponse(BaseModel):
 
 class OrderChangeNotifyRequest(BaseModel):
     order_id: str = Field(..., description="変更対象のオーダーID")
-    change_type: str = Field(
+    change_type: Literal["reassigned", "time_changed", "cancelled"] = Field(
         ...,
-        description="変更種別: reassigned / time_changed / cancelled",
+        description="変更種別",
     )
     affected_staff_ids: list[str] = Field(
         ..., min_length=1, description="通知対象のスタッフIDリスト",
@@ -393,9 +395,9 @@ class NextDayNotifyRequest(BaseModel):
         pattern=r"^\d{4}-\d{2}-\d{2}$",
         description="通知対象日 YYYY-MM-DD",
     )
-    channel: str = Field(
+    channel: Literal["chat", "email"] = Field(
         default="chat",
-        description="通知チャネル: chat / email（emailは未実装）",
+        description="通知チャネル（emailは未実装）",
     )
 
 
