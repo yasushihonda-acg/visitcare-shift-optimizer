@@ -354,3 +354,32 @@ export async function importNotesApply(params: {
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// オーダー一括複製
+// ---------------------------------------------------------------------------
+
+export interface DuplicateWeekResponse {
+  created_count: number;
+  skipped_count: number;
+  target_week_start: string;
+}
+
+export async function duplicateWeek(params: {
+  source_week_start: string;
+  target_week_start: string;
+}): Promise<DuplicateWeekResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/orders/duplicate-week`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}

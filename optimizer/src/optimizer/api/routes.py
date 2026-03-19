@@ -45,6 +45,8 @@ def _get_sheets_credentials() -> object:
 from optimizer.api.auth import require_manager_or_above
 from optimizer.api.schemas import (
     AssignmentResponse,
+    DuplicateWeekRequest,
+    DuplicateWeekResponse,
     ErrorResponse,
     ExportReportRequest,
     ExportReportResponse,
@@ -76,6 +78,7 @@ from optimizer.data.firestore_loader import (
     load_optimization_input,
 )
 from optimizer.data.firestore_writer import (
+    duplicate_week_orders,
     reset_assignments,
     save_optimization_run,
     write_assignments,
@@ -838,4 +841,70 @@ def import_notes_apply(
         applied_count=applied_count,
         marked_count=marked_count,
         total_requested=len(req.post_ids),
+    )
+
+
+# ---------------------------------------------------------------------------
+# オーダー一括複製
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/orders/duplicate-week",
+    response_model=DuplicateWeekResponse,
+    responses={409: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
+def duplicate_week(
+    req: DuplicateWeekRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> DuplicateWeekResponse:
+    """基本シフト（ソース週）のオーダーをターゲット週に一括複製"""
+    # 日付パース
+    try:
+        source_week = date.fromisoformat(req.source_week_start)
+        target_week = date.fromisoformat(req.target_week_start)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    # 月曜日チェック
+    if source_week.weekday() != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{req.source_week_start} は月曜日ではありません"
+            f"（weekday={source_week.weekday()}）",
+        )
+    if target_week.weekday() != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{req.target_week_start} は月曜日ではありません"
+            f"（weekday={target_week.weekday()}）",
+        )
+
+    # 同一週チェック
+    if source_week == target_week:
+        raise HTTPException(
+            status_code=422,
+            detail="コピー元とコピー先が同じ週です",
+        )
+
+    try:
+        db = get_firestore_client()
+        created, skipped = duplicate_week_orders(db, source_week, target_week)
+    except Exception as e:
+        logger.error("オーダー複製失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"オーダー複製エラー: {e}"
+        ) from e
+
+    if skipped > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"ターゲット週 {req.target_week_start} に既存オーダーが"
+            f"あるため複製をスキップしました（{skipped}件）",
+        )
+
+    return DuplicateWeekResponse(
+        created_count=created,
+        skipped_count=skipped,
+        target_week_start=req.target_week_start,
     )

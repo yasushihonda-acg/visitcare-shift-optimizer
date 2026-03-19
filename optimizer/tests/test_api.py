@@ -245,6 +245,152 @@ class TestFirestoreWriter:
         assert batch.commit.call_count == 2
 
 
+class TestDuplicateWeekOrders:
+    """duplicate_week_orders 関数のユニットテスト"""
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_duplicate_creates_new_orders(self) -> None:
+        from datetime import datetime, timezone, timedelta
+        from optimizer.data.firestore_writer import duplicate_week_orders
+
+        JST = timezone(timedelta(hours=9))
+        source_date = datetime(2026, 2, 9, tzinfo=JST)  # 月曜日
+
+        # ソースオーダー2件のモック
+        doc1 = MagicMock()
+        doc1.id = "order-1"
+        doc1.to_dict.return_value = {
+            "customer_id": "C001",
+            "date": datetime(2026, 2, 9, tzinfo=JST),  # 月曜日
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "service_type": "physical_care",
+            "staff_count": 1,
+        }
+
+        doc2 = MagicMock()
+        doc2.id = "order-2"
+        doc2.to_dict.return_value = {
+            "customer_id": "C002",
+            "date": datetime(2026, 2, 11, tzinfo=JST),  # 水曜日
+            "start_time": "14:00",
+            "end_time": "15:00",
+            "service_type": "daily_living",
+            "linked_order_id": "order-1",
+        }
+
+        db = MagicMock()
+        batch = MagicMock()
+        db.batch.return_value = batch
+
+        # ソース週クエリ → 2件返す
+        source_query = MagicMock()
+        source_query.where.return_value = source_query
+        source_query.stream.return_value = iter([doc1, doc2])
+
+        # ターゲット週クエリ → 0件（既存なし）
+        target_query = MagicMock()
+        target_query.where.return_value = target_query
+        target_query.stream.return_value = iter([])
+
+        # 最初のcollection("orders")呼び出し→ソース、2回目→ターゲット
+        call_count = {"n": 0}
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "orders":
+                call_count["n"] += 1
+                if call_count["n"] == 1:
+                    return source_query
+                return target_query
+            return MagicMock()
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        created, skipped = duplicate_week_orders(
+            db, date(2026, 2, 9), date(2026, 2, 16)
+        )
+
+        assert created == 2
+        assert skipped == 0
+        assert batch.set.call_count == 2
+        batch.commit.assert_called_once()
+
+        # 作成されたオーダーの内容を検証
+        set_calls = batch.set.call_args_list
+        order_data_list = [call[0][1] for call in set_calls]
+
+        # customer_idが保持されていること
+        customer_ids = {d["customer_id"] for d in order_data_list}
+        assert customer_ids == {"C001", "C002"}
+
+        # 全てpending/空割当
+        for d in order_data_list:
+            assert d["status"] == "pending"
+            assert d["assigned_staff_ids"] == []
+            assert d["manually_edited"] is False
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_duplicate_skips_when_target_has_orders(self) -> None:
+        from datetime import datetime, timezone, timedelta
+        from optimizer.data.firestore_writer import duplicate_week_orders
+
+        JST = timezone(timedelta(hours=9))
+
+        doc1 = MagicMock()
+        doc1.id = "source-1"
+        doc1.to_dict.return_value = {"customer_id": "C001"}
+
+        existing_doc = MagicMock()
+
+        db = MagicMock()
+        source_query = MagicMock()
+        source_query.where.return_value = source_query
+        source_query.stream.return_value = iter([doc1])
+
+        target_query = MagicMock()
+        target_query.where.return_value = target_query
+        target_query.stream.return_value = iter([existing_doc])
+
+        call_count = {"n": 0}
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "orders":
+                call_count["n"] += 1
+                if call_count["n"] == 1:
+                    return source_query
+                return target_query
+            return MagicMock()
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        created, skipped = duplicate_week_orders(
+            db, date(2026, 2, 9), date(2026, 2, 16)
+        )
+
+        assert created == 0
+        assert skipped == 1
+        db.batch.assert_not_called()
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_duplicate_empty_source(self) -> None:
+        from optimizer.data.firestore_writer import duplicate_week_orders
+
+        db = MagicMock()
+        source_query = MagicMock()
+        source_query.where.return_value = source_query
+        source_query.stream.return_value = iter([])
+
+        db.collection.return_value = source_query
+
+        from datetime import date
+        created, skipped = duplicate_week_orders(
+            db, date(2026, 2, 9), date(2026, 2, 16)
+        )
+
+        assert created == 0
+        assert skipped == 0
+
+
 class TestResetAssignmentsEndpoint:
     """POST /reset-assignments のテスト"""
 
@@ -309,3 +455,90 @@ class TestResetAssignmentsEndpoint:
         )
         assert response.status_code == 200
         assert response.json()["orders_reset"] == 0
+
+
+class TestDuplicateWeekEndpoint:
+    """オーダー一括複製エンドポイントのテスト"""
+
+    @patch("optimizer.api.routes.duplicate_week_orders")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_successful_duplicate(
+        self,
+        mock_get_db: MagicMock,
+        mock_duplicate: MagicMock,
+    ) -> None:
+        mock_get_db.return_value = MagicMock()
+        mock_duplicate.return_value = (10, 0)
+
+        response = client.post(
+            "/orders/duplicate-week",
+            json={
+                "source_week_start": "2026-02-09",
+                "target_week_start": "2026-02-16",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["created_count"] == 10
+        assert data["skipped_count"] == 0
+        assert data["target_week_start"] == "2026-02-16"
+
+    @patch("optimizer.api.routes.duplicate_week_orders")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_existing_target_orders_returns_409(
+        self,
+        mock_get_db: MagicMock,
+        mock_duplicate: MagicMock,
+    ) -> None:
+        mock_get_db.return_value = MagicMock()
+        mock_duplicate.return_value = (0, 5)
+
+        response = client.post(
+            "/orders/duplicate-week",
+            json={
+                "source_week_start": "2026-02-09",
+                "target_week_start": "2026-02-16",
+            },
+        )
+        assert response.status_code == 409
+        assert "既存オーダー" in response.json()["detail"]
+
+    def test_source_not_monday_returns_422(self) -> None:
+        response = client.post(
+            "/orders/duplicate-week",
+            json={
+                "source_week_start": "2026-02-10",  # 火曜日
+                "target_week_start": "2026-02-16",
+            },
+        )
+        assert response.status_code == 422
+        assert "月曜日ではありません" in response.json()["detail"]
+
+    def test_target_not_monday_returns_422(self) -> None:
+        response = client.post(
+            "/orders/duplicate-week",
+            json={
+                "source_week_start": "2026-02-09",
+                "target_week_start": "2026-02-17",  # 火曜日
+            },
+        )
+        assert response.status_code == 422
+        assert "月曜日ではありません" in response.json()["detail"]
+
+    def test_same_week_returns_422(self) -> None:
+        response = client.post(
+            "/orders/duplicate-week",
+            json={
+                "source_week_start": "2026-02-09",
+                "target_week_start": "2026-02-09",
+            },
+        )
+        assert response.status_code == 422
+        assert "同じ週" in response.json()["detail"]
+
+    def test_missing_fields_returns_422(self) -> None:
+        response = client.post(
+            "/orders/duplicate-week",
+            json={"source_week_start": "2026-02-09"},
+        )
+        assert response.status_code == 422
