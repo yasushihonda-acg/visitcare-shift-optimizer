@@ -51,6 +51,9 @@ from optimizer.api.schemas import (
     AssignmentResponse,
     ChecklistOrderItem,
     DailyChecklistResponse,
+    NextDayNotifyRequest,
+    NextDayNotifyResponse,
+    NextDayNotifyResultItem,
     DuplicateWeekRequest,
     DuplicateWeekResponse,
     ErrorResponse,
@@ -107,7 +110,7 @@ from optimizer.integrations.note_diff import (
 from optimizer.integrations.note_parser import ParsedNote, TimeRange, parse_notes
 from optimizer.integrations.sheets_reader import mark_notes_as_handled, read_note_rows
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
-from optimizer.notification.chat_sender import send_chat_dms
+from optimizer.notification.chat_sender import send_chat_dm, send_chat_dms
 from optimizer.report.aggregation import (
     aggregate_customer_summary,
     aggregate_service_type_summary,
@@ -1269,4 +1272,144 @@ def get_daily_checklist(
         date=date_param,
         total_orders=len(orders_data),
         staff_checklists=checklists,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 翌日通知
+# ---------------------------------------------------------------------------
+
+_NEXT_DAY_NOTIFY_TEMPLATE = (
+    "[VisitCare] 翌日の予定をお知らせします\n\n"
+    "{date} の予定:\n"
+    "{schedule_text}\n\n"
+    "詳細はシフト管理画面をご確認ください。\n"
+    "{app_url}"
+)
+
+
+@router.post(
+    "/notify/next-day",
+    response_model=NextDayNotifyResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def notify_next_day(
+    req: NextDayNotifyRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> NextDayNotifyResponse:
+    """翌日のチェックリストをヘルパーにChat DMで通知"""
+    if req.channel == "email":
+        raise HTTPException(
+            status_code=422,
+            detail="email通知は未実装です。channel=chatを使用してください。",
+        )
+
+    try:
+        target_date = date.fromisoformat(req.date)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    JST = timezone(timedelta(hours=9))
+    target_dt = datetime(target_date.year, target_date.month, target_date.day, tzinfo=JST)
+    target_dt_end = target_dt + timedelta(days=1)
+
+    try:
+        db = get_firestore_client()
+
+        # 対象日のassignedオーダーを取得
+        order_docs = list(
+            db.collection("orders")
+            .where("date", ">=", target_dt)
+            .where("date", "<", target_dt_end)
+            .where("status", "==", "assigned")
+            .stream()
+        )
+
+        if not order_docs:
+            return NextDayNotifyResponse(
+                date=req.date, messages_sent=0, total_targets=0, results=[],
+            )
+
+        # ヘルパー別にグルーピング
+        staff_orders: dict[str, list[dict]] = {}
+        customer_names: dict[str, str] = {}
+
+        for doc in order_docs:
+            d = doc.to_dict()
+            if d is None:
+                continue
+            for sid in d.get("assigned_staff_ids", []):
+                staff_orders.setdefault(sid, []).append(d)
+            cid = d.get("customer_id", "")
+            if cid and cid not in customer_names:
+                cdoc = db.collection("customers").document(cid).get()
+                if cdoc.exists:
+                    cd = cdoc.to_dict() or {}
+                    name = cd.get("name", {})
+                    customer_names[cid] = f"{name.get('family', '')} {name.get('given', '')}"
+
+        # 各ヘルパーにChat DM送信
+        results: list[NextDayNotifyResultItem] = []
+        sent_count = 0
+
+        for sid, orders in staff_orders.items():
+            # ヘルパー情報取得
+            hdoc = db.collection("helpers").document(sid).get()
+            if not hdoc.exists:
+                results.append(NextDayNotifyResultItem(
+                    staff_id=sid, staff_name=sid, email="",
+                    success=False, orders_count=len(orders),
+                ))
+                continue
+
+            hd = hdoc.to_dict() or {}
+            hname = hd.get("name", {})
+            staff_name = f"{hname.get('family', '')} {hname.get('given', '')}"
+            email = hd.get("email", "")
+
+            if not email:
+                results.append(NextDayNotifyResultItem(
+                    staff_id=sid, staff_name=staff_name, email="",
+                    success=False, orders_count=len(orders),
+                ))
+                continue
+
+            # スケジュールテキスト生成
+            sorted_orders = sorted(orders, key=lambda o: o.get("start_time", ""))
+            schedule_lines = []
+            for o in sorted_orders:
+                cid = o.get("customer_id", "")
+                cname = customer_names.get(cid, cid)
+                schedule_lines.append(
+                    f"  {o.get('start_time', '')}–{o.get('end_time', '')} {cname}"
+                )
+
+            message = _NEXT_DAY_NOTIFY_TEMPLATE.format(
+                date=req.date,
+                schedule_text="\n".join(schedule_lines),
+                app_url=APP_URL,
+            )
+
+            success = send_chat_dm(email, message)
+            if success:
+                sent_count += 1
+
+            results.append(NextDayNotifyResultItem(
+                staff_id=sid, staff_name=staff_name, email=email,
+                success=success, orders_count=len(orders),
+            ))
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("翌日通知失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"翌日通知エラー: {e}"
+        ) from e
+
+    return NextDayNotifyResponse(
+        date=req.date,
+        messages_sent=sent_count,
+        total_targets=len(staff_orders),
+        results=results,
     )

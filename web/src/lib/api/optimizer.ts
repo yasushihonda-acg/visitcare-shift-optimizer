@@ -537,3 +537,41 @@ export async function fetchDailyChecklist(
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// 翌日通知
+// ---------------------------------------------------------------------------
+
+export interface NextDayNotifyResultItem {
+  staff_id: string;
+  staff_name: string;
+  email: string;
+  success: boolean;
+  orders_count: number;
+}
+
+export interface NextDayNotifyResponse {
+  date: string;
+  messages_sent: number;
+  total_targets: number;
+  results: NextDayNotifyResultItem[];
+}
+
+export async function notifyNextDay(params: {
+  date: string;
+  channel?: string;
+}): Promise<NextDayNotifyResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/notify/next-day`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}
