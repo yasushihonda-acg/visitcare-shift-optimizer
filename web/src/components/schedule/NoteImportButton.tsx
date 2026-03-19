@@ -67,13 +67,14 @@ export function NoteImportButton({ onComplete }: NoteImportButtonProps) {
       setLoading(true);
       try {
         const result = await importNotesPreview(spreadsheetId);
-        setPreview(result);
-        setPreviewOpen(true);
 
         if (result.total_notes === 0) {
           toast.info('未処理のノートはありません');
           return;
         }
+
+        setPreview(result);
+        setPreviewOpen(true);
 
         toast.success(`${result.total_notes}件のノートを読み取りました`);
       } catch (err) {
@@ -219,6 +220,7 @@ export function NoteImportButton({ onComplete }: NoteImportButtonProps) {
 
       {/* プレビューダイアログ */}
       <NoteImportPreview
+        key={preview?.spreadsheet_id ?? ''}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         preview={preview}
