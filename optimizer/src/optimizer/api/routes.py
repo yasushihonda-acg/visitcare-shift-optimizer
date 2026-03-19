@@ -73,6 +73,9 @@ from optimizer.api.schemas import (
     ChatReminderResponse,
     ChatReminderResultItem,
     IrregularPatternExclusion,
+    OrderChangeNotifyRequest,
+    OrderChangeNotifyResponse,
+    OrderChangeNotifyResultItem,
     UnavailabilityRemovalItem,
 )
 from optimizer.data.firestore_loader import (
@@ -1019,4 +1022,107 @@ def apply_irregular_patterns_endpoint(
             )
             for ex in result.excluded_customers
         ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# オーダー変更通知
+# ---------------------------------------------------------------------------
+
+_CHANGE_TYPE_LABELS = {
+    "reassigned": "担当変更",
+    "time_changed": "時間変更",
+    "cancelled": "キャンセル",
+}
+
+_ORDER_CHANGE_TEMPLATE = (
+    "[VisitCare] 【シフト変更】\n\n"
+    "日付: {date}\n"
+    "利用者: {customer_name}\n"
+    "変更内容: {change_type_label}\n\n"
+    "詳細はシフト管理画面をご確認ください。\n"
+    "{app_url}"
+)
+
+
+@router.post(
+    "/notify/order-change",
+    response_model=OrderChangeNotifyResponse,
+    responses={500: {"model": ErrorResponse}},
+)
+def notify_order_change(
+    req: OrderChangeNotifyRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> OrderChangeNotifyResponse:
+    """オーダー変更を影響スタッフにGoogle Chat DMで通知"""
+    # ヘルパーのメールアドレスを取得
+    try:
+        db = get_firestore_client()
+        staff_emails: dict[str, str] = {}
+        for sid in req.affected_staff_ids:
+            doc = db.collection("helpers").document(sid).get()
+            if doc.exists:
+                d = doc.to_dict()
+                email = (d or {}).get("email", "")
+                if email:
+                    staff_emails[sid] = email
+    except Exception as e:
+        logger.error("ヘルパー情報取得失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"ヘルパー情報取得エラー: {e}"
+        ) from e
+
+    if not staff_emails:
+        return OrderChangeNotifyResponse(
+            messages_sent=0,
+            total_targets=len(req.affected_staff_ids),
+            results=[
+                OrderChangeNotifyResultItem(
+                    staff_id=sid, email="", success=False,
+                )
+                for sid in req.affected_staff_ids
+            ],
+        )
+
+    change_label = _CHANGE_TYPE_LABELS.get(req.change_type, req.change_type)
+    message_text = req.message or _ORDER_CHANGE_TEMPLATE.format(
+        date=req.date,
+        customer_name=req.customer_name,
+        change_type_label=change_label,
+        app_url=APP_URL,
+    )
+
+    emails = list(staff_emails.values())
+    sent_count, raw_results = send_chat_dms(emails, message_text)
+
+    # email → staff_id の逆引き
+    email_to_staff = {v: k for k, v in staff_emails.items()}
+    results = [
+        OrderChangeNotifyResultItem(
+            staff_id=email_to_staff.get(str(r["email"]), ""),
+            email=str(r["email"]),
+            success=bool(r["success"]),
+        )
+        for r in raw_results
+    ]
+
+    # email未登録のスタッフも結果に含める
+    notified_staff = {r.staff_id for r in results}
+    for sid in req.affected_staff_ids:
+        if sid not in notified_staff:
+            results.append(
+                OrderChangeNotifyResultItem(
+                    staff_id=sid, email="", success=False,
+                )
+            )
+
+    logger.info(
+        "オーダー変更通知: sent=%d/%d (order=%s, change=%s)",
+        sent_count, len(req.affected_staff_ids), req.order_id, req.change_type,
+    )
+
+    return OrderChangeNotifyResponse(
+        messages_sent=sent_count,
+        total_targets=len(req.affected_staff_ids),
+        results=results,
     )
