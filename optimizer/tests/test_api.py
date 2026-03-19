@@ -1063,3 +1063,94 @@ class TestOrderChangeNotifyEndpoint:
             json={"order_id": "ORD001"},
         )
         assert response.status_code == 422
+
+
+class TestDailyChecklistEndpoint:
+    """GET /checklist/next-day のテスト"""
+
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_successful_checklist(
+        self,
+        mock_get_db: MagicMock,
+    ) -> None:
+        from datetime import datetime, timezone, timedelta
+        JST = timezone(timedelta(hours=9))
+
+        db = MagicMock()
+        mock_get_db.return_value = db
+
+        # オーダードキュメント
+        order_doc = MagicMock()
+        order_doc.id = "ORD001"
+        order_doc.to_dict.return_value = {
+            "customer_id": "C001",
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "service_type": "physical_care",
+            "status": "assigned",
+            "assigned_staff_ids": ["H003"],
+        }
+
+        # ordersコレクションクエリ
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([order_doc])
+
+        # helpersドキュメント
+        helper_doc = MagicMock()
+        helper_doc.exists = True
+        helper_doc.to_dict.return_value = {
+            "name": {"family": "佐藤", "given": "花子"},
+        }
+
+        # customersドキュメント
+        customer_doc = MagicMock()
+        customer_doc.exists = True
+        customer_doc.to_dict.return_value = {
+            "name": {"family": "田中", "given": "太郎"},
+        }
+
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "orders":
+                return order_query
+            mock_col = MagicMock()
+            if name == "helpers":
+                mock_col.document.return_value.get.return_value = helper_doc
+            elif name == "customers":
+                mock_col.document.return_value.get.return_value = customer_doc
+            return mock_col
+
+        db.collection.side_effect = collection_side_effect
+
+        response = client.get("/checklist/next-day?date=2026-02-11")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["date"] == "2026-02-11"
+        assert data["total_orders"] == 1
+        assert len(data["staff_checklists"]) == 1
+        assert data["staff_checklists"][0]["staff_id"] == "H003"
+        assert data["staff_checklists"][0]["staff_name"] == "佐藤 花子"
+        assert len(data["staff_checklists"][0]["orders"]) == 1
+
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_empty_checklist(
+        self,
+        mock_get_db: MagicMock,
+    ) -> None:
+        db = MagicMock()
+        mock_get_db.return_value = db
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([])
+        db.collection.return_value = order_query
+
+        response = client.get("/checklist/next-day?date=2026-02-11")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_orders"] == 0
+        assert data["staff_checklists"] == []
+
+    def test_invalid_date_returns_422(self) -> None:
+        response = client.get("/checklist/next-day?date=bad-date")
+        assert response.status_code == 422

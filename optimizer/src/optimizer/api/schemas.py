@@ -353,3 +353,30 @@ class OrderChangeNotifyResponse(BaseModel):
     messages_sent: int = Field(description="送信成功件数")
     total_targets: int = Field(description="送信対象件数")
     results: list[OrderChangeNotifyResultItem]
+
+
+# ---------------------------------------------------------------------------
+# 翌日チェックリスト
+# ---------------------------------------------------------------------------
+
+
+class ChecklistOrderItem(BaseModel):
+    order_id: str
+    customer_id: str
+    customer_name: str
+    start_time: str
+    end_time: str
+    service_type: str
+    status: str
+
+
+class StaffChecklist(BaseModel):
+    staff_id: str
+    staff_name: str
+    orders: list[ChecklistOrderItem]
+
+
+class DailyChecklistResponse(BaseModel):
+    date: str
+    total_orders: int = Field(description="対象オーダー数")
+    staff_checklists: list[StaffChecklist]
