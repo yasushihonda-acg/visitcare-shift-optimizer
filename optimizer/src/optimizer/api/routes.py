@@ -44,6 +44,8 @@ def _get_sheets_credentials() -> object:
 
 from optimizer.api.auth import require_manager_or_above
 from optimizer.api.schemas import (
+    ApplyUnavailabilityRequest,
+    ApplyUnavailabilityResponse,
     AssignmentResponse,
     DuplicateWeekRequest,
     DuplicateWeekResponse,
@@ -68,6 +70,7 @@ from optimizer.api.schemas import (
     ChatReminderRequest,
     ChatReminderResponse,
     ChatReminderResultItem,
+    UnavailabilityRemovalItem,
 )
 from optimizer.data.firestore_loader import (
     get_firestore_client,
@@ -78,6 +81,7 @@ from optimizer.data.firestore_loader import (
     load_optimization_input,
 )
 from optimizer.data.firestore_writer import (
+    apply_unavailability_to_orders,
     duplicate_week_orders,
     reset_assignments,
     save_optimization_run,
@@ -907,4 +911,58 @@ def duplicate_week(
         created_count=created,
         skipped_count=skipped,
         target_week_start=req.target_week_start,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 休み希望の自動反映
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/orders/apply-unavailability",
+    response_model=ApplyUnavailabilityResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def apply_unavailability_endpoint(
+    req: ApplyUnavailabilityRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> ApplyUnavailabilityResponse:
+    """対象週の休み希望をオーダーに反映し、該当スタッフの割当を解除"""
+    try:
+        week_start = date.fromisoformat(req.week_start_date)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    if week_start.weekday() != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{req.week_start_date} は月曜日ではありません"
+            f"（weekday={week_start.weekday()}）",
+        )
+
+    try:
+        db = get_firestore_client()
+        result = apply_unavailability_to_orders(db, week_start)
+    except Exception as e:
+        logger.error("休み希望反映失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"休み希望反映エラー: {e}"
+        ) from e
+
+    return ApplyUnavailabilityResponse(
+        orders_modified=result.orders_modified,
+        removals_count=result.removals_count,
+        reverted_to_pending=result.reverted_to_pending,
+        removals=[
+            UnavailabilityRemovalItem(
+                order_id=r.order_id,
+                staff_id=r.staff_id,
+                customer_id=r.customer_id,
+                date=r.date,
+                start_time=r.start_time,
+                end_time=r.end_time,
+            )
+            for r in result.removals
+        ],
     )

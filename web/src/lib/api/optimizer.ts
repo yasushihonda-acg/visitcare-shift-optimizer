@@ -383,3 +383,41 @@ export async function duplicateWeek(params: {
   }
   return res.json();
 }
+
+// ---------------------------------------------------------------------------
+// 休み希望の自動反映
+// ---------------------------------------------------------------------------
+
+export interface UnavailabilityRemovalItem {
+  order_id: string;
+  staff_id: string;
+  customer_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+}
+
+export interface ApplyUnavailabilityResponse {
+  orders_modified: number;
+  removals_count: number;
+  reverted_to_pending: number;
+  removals: UnavailabilityRemovalItem[];
+}
+
+export async function applyUnavailability(params: {
+  week_start_date: string;
+}): Promise<ApplyUnavailabilityResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetchWithRetry(() =>
+    fetch(`${API_URL}/orders/apply-unavailability`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    }),
+  );
+  if (!res.ok) {
+    const error: OptimizeError = await res.json();
+    throw new OptimizeApiError(res.status, error.detail);
+  }
+  return res.json();
+}
