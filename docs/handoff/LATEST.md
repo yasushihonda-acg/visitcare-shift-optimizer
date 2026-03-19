@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-19（Phase 6a: CURAノート取込・基本シフト反映自動化 実装中）
-**現在のフェーズ**: Phase 6a 実装中（ノート取込→差分検出→プレビュー→Firestore反映）
+**最終更新**: 2026-03-20（Phase 6c完了 / Phase 6d待機中）
+**現在のフェーズ**: Phase 6b-6c完了、routes.py分割済み、Phase 6dはふせんスプレッドシート構造の提供待ち
 
 ## 完了済みフェーズ
 
@@ -12,21 +12,79 @@
 - **Phase 4a-4d**: D&D手動編集、UIデザイン改善、マスタ管理（customers/helpers/unavailability）
 - **Phase 4d-security**: RBAC (Custom Claims 3役体系) + Firestoreセキュリティルール
 - **Phase 5b**: メール通知スタブ、Gmail API DWD、Google Chat DM催促、利用者軸ビュー、Undo/Redo
-- **詳細アーカイブ**: `docs/handoff/archive/2026-02-detailed-history.md`（〜2026-02-25）、`docs/handoff/archive/2026-03-detailed-history.md`（2026-03-07〜03-11）
+- **Phase 6a**: CURAノート取込・基本シフト反映自動化（sheets_reader/note_parser/note_diff + API + UI）
+- **Phase 6b**: 当週シフト作成効率化（一括複製・休み希望反映・不定期パターン・当週ノート反映）
+- **Phase 6c**: 当日対応効率化（変更通知・翌日チェックリスト・翌日Chat DM通知）
+- **詳細アーカイブ**: `docs/handoff/archive/`
 
 ## デプロイURL
 
 - **Web App**: https://visitcare-shift-optimizer.web.app
 - **Optimizer API**: https://shift-optimizer-1045989697649.asia-northeast1.run.app
 
+## 直近の実装（2026-03-19〜20）
+
+### Phase 6b-6c 一括実装（#301-#309）
+
+| PR | 内容 |
+|----|------|
+| #301 | service_typesマスタに hospital_visit/meeting/other 追加 |
+| #302 | 基本→当週シフト一括複製API+UI（`/orders/duplicate-week`） |
+| #303 | 休み希望の自動反映API+UI（`/orders/apply-unavailability`） |
+| #304 | 不定期パターン自動判定API（`/orders/apply-irregular-patterns`） |
+| #305 | オーダー変更通知API（`/notify/order-change`） |
+| #306 | 翌日チェックリストAPI+UI（`/checklist/next-day`、`DailyChecklist.tsx`） |
+| #307 | 翌日Chat DM通知API（`/notify/next-day`） |
+| #308 | 品質ゲート対応（N+1→db.get_all、1件失敗=全件中断バグ修正、Literal型化、DRY抽出） |
+| #309 | routes.pyドメイン別分割（1,404行→319行） |
+
+### routes.py 分割後の構成
+
+```
+optimizer/api/
+├── routes.py          (319行) /health, /optimize, /optimization-runs, /reset-assignments
+├── routes_import.py   (329行) /import/notes, /import/notes/apply
+├── routes_orders.py   (161行) /orders/duplicate-week, /orders/apply-*
+├── routes_notify.py   (336行) /notify/chat-reminder, /notify/order-change, /notify/next-day
+├── routes_report.py   (281行) /export-report, /checklist/next-day
+└── routes_common.py    (66行) 共通ユーティリティ
+```
+
+### 新規UIコンポーネント
+
+- `WeekDuplicateButton.tsx` — 週複製ボタン（ダイアログ付き）
+- `UnavailabilityApplyButton.tsx` — 休み反映ボタン
+- `DailyChecklist.tsx` — 翌日チェックリスト（ヘルパー別テーブル表示）
+
+## 最新テスト結果サマリー（2026-03-20）
+
+- **Optimizer**: 372件 pass
+- **Web (Next.js)**: 1,076件 pass
+- **TypeScript型チェック**: tsc --noEmit PASS
+- **Firestore Rules**: 114件 pass
+
+## 次のアクション（優先度順）
+
+1. **Phase 6a 本番テスト (#290)**: ノート取込を本番環境で検証（少量データ）
+2. **Phase 6d-1 (#299)**: ふせんスプレッドシート読み取り — **ユーザーからのシート構造情報が必要**
+3. **Phase 6d-2 (#300)**: ふせん差分適用 — 6d-1依存
+4. **email通知チャネル**: ADR-016 Gmail API DWD設定完了後に `POST /notify/next-day` の email channel を実装
+5. **技術負債**: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション) — 全てP2
+6. **#289**: service_typesマスタ追加 → #301で解決済み（Issueクローズ漏れ）
+
+## GitHub Issuesサマリー
+
+- **オープンIssue**: 7件
+  - Phase 6d: #299, #300
+  - Phase 6a本番テスト: #290
+  - service_types: #289（#301で解決済み、要クローズ）
+  - 技術負債: #270, #271, #272
+
 ## データアクセス方法
 
 ```bash
 # 一括起動（推奨、ローカル Emulator）
 ./scripts/dev-start.sh
-
-# 本番 Firestore へのseed投入（今週の日付）
-cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts
 
 # 最適化エンジン テスト
 cd optimizer && .venv/bin/pytest tests/ -v
@@ -36,197 +94,30 @@ cd optimizer && ALLOW_UNAUTHENTICATED=true .venv/bin/uvicorn optimizer.api.main:
 
 # Next.js dev
 cd web && npm run dev  # → http://localhost:3000
-
-# テスト
-cd web && npm test          # Vitest
-cd optimizer && .venv/bin/pytest tests/ -v  # pytest
 ```
 
 ## CI/CD（ADR-010）
 
 - **GitHub Actions**: `.github/workflows/ci.yml`
 - **認証**: Workload Identity Federation（JSON鍵不使用）
-  - SA: `github-actions@visitcare-shift-optimizer.iam.gserviceaccount.com`
-  - WIF Pool: `github-actions-pool` / OIDC Provider: `github-oidc`
 - PR時: test-optimizer + test-web 並列実行
 - main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
-- 必要なGitHub Secrets: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`
-
-## 直近の実装（2026-03-19）
-
-- **feat (Phase 6a, 2026-03-19)**: CURAノート取込・基本シフト反映自動化
-  - CURAノートスプレッドシート読み取り（Google Sheets API）: `sheets_reader.py`
-  - 自由テキスト解析（正規表現ベース）: `note_parser.py` — 利用者名・時刻・アクション種別を抽出
-  - 差分検出・Firestoreオーダーマッチング: `note_diff.py`
-  - APIエンドポイント: `POST /import/notes`（プレビュー）、`POST /import/notes/apply`（適用）
-  - フロントエンドUI: `NoteImportButton.tsx`（スプレッドシート入力）、`NoteImportPreview.tsx`（プレビューダイアログ）
-  - テスト: 35件追加（note_parser 22件 + note_diff 13件）全PASS
-  - ADR-017、マッピング定義 `docs/schema/cura-note-mapping.md`
-  - GitHub Issues: #280-#284
-
-## 過去の実装（2026-03-17）
-
-- **feat (#279, 2026-03-17)** ✅: 割当スタッフ選択UIにグループ分け・性別フィルタ・訪問実績バッジを追加
-  - StaffMultiSelect に「担当経験あり」「その他」グループ分けを実装
-  - `customer.gender_requirement` に基づく性別フィルタをStaffMultiSelectにも適用
-  - 過去訪問実績がある（または現在担当中の）スタッフにバッジ表示
-
-- **fix (#277, 2026-03-17)** ✅: 同行スタッフ候補リストに性別制限フィルタを追加
-  - `customer.gender_requirement` に基づき CompanionDialog の候補一覧をフィルタ
-  - 性別制限がある利用者では条件を満たさないスタッフが選択肢に表示されなくなった
-
-- **fix (#276, 2026-03-17)** ✅: 同行スタッフ候補から希望休・勤務時間外のスタッフを除外
-  - CompanionDialog の候補一覧から、当日希望休 or 勤務時間外のスタッフをフィルタ
-  - 不適切な同行者が誤って選択されるリスクを解消
-
-- **fix (#274, 2026-03-16)** ✅: CompanionDialogに「教える方」表示追加 & 制約違反に「（同行）」付与
-  - CompanionDialog で選択済みの同行者に「教える方」ラベルを表示
-  - 最適化結果の制約違反メッセージに「（同行）」を付与して識別しやすく改善
-
-- **refactor (#273, 2026-03-16)** ✅: /simplify品質ゲート対応（-53行コード削減）
-  - commands.ts 3関数→共通ファクトリ統合、同行計算ロジックをuseOrderEditに吸収
-  - OptimizeButton同行チェック重複除去、OrderDetailPanel IIFE除去
-  - 既存負債をIssue化: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション)
-
-- **feat (#269, 2026-03-16)** ✅: 同行（OJT）機能を実装
-  - Order型に `companion_staff_id` フィールド追加、Firestore永続化（`deleteField()` で安全削除）
-  - CompanionDialog（単一選択+検索+研修ステータスバッジ）
-  - OrderDetailPanelに同行セクション統合、StaffMultiSelectから同行者除外
-  - Undo/Redo対応、D&D制限（同行者行はドラッグ不可）
-  - ガントバーにUsersアイコン表示
-  - 最適化前警告 + 成功後に同行設定一括クリア
-
-- **fix (#267, 2026-03-13)** ✅: 同一住所インジケーターを1色に統一しアンダーラインを太く
-  - インジケーター色を単一カラー（青 `#3b82f6`）に統一（5色ローテーション廃止）
-  - アンダーラインの太さを 3px → 4px に変更
-
-- **fix (#266, 2026-03-13)** ✅: 同一住所インジケーターを隣接オーダー限定に変更
-  - 同じヘルパー行で時間的に隣接（end_time === start_time）するペアのみ表示
-  - 未割当セクションからはインジケーター削除
-  - `useAdjacentAddressGroups` フックに刷新（キー: customerId → orderId）
-  - テスト13件全パス
-
-- **fix (#265, 2026-03-13)** ✅: 同一住所インジケーターの偽陽性を修正
-  - `useAddressGroups` に `activeCustomerIds` フィルタパラメータを追加
-  - 当日オーダーがあるメンバーが2名以上のグループのみインジケーター表示
-  - テスト12件全パス
-
-- **feat (#263, 2026-03-13)** ✅: 同一住所の利用者をガントチャート上で視覚的に識別可能にする
-  - GanttBar下部3pxアンダーラインで同一住所グループを色分け（5色ローテーション）
-  - 🏠（世帯）/🏢（施設）アイコンをバー内・未割当セクションに表示
-  - Union-Findで same_household/same_facility を統合しグループ計算
-  - tooltipに住所情報を追記
-
-- **fix (#259, 2026-03-12)** ✅: Dialog/Sheetのaria-describedby警告を解消
-  - `aria-describedby={undefined}` を SheetContent / DialogContent に追加
-  - Radix UIコンソール警告（`Missing Description or aria-describedby`）を解消
-
-- **feat (#258, 2026-03-12)** ✅: キャンセル/復元をトグルボタン化しパネル内でリアルタイム切替可能に
-  - Selectドロップダウンを廃止し、キャンセル・復元・完了を個別ボタンに変更
-  - `selectedOrder` をIDベースで管理し、Firestoreリアルタイム更新がパネルに即反映
-  - パネルを閉じずにキャンセル⇔復元をワンクリックでトグル切替可能に
-  - OrderDetailPanel テスト 27件、page.tsx テスト 3件パス
-
-- **fix (#257, 2026-03-12)** ✅: キャンセル操作前に確認ダイアログを追加
-  - `window.confirm` でキャンセル確定前に確認を挟み誤操作防止
-  - 確認メッセージに「復元可能」の案内を含む
-
-- **fix (#256, 2026-03-12)** ✅: キャンセル復元UIをセレクトから明示的な復元ボタンに変更
-  - Undo2アイコン付き「復元」ボタンで誤操作しにくいUIに変更
-  - OrderDetailPanel テスト 24件パス
-
-- **fix (#255, 2026-03-12)** ✅: キャンセル済みオーダーをpendingに復元可能にする
-  - `cancelled → pending` 状態遷移を追加（誤キャンセル取り消し機能）
-  - updateOrder テスト 23件、OrderDetailPanel 24件、Firestoreルール 114件パス
-  - CI SUCCESS
-
-- **feat (#254, 2026-03-12)** ✅: サービス種別フィルタUIを改善し検索機能を追加
-  - カテゴリフィルタの選択/未選択状態の視認性大幅改善（ゴースト→カラー切り替え）
-  - テキスト検索窓を追加（コード・名前・カテゴリで絞り込み可能、カテゴリフィルタと併用可）
-  - テスト4件追加（計15テスト全パス）
-  - CI SUCCESS（run #22992254818、7m45s）
-
-- **feat (#253, 2026-03-12)** ✅: サービス種別全105種を復元しカテゴリフィルタUIを追加（PR #252をリバート）
-  - seed CSV: 訪問介護9種→全105種（5カテゴリ: 訪問介護・通所介護Ⅰ・地域密着型・訪問看護・大規模型Ⅰ）に復元
-  - サービス種別マスタ管理画面にカテゴリフィルタ（複数選択可能）を追加
-  - カテゴリ別色分けバッジ（CATEGORY_STYLES / CATEGORY_ACTIVE_STYLES）
-  - テスト11件追加（4基本 + 7カテゴリフィルタ）
-  - .gitignore に seed/emulator-data/ 追加
-  - CI SUCCESS（E2E 67 passed, 3 skipped）
-  - **要対応**: 本番Firestoreへの再投入が必要（`cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts`）
-
-- **refactor (#250, 2026-03-11)** ✅: メール送信機能を削除（Google Chat DM催促は維持）
-  - Backend: `notification/sender.py`, `templates.py`, `recipients.py` 削除、メール3エンドポイント削除
-  - Frontend: NotifyConfirmDialog, NotifyChangesButton, 通知設定ページ, Header通知メニュー 削除
-  - 維持: `chat_sender.py`, `/notify/chat-reminder`, `ChatReminderDialog.tsx`
-
-## 最新テスト結果サマリー（2026-03-19）
-
-- **Optimizer**: 332件 pass ✅（+35件: note_parser/note_diff テスト追加）
-- **Web (Next.js)**: **986件以上** pass ✅
-- **TypeScript型チェック**: tsc --noEmit PASS ✅
-- **Python mypy**: Success, no issues ✅
-- **ESLint**: PASS ✅
-- **Firestore Rules**: **114件** pass ✅
-- **E2E Tests (Playwright)**: **73テスト以上** pass ✅
 
 ## 重要なドキュメント
 
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
-- `docs/adr/` — ADR-001〜ADR-015（スキーマ設計、PuLP、FastAPI、UI、認証、DnD、ルール、マスタ編集、Google Sheetsエクスポート等）
-- `shared/types/` — TypeScript型定義（Python Pydantic参照元）
-- `optimizer/src/optimizer/` — 最適化エンジン + API
+- `docs/adr/` — ADR-001〜ADR-017
+- `shared/types/` — TypeScript型定義
+- `optimizer/src/optimizer/` — 最適化エンジン + API（routes分割済み）
 - `web/src/` — Next.js フロントエンド
-
-## Seedコマンド（本番Firestore）
-
-```bash
-# 全データ再投入（今週）
-cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts
-
-# オーダーのみ週切替
-cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --orders-only --week 2026-02-16
-
-# 複数週一括投入
-cd seed && SEED_TARGET=production npx tsx scripts/import-all.ts --weeks 2026-02-09,2026-02-16,2026-02-23
-```
 
 ## GCP Sheets エクスポート（本番環境設定まとめ）
 
 採用アプローチ: Authorized User ADC を Secret Manager に保存（`google-adc-credentials`）
-
-**注意事項**:
-- スプレッドシートは `yasushi.honda@aozora-cg.com` の個人 Drive に作成される
-- ADC の refresh token が失効した場合:
-  ```bash
-  gcloud auth application-default login \
-    --scopes="openid,https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive"
-  gcloud secrets versions add google-adc-credentials \
-    --data-file="$HOME/.config/gcloud/application_default_credentials.json" \
-    --project=visitcare-shift-optimizer
-  ```
-
-## 次のアクション（優先度順）
-
-1. **Phase 6a 本番テスト**: ノート取込を本番環境で検証（少量データ）
-2. **Phase 6b**: 当週シフト作成プロセスの効率化（基本シフト→当週シフト一括複製、休み希望自動反映）
-3. **Phase 6c**: 当日対応の効率化（変更通知自動送信、夜間チェックリスト生成）
-4. **Phase 6d**: ふせん取込・自動作成後反映
-5. **技術負債**: #270(timeToMinutes統合), #271(ヘルパー名共通化), #272(二重サブスクリプション) — 全てP2 refactor
-
-## GitHub Issuesサマリー
-
-- **オープンIssue**: 8件
-  - Phase 6a: #280（マッピング定義）、#281（sheets_reader）、#282（note_diff）、#283（API+UI）、#284（テスト検証）
-  - 技術負債: #270, #271, #272 — 全てP2 refactor
-- **クローズ済み（直近）**: #279（割当スタッフUI改善）、#277（CompanionDialog性別フィルタ）
 
 ## 参考資料（ローカルExcel）
 
 プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
 - `シフト作成_編集ファイル(基本シフト)20251231.xlsx` - 基本シフト4シート
 - `Excel（...）マクロ.docx` - VBAマクロソース
-- `1.5 のコピー.xlsx` - 当週加工データ
-- `時間繋がっている人 のコピー.xlsx` - 夫婦/兄弟連続訪問一覧
-- `希望休申請フォーム（訪問介護）のコピー.xlsx` - 希望休フォーム回答
 - `訪問介護　不定期 のコピー.xlsx` - 不定期パターン（利用者別シート）
