@@ -22,8 +22,9 @@ import {
 } from '@/lib/api/optimizer';
 import { NoteImportPreview } from './NoteImportPreview';
 
-/** CURAノートのデフォルトスプレッドシートID */
-const DEFAULT_SPREADSHEET_ID = '1fj2Hj-ZSkLR0GsNylXu3HFZ55Y_a-pqfiV1Sq-U84G0';
+/** CURAノートのデフォルトスプレッドシートID（環境変数から取得） */
+const DEFAULT_SPREADSHEET_ID =
+  process.env.NEXT_PUBLIC_CURA_NOTE_SPREADSHEET_ID ?? '';
 
 interface NoteImportButtonProps {
   onComplete?: () => void;
@@ -53,6 +54,11 @@ export function NoteImportButton({ onComplete }: NoteImportButtonProps) {
     const spreadsheetId = spreadsheetInput
       ? extractSpreadsheetId(spreadsheetInput)
       : DEFAULT_SPREADSHEET_ID;
+
+    if (!spreadsheetId) {
+      toast.error('スプレッドシートIDを入力してください');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -132,7 +138,7 @@ export function NoteImportButton({ onComplete }: NoteImportButtonProps) {
             <Label htmlFor="spreadsheet-input">スプレッドシート ID / URL</Label>
             <Input
               id="spreadsheet-input"
-              placeholder={DEFAULT_SPREADSHEET_ID}
+              placeholder={DEFAULT_SPREADSHEET_ID || 'スプレッドシートIDを入力'}
               value={spreadsheetInput}
               onChange={(e) => setSpreadsheetInput(e.target.value)}
             />

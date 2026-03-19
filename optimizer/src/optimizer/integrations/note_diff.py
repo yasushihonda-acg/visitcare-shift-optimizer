@@ -168,12 +168,11 @@ def _find_matching_orders(
         if order.get("status") == "cancelled":
             continue
 
-        # 時間帯チェック
+        # 時間帯チェック: start_time完全一致で絞り込む
         if time_range is not None:
             order_start = order.get("start_time", "")
             if order_start and order_start != time_range.start:
-                # 完全一致しない場合でも近い時刻は候補にする
-                pass
+                continue
 
         matched.append(order)
 

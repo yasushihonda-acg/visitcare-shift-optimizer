@@ -167,6 +167,9 @@ class ChatReminderResponse(BaseModel):
 class NoteImportRequest(BaseModel):
     spreadsheet_id: str = Field(
         ...,
+        min_length=20,
+        max_length=80,
+        pattern=r"^[a-zA-Z0-9_-]+$",
         description="CURAノートのスプレッドシートID",
     )
 

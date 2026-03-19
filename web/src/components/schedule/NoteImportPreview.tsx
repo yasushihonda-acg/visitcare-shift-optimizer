@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Check, AlertTriangle, HelpCircle, SkipForward } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -138,39 +138,48 @@ export function NoteImportPreview({
   loading,
   onApply,
 }: NoteImportPreviewProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const readyActions = useMemo(
+    () => preview?.actions.filter((a) => a.status === 'ready') ?? [],
+    [preview],
+  );
 
-  // readyなアクションがロード時に自動選択
-  const readyActions = preview?.actions.filter((a) => a.status === 'ready') ?? [];
+  // プレビュー変更時にreadyアクションを初期選択とする（useMemoで計算）
+  const initialSelectedIds = useMemo(
+    () => new Set(readyActions.map((a) => a.post_id)),
+    [readyActions],
+  );
+
+  // ユーザーによる選択変更を追跡。previewが変わったらnullにリセットして初期値を使う。
+  const [userSelectedIds, setUserSelectedIds] = useState<Set<string> | null>(null);
+  const selectedIds = userSelectedIds ?? initialSelectedIds;
+
+  // previewが変わったらユーザー選択をリセット
+  const [lastPreviewKey, setLastPreviewKey] = useState('');
+  const currentKey = preview ? `${preview.spreadsheet_id}:${preview.total_notes}` : '';
+  if (currentKey !== lastPreviewKey) {
+    setLastPreviewKey(currentKey);
+    if (userSelectedIds !== null) {
+      setUserSelectedIds(null);
+    }
+  }
 
   const toggleAction = (postId: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(postId)) {
-        next.delete(postId);
-      } else {
-        next.add(postId);
-      }
-      return next;
-    });
+    const next = new Set(selectedIds);
+    if (next.has(postId)) {
+      next.delete(postId);
+    } else {
+      next.add(postId);
+    }
+    setUserSelectedIds(next);
   };
 
   const selectAllReady = () => {
-    setSelectedIds(new Set(readyActions.map((a) => a.post_id)));
+    setUserSelectedIds(new Set(readyActions.map((a) => a.post_id)));
   };
 
   const deselectAll = () => {
-    setSelectedIds(new Set());
+    setUserSelectedIds(new Set());
   };
-
-  // プレビュー変更時に自動全選択
-  if (preview && selectedIds.size === 0 && readyActions.length > 0) {
-    // useEffect を使わず初回のみ設定（再レンダリングは不要）
-    const newSet = new Set(readyActions.map((a) => a.post_id));
-    if (newSet.size > 0) {
-      Promise.resolve().then(() => setSelectedIds(newSet));
-    }
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

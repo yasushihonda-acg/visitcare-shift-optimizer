@@ -32,10 +32,10 @@ class NoteRow(BaseModel):
 
 # 列名 → NoteRow フィールドのマッピング（列名ベースで列順序に非依存）
 _COLUMN_MAP: dict[str, str] = {
-    "対応\n可否": "handled",
+    "対応 可否": "handled",
     "コメント": "comment",
     "週間スケジュール反映": "schedule_reflected",
-    "\u3000連絡要否": "contact_required",
+    "連絡要否": "contact_required",
     "スケジュール変更内容": "content",
     "入退院・その他": "sub_category",
     "日付：From": "date_from",
@@ -51,8 +51,8 @@ _NORMALIZE_RE = re.compile(r"\s+")
 
 
 def _normalize_header(raw: str) -> str:
-    """ヘッダー文字列を正規化（改行→空白変換してからマッチ）"""
-    return raw.strip()
+    """ヘッダー文字列を正規化（改行・連続空白を単一スペースに変換）"""
+    return _NORMALIZE_RE.sub(" ", raw).strip()
 
 
 def _build_column_index(header_row: list[str]) -> dict[str, int]:

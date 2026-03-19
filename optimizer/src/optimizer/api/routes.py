@@ -596,30 +596,8 @@ def import_notes_preview(
             status_code=500, detail=f"Firestoreデータの読み込みに失敗しました: {e}"
         ) from e
 
-    # 顧客データを辞書リストに変換
-    customers_list = [
-        {
-            "id": c.id,
-            "family_name": c.family_name,
-            "given_name": c.given_name,
-            "short_name": getattr(c, "short_name", ""),
-        }
-        for c in customers_raw
-    ]
-
-    # オーダーデータを辞書リストに変換
-    orders_list = [
-        {
-            "id": o.get("id", ""),
-            "customer_id": o.get("customer_id", ""),
-            "date": o.get("date", ""),
-            "start_time": o.get("start_time", ""),
-            "end_time": o.get("end_time", ""),
-            "service_type": o.get("service_type", ""),
-            "status": o.get("status", ""),
-        }
-        for o in all_orders_raw
-    ]
+    customers_list = _customers_to_dicts(customers_raw)
+    orders_list = _orders_to_dicts(all_orders_raw)
 
     # プレビュー構築
     preview = build_import_preview(
@@ -640,12 +618,14 @@ def import_notes_preview(
     )
 
 
-def _action_to_response(action: object) -> object:
+def _action_to_response(action: "NoteImportAction") -> "NoteImportActionResponse":
     """NoteImportAction → NoteImportActionResponse 変換"""
     from optimizer.api.schemas import NoteImportActionResponse, NoteImportMatchedOrder, NoteImportTimeRange
+    from optimizer.integrations.note_diff import NoteImportAction
+    from optimizer.integrations.note_parser import TimeRange
 
     matched = None
-    if hasattr(action, "matched_order") and action.matched_order is not None:
+    if action.matched_order is not None:
         mo = action.matched_order
         matched = NoteImportMatchedOrder(
             order_id=mo.order_id,
@@ -658,7 +638,7 @@ def _action_to_response(action: object) -> object:
             status=mo.status,
         )
 
-    def _tr(tr: object) -> NoteImportTimeRange | None:
+    def _tr(tr: TimeRange | None) -> NoteImportTimeRange | None:
         if tr is None:
             return None
         return NoteImportTimeRange(start=tr.start, end=tr.end)
@@ -680,9 +660,43 @@ def _action_to_response(action: object) -> object:
     )
 
 
-def _load_orders_for_notes(db: object, parsed_notes: list) -> list[dict]:
+def _customers_to_dicts(customers_raw: list) -> list[dict[str, object]]:
+    """Customer Pydanticモデルを辞書リストに変換"""
+    return [
+        {
+            "id": c.id,
+            "family_name": c.family_name,
+            "given_name": c.given_name,
+            "short_name": getattr(c, "short_name", ""),
+        }
+        for c in customers_raw
+    ]
+
+
+def _orders_to_dicts(orders_raw: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Firestoreオーダーdictのフィールドを正規化"""
+    return [
+        {
+            "id": o.get("id", ""),
+            "customer_id": o.get("customer_id", ""),
+            "date": o.get("date", ""),
+            "start_time": o.get("start_time", ""),
+            "end_time": o.get("end_time", ""),
+            "service_type": o.get("service_type", ""),
+            "status": o.get("status", ""),
+        }
+        for o in orders_raw
+    ]
+
+
+def _load_orders_for_notes(
+    db: "firestore.Client",  # type: ignore[name-defined]
+    parsed_notes: list["ParsedNote"],  # type: ignore[name-defined]
+) -> list[dict[str, object]]:
     """ノートの日付範囲に該当するオーダーをFirestoreから取得する"""
     from datetime import timedelta
+
+    from optimizer.integrations.note_parser import ParsedNote
 
     if not parsed_notes:
         return []
@@ -699,9 +713,6 @@ def _load_orders_for_notes(db: object, parsed_notes: list) -> list[dict]:
 
     min_date = min(all_dates)
     max_date = max(all_dates)
-
-    # 日付範囲のオーダーをFirestoreから取得
-    from datetime import date as date_type
 
     start_dt = datetime.fromisoformat(min_date)
     end_dt = datetime.fromisoformat(max_date) + timedelta(days=1)
@@ -788,28 +799,8 @@ def import_notes_apply(
             status_code=500, detail=f"Firestoreデータの読み込みに失敗しました: {e}"
         ) from e
 
-    customers_list = [
-        {
-            "id": c.id,
-            "family_name": c.family_name,
-            "given_name": c.given_name,
-            "short_name": getattr(c, "short_name", ""),
-        }
-        for c in customers_raw
-    ]
-
-    orders_list = [
-        {
-            "id": o.get("id", ""),
-            "customer_id": o.get("customer_id", ""),
-            "date": o.get("date", ""),
-            "start_time": o.get("start_time", ""),
-            "end_time": o.get("end_time", ""),
-            "service_type": o.get("service_type", ""),
-            "status": o.get("status", ""),
-        }
-        for o in all_orders_raw
-    ]
+    customers_list = _customers_to_dicts(customers_raw)
+    orders_list = _orders_to_dicts(all_orders_raw)
 
     preview = build_import_preview(
         req.spreadsheet_id, parsed_notes, customers_list, orders_list
