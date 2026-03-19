@@ -14,7 +14,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import type { NoteImportAction, NoteImportPreviewResponse } from '@/lib/api/optimizer';
+import type {
+  NoteActionType,
+  ImportActionStatus,
+  NoteImportAction,
+  NoteImportPreviewResponse,
+} from '@/lib/api/optimizer';
 
 interface NoteImportPreviewProps {
   open: boolean;
@@ -24,7 +29,7 @@ interface NoteImportPreviewProps {
   onApply: (postIds: string[]) => void;
 }
 
-const ACTION_TYPE_LABELS: Record<string, string> = {
+const ACTION_TYPE_LABELS: Record<NoteActionType, string> = {
   cancel: 'キャンセル',
   update_time: '時間変更',
   add_visit: '受診同行追加',
@@ -34,14 +39,14 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   unknown: '要確認',
 };
 
-const STATUS_CONFIG: Record<string, { icon: typeof Check; color: string; label: string }> = {
+const STATUS_CONFIG: Record<ImportActionStatus, { icon: typeof Check; color: string; label: string }> = {
   ready: { icon: Check, color: 'text-green-600', label: '適用可能' },
   needs_review: { icon: AlertTriangle, color: 'text-amber-500', label: '要確認' },
   unmatched: { icon: HelpCircle, color: 'text-red-500', label: '未マッチ' },
   skipped: { icon: SkipForward, color: 'text-gray-400', label: 'スキップ' },
 };
 
-const ACTION_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+const ACTION_BADGE_VARIANT: Record<NoteActionType, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   cancel: 'destructive',
   update_time: 'default',
   add_visit: 'secondary',
@@ -143,25 +148,10 @@ export function NoteImportPreview({
     [preview],
   );
 
-  // プレビュー変更時にreadyアクションを初期選択とする（useMemoで計算）
-  const initialSelectedIds = useMemo(
+  // readyアクションを初期選択。key propによるコンポーネント再マウントでリセットされる。
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set(readyActions.map((a) => a.post_id)),
-    [readyActions],
   );
-
-  // ユーザーによる選択変更を追跡。previewが変わったらnullにリセットして初期値を使う。
-  const [userSelectedIds, setUserSelectedIds] = useState<Set<string> | null>(null);
-  const selectedIds = userSelectedIds ?? initialSelectedIds;
-
-  // previewが変わったらユーザー選択をリセット
-  const [lastPreviewKey, setLastPreviewKey] = useState('');
-  const currentKey = preview ? `${preview.spreadsheet_id}:${preview.total_notes}` : '';
-  if (currentKey !== lastPreviewKey) {
-    setLastPreviewKey(currentKey);
-    if (userSelectedIds !== null) {
-      setUserSelectedIds(null);
-    }
-  }
 
   const toggleAction = (postId: string) => {
     const next = new Set(selectedIds);
@@ -170,15 +160,15 @@ export function NoteImportPreview({
     } else {
       next.add(postId);
     }
-    setUserSelectedIds(next);
+    setSelectedIds(next);
   };
 
   const selectAllReady = () => {
-    setUserSelectedIds(new Set(readyActions.map((a) => a.post_id)));
+    setSelectedIds(new Set(readyActions.map((a) => a.post_id)));
   };
 
   const deselectAll = () => {
-    setUserSelectedIds(new Set());
+    setSelectedIds(new Set());
   };
 
   return (

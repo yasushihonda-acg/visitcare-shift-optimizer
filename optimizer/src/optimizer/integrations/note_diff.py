@@ -7,16 +7,21 @@
 from __future__ import annotations
 
 import logging
+import uuid
+from collections import defaultdict
 from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Any
 
-from google.cloud import firestore  # type: ignore[import-untyped]
+from google.cloud import firestore  # type: ignore[attr-defined]
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 from pydantic import BaseModel, Field
 
 from optimizer.integrations.note_parser import NoteActionType, ParsedNote, TimeRange
 
 logger = logging.getLogger(__name__)
+
+BATCH_LIMIT = 500
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +90,7 @@ class NoteImportPreview(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# 利用者マッチング
+# 共通ユーティリティ
 # ---------------------------------------------------------------------------
 
 
@@ -94,89 +99,108 @@ def _normalize_name(name: str) -> str:
     return name.replace(" ", "").replace("\u3000", "")
 
 
+def _customer_full_name(customer: dict[str, Any]) -> str:
+    """顧客dictからフルネームを生成"""
+    return f"{customer.get('family_name', '')}{customer.get('given_name', '')}"
+
+
+def _build_unmatched_action(
+    note: ParsedNote, action_type: NoteActionType,
+) -> NoteImportAction:
+    """利用者が見つからない場合のUNMATCHEDアクションを生成"""
+    return NoteImportAction(
+        post_id=note.post_id,
+        action_type=action_type,
+        status=ImportActionStatus.UNMATCHED,
+        customer_name=note.customer_name,
+        description=f"利用者「{note.customer_name}」が見つかりません",
+        raw_content=note.raw_content,
+        date_from=note.date_from,
+        date_to=note.date_to,
+        confidence=note.confidence,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 利用者マッチング（インデックスベース）
+# ---------------------------------------------------------------------------
+
+
+def _build_customer_index(
+    customers: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """顧客リストからO(1)検索用インデックスを構築"""
+    idx: dict[str, dict[str, Any]] = {}
+    for cust in customers:
+        # フルネーム
+        full = _normalize_name(_customer_full_name(cust))
+        if full:
+            idx[full] = cust
+        # short名
+        short = _normalize_name(str(cust.get("short_name", "")))
+        if short:
+            idx[short] = cust
+    return idx
+
+
 def _match_customer(
-    customer_name: str, customers: list[dict[str, Any]],
+    customer_name: str, customer_index: dict[str, dict[str, Any]],
 ) -> dict[str, Any] | None:
-    """利用者名からFirestoreの顧客を特定する。
-
-    Args:
-        customer_name: ノートから抽出した利用者名
-        customers: Firestoreの顧客リスト（各要素は {id, family_name, given_name, ...} ）
-
-    Returns:
-        マッチした顧客の dict、見つからない場合は None
-    """
+    """利用者名からFirestoreの顧客を特定する（インデックスベース）"""
     normalized = _normalize_name(customer_name)
 
-    for cust in customers:
-        # フルネーム（姓+名）一致
-        full_name = _normalize_name(
-            cust.get("family_name", "") + cust.get("given_name", "")
-        )
-        if full_name and full_name == normalized:
-            return cust
+    # 完全一致（フルネーム or short名）
+    if normalized in customer_index:
+        return customer_index[normalized]
 
-        # 姓のみ一致（名が1文字以上一致する場合のみ）
-        family = _normalize_name(cust.get("family_name", ""))
+    # 部分一致（姓で始まり名が前方一致）
+    for key, cust in customer_index.items():
+        family = _normalize_name(str(cust.get("family_name", "")))
         if family and normalized.startswith(family):
             remaining = normalized[len(family):]
-            given = _normalize_name(cust.get("given_name", ""))
+            given = _normalize_name(str(cust.get("given_name", "")))
             if given and given.startswith(remaining):
                 return cust
 
-        # short名一致
-        short_name = _normalize_name(cust.get("short_name", ""))
-        if short_name and short_name == normalized:
-            return cust
-
     return None
+
+
+# ---------------------------------------------------------------------------
+# オーダーインデックス
+# ---------------------------------------------------------------------------
+
+
+def _build_order_index(
+    orders: list[dict[str, Any]],
+) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """オーダーリストから (customer_id, date) → orders のインデックスを構築"""
+    idx: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for order in orders:
+        if order.get("status") == "cancelled":
+            continue
+        cid = str(order.get("customer_id", ""))
+        d = str(order.get("date", ""))
+        idx[(cid, d)].append(order)
+    return idx
 
 
 def _find_matching_orders(
     customer_id: str,
     target_date: str,
-    orders: list[dict[str, Any]],
+    order_index: dict[tuple[str, str], list[dict[str, Any]]],
     time_range: TimeRange | None = None,
 ) -> list[dict[str, Any]]:
-    """指定顧客・日付のオーダーを検索する。
+    """指定顧客・日付のオーダーをインデックスから検索する"""
+    candidates = order_index.get((customer_id, target_date), [])
+    if not time_range:
+        return list(candidates)
 
-    Args:
-        customer_id: 顧客ID
-        target_date: 対象日（YYYY-MM-DD）
-        orders: Firestoreのオーダーリスト
-        time_range: 時間帯（指定時はstart_timeで絞り込み）
-
-    Returns:
-        マッチしたオーダーのリスト
-    """
-    matched: list[dict[str, Any]] = []
-    for order in orders:
-        if order.get("customer_id") != customer_id:
-            continue
-
-        # 日付比較
-        order_date = order.get("date", "")
-        if isinstance(order_date, datetime):
-            order_date = order_date.strftime("%Y-%m-%d")
-        elif hasattr(order_date, "date_string"):
-            order_date = str(order_date)
-
-        if order_date != target_date:
-            continue
-
-        # ステータスチェック（cancelled は除外）
-        if order.get("status") == "cancelled":
-            continue
-
-        # 時間帯チェック: start_time完全一致で絞り込む
-        if time_range is not None:
-            order_start = order.get("start_time", "")
-            if order_start and order_start != time_range.start:
-                continue
-
-        matched.append(order)
-
-    return matched
+    # start_time完全一致で絞り込む
+    filtered = [
+        o for o in candidates
+        if not o.get("start_time") or o["start_time"] == time_range.start
+    ]
+    return filtered if filtered else list(candidates)
 
 
 def _generate_date_range(date_from: str, date_to: str) -> list[str]:
@@ -201,27 +225,17 @@ def _generate_date_range(date_from: str, date_to: str) -> list[str]:
 def _build_cancel_action(
     note: ParsedNote,
     customer: dict[str, Any] | None,
-    orders: list[dict[str, Any]],
+    order_index: dict[tuple[str, str], list[dict[str, Any]]],
 ) -> NoteImportAction:
     """キャンセルアクションを生成"""
     if customer is None:
-        return NoteImportAction(
-            post_id=note.post_id,
-            action_type=NoteActionType.CANCEL,
-            status=ImportActionStatus.UNMATCHED,
-            customer_name=note.customer_name,
-            description=f"利用者「{note.customer_name}」が見つかりません",
-            raw_content=note.raw_content,
-            date_from=note.date_from,
-            date_to=note.date_to,
-            confidence=note.confidence,
-        )
+        return _build_unmatched_action(note, NoteActionType.CANCEL)
 
     dates = _generate_date_range(note.date_from, note.date_to)
-    matched_orders = []
+    matched_orders: list[dict[str, Any]] = []
     for d in dates:
         matched_orders.extend(
-            _find_matching_orders(customer["id"], d, orders, note.time_range)
+            _find_matching_orders(customer["id"], d, order_index, note.time_range)
         )
 
     if not matched_orders:
@@ -231,9 +245,7 @@ def _build_cancel_action(
             status=ImportActionStatus.NEEDS_REVIEW,
             customer_name=note.customer_name,
             matched_customer_id=customer["id"],
-            description=(
-                f"{note.customer_name}様の{note.date_from}のオーダーが見つかりません（キャンセル対象）"
-            ),
+            description=f"{note.customer_name}様の{note.date_from}のオーダーが見つかりません（キャンセル対象）",
             raw_content=note.raw_content,
             date_from=note.date_from,
             date_to=note.date_to,
@@ -241,7 +253,6 @@ def _build_cancel_action(
             confidence=note.confidence,
         )
 
-    # 複数オーダーがある場合は要確認
     if len(matched_orders) > 1 and note.time_range is None:
         return NoteImportAction(
             post_id=note.post_id,
@@ -269,7 +280,7 @@ def _build_cancel_action(
         matched_order=MatchedOrder(
             order_id=order["id"],
             customer_id=customer["id"],
-            customer_name=f"{customer.get('family_name', '')}{customer.get('given_name', '')}",
+            customer_name=_customer_full_name(customer),
             date=note.date_from,
             start_time=order.get("start_time", ""),
             end_time=order.get("end_time", ""),
@@ -289,27 +300,17 @@ def _build_cancel_action(
 def _build_update_time_action(
     note: ParsedNote,
     customer: dict[str, Any] | None,
-    orders: list[dict[str, Any]],
+    order_index: dict[tuple[str, str], list[dict[str, Any]]],
 ) -> NoteImportAction:
     """時間変更アクションを生成"""
     if customer is None:
-        return NoteImportAction(
-            post_id=note.post_id,
-            action_type=NoteActionType.UPDATE_TIME,
-            status=ImportActionStatus.UNMATCHED,
-            customer_name=note.customer_name,
-            description=f"利用者「{note.customer_name}」が見つかりません",
-            raw_content=note.raw_content,
-            date_from=note.date_from,
-            date_to=note.date_to,
-            confidence=note.confidence,
-        )
+        return _build_unmatched_action(note, NoteActionType.UPDATE_TIME)
 
     dates = _generate_date_range(note.date_from, note.date_to)
-    matched_orders = []
+    matched_orders: list[dict[str, Any]] = []
     for d in dates:
         matched_orders.extend(
-            _find_matching_orders(customer["id"], d, orders, note.time_range)
+            _find_matching_orders(customer["id"], d, order_index, note.time_range)
         )
 
     if not matched_orders:
@@ -329,7 +330,7 @@ def _build_update_time_action(
         )
 
     order = matched_orders[0]
-    update_fields: dict[str, Any] ={}
+    update_fields: dict[str, Any] = {}
     desc_parts: list[str] = []
 
     if note.new_time_range:
@@ -352,7 +353,7 @@ def _build_update_time_action(
         matched_order=MatchedOrder(
             order_id=order["id"],
             customer_id=customer["id"],
-            customer_name=f"{customer.get('family_name', '')}{customer.get('given_name', '')}",
+            customer_name=_customer_full_name(customer),
             date=note.date_from,
             start_time=order.get("start_time", ""),
             end_time=order.get("end_time", ""),
@@ -376,29 +377,21 @@ def _build_add_action(
     action_type: NoteActionType,
 ) -> NoteImportAction:
     """追加系アクションを生成（受診同行、担当者会議、新規）"""
-    service_type_map = {
-        NoteActionType.ADD_VISIT: "hospital_visit",
-        NoteActionType.ADD_MEETING: "meeting",
-        NoteActionType.ADD: "other",
+    _ACTION_CONFIG: dict[NoteActionType, tuple[str, str]] = {
+        NoteActionType.ADD_VISIT: ("hospital_visit", "受診同行"),
+        NoteActionType.ADD_MEETING: ("meeting", "担当者会議"),
+        NoteActionType.ADD: ("other", "新規"),
     }
 
     if customer is None:
-        return NoteImportAction(
-            post_id=note.post_id,
-            action_type=action_type,
-            status=ImportActionStatus.UNMATCHED,
-            customer_name=note.customer_name,
-            description=f"利用者「{note.customer_name}」が見つかりません",
-            raw_content=note.raw_content,
-            date_from=note.date_from,
-            date_to=note.date_to,
-            confidence=note.confidence,
-        )
+        return _build_unmatched_action(note, action_type)
 
-    new_order: dict[str, Any] ={
+    service_type, type_label = _ACTION_CONFIG.get(action_type, ("other", ""))
+
+    new_order: dict[str, Any] = {
         "customer_id": customer["id"],
         "date": note.date_from,
-        "service_type": service_type_map.get(action_type, "other"),
+        "service_type": service_type,
         "status": "pending",
         "assigned_staff_ids": [],
         "manually_edited": False,
@@ -414,13 +407,6 @@ def _build_add_action(
             f"〜{note.time_range.end}" if note.time_range.end else "〜"
         )
 
-    type_label = {
-        NoteActionType.ADD_VISIT: "受診同行",
-        NoteActionType.ADD_MEETING: "担当者会議",
-        NoteActionType.ADD: "新規",
-    }.get(action_type, "")
-
-    # 時間情報がない追加は要確認
     needs_review = note.time_range is None
 
     return NoteImportAction(
@@ -480,39 +466,30 @@ def generate_import_actions(
     customers: list[dict[str, Any]],
     orders: list[dict[str, Any]],
 ) -> list[NoteImportAction]:
-    """解析済みノートから実行アクションリストを生成する。
+    """解析済みノートから実行アクションリストを生成する。"""
+    # インデックスを先にビルド（O(N)→O(1)検索）
+    customer_index = _build_customer_index(customers)
+    order_index = _build_order_index(orders)
 
-    Args:
-        parsed_notes: parse_notes() の結果
-        customers: Firestoreの顧客リスト
-        orders: Firestoreのオーダーリスト
-
-    Returns:
-        NoteImportAction のリスト
-    """
     actions: list[NoteImportAction] = []
 
     for note in parsed_notes:
-        # ヘルパー休みは別処理
         if note.action_type == NoteActionType.STAFF_UNAVAILABILITY:
             actions.append(_build_staff_unavailability_action(note))
             continue
 
-        # 判定不能
         if note.action_type == NoteActionType.UNKNOWN:
             actions.append(_build_unknown_action(note))
             continue
 
-        # 利用者マッチング
         customer = None
         if note.customer_name:
-            customer = _match_customer(note.customer_name, customers)
+            customer = _match_customer(note.customer_name, customer_index)
 
-        # アクション種別ごとの処理
         if note.action_type == NoteActionType.CANCEL:
-            actions.append(_build_cancel_action(note, customer, orders))
+            actions.append(_build_cancel_action(note, customer, order_index))
         elif note.action_type == NoteActionType.UPDATE_TIME:
-            actions.append(_build_update_time_action(note, customer, orders))
+            actions.append(_build_update_time_action(note, customer, order_index))
         elif note.action_type in (
             NoteActionType.ADD_VISIT,
             NoteActionType.ADD_MEETING,
@@ -551,7 +528,7 @@ def build_import_preview(
 
 
 # ---------------------------------------------------------------------------
-# Firestore 反映
+# Firestore 反映（バッチ書き込み）
 # ---------------------------------------------------------------------------
 
 
@@ -559,7 +536,7 @@ def apply_import_actions(
     db: firestore.Client,
     actions: list[NoteImportAction],
 ) -> int:
-    """承認済みアクションをFirestoreに反映する。
+    """承認済みアクションをFirestoreにバッチ反映する。
 
     Args:
         db: Firestore クライアント
@@ -568,65 +545,53 @@ def apply_import_actions(
     Returns:
         反映したアクション数
     """
-    applied = 0
+    ready_actions = [a for a in actions if a.status == ImportActionStatus.READY]
+    if not ready_actions:
+        return 0
 
-    for action in actions:
-        if action.status != ImportActionStatus.READY:
-            continue
+    applied = 0
+    for i in range(0, len(ready_actions), BATCH_LIMIT):
+        batch = db.batch()
+        chunk = ready_actions[i : i + BATCH_LIMIT]
+
+        for action in chunk:
+            try:
+                if action.action_type == NoteActionType.CANCEL and action.matched_order:
+                    order_ref = db.collection("orders").document(action.matched_order.order_id)
+                    batch.update(order_ref, {
+                        "status": "cancelled",
+                        "updated_at": SERVER_TIMESTAMP,
+                    })
+
+                elif action.action_type == NoteActionType.UPDATE_TIME and action.matched_order and action.update_fields:
+                    order_ref = db.collection("orders").document(action.matched_order.order_id)
+                    batch.update(order_ref, {
+                        **action.update_fields,
+                        "updated_at": SERVER_TIMESTAMP,
+                    })
+
+                elif action.action_type in (
+                    NoteActionType.ADD_VISIT, NoteActionType.ADD_MEETING, NoteActionType.ADD,
+                ) and action.new_order_data:
+                    doc_id = str(uuid.uuid4())
+                    order_ref = db.collection("orders").document(doc_id)
+                    batch.set(order_ref, {
+                        **action.new_order_data,
+                        "created_at": SERVER_TIMESTAMP,
+                        "updated_at": SERVER_TIMESTAMP,
+                    })
+
+                else:
+                    continue
+
+                applied += 1
+
+            except Exception:
+                logger.exception("Failed to prepare action post_id=%s", action.post_id)
 
         try:
-            if action.action_type == NoteActionType.CANCEL and action.matched_order:
-                _apply_cancel(db, action)
-                applied += 1
-
-            elif action.action_type == NoteActionType.UPDATE_TIME and action.matched_order:
-                _apply_update(db, action)
-                applied += 1
-
-            elif action.action_type in (
-                NoteActionType.ADD_VISIT,
-                NoteActionType.ADD_MEETING,
-                NoteActionType.ADD,
-            ) and action.new_order_data:
-                _apply_add(db, action)
-                applied += 1
-
+            batch.commit()
         except Exception:
-            logger.exception(
-                "Failed to apply action post_id=%s", action.post_id
-            )
+            logger.exception("Failed to commit batch (chunk %d)", i // BATCH_LIMIT)
 
     return applied
-
-
-def _apply_cancel(db: firestore.Client, action: NoteImportAction) -> None:
-    """キャンセルを適用"""
-    assert action.matched_order is not None
-    order_ref = db.collection("orders").document(action.matched_order.order_id)
-    order_ref.update({
-        "status": "cancelled",
-        "updated_at": firestore.SERVER_TIMESTAMP,
-    })
-
-
-def _apply_update(db: firestore.Client, action: NoteImportAction) -> None:
-    """時間変更を適用"""
-    assert action.matched_order is not None
-    assert action.update_fields is not None
-    order_ref = db.collection("orders").document(action.matched_order.order_id)
-    update_data: dict[str, Any] ={
-        **action.update_fields,
-        "updated_at": firestore.SERVER_TIMESTAMP,
-    }
-    order_ref.update(update_data)
-
-
-def _apply_add(db: firestore.Client, action: NoteImportAction) -> None:
-    """新規オーダーを追加"""
-    assert action.new_order_data is not None
-    order_data = {
-        **action.new_order_data,
-        "created_at": firestore.SERVER_TIMESTAMP,
-        "updated_at": firestore.SERVER_TIMESTAMP,
-    }
-    db.collection("orders").add(order_data)

@@ -3,9 +3,10 @@
 import logging
 import os
 import re
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import google.auth  # type: ignore[import-untyped]
+from google.cloud import firestore as firestore_client  # type: ignore[import-untyped]
 import google.auth.compute_engine  # type: ignore[import-untyped]
 from fastapi import APIRouter, Depends, HTTPException, Query
 from googleapiclient.discovery import build  # type: ignore[import-untyped]
@@ -86,6 +87,19 @@ from optimizer.report.aggregation import (
     aggregate_status_summary,
 )
 from optimizer.report.sheets_writer import create_monthly_report_spreadsheet
+from optimizer.integrations.note_diff import (
+    ImportActionStatus,
+    NoteImportAction,
+    apply_import_actions,
+    build_import_preview,
+)
+from optimizer.integrations.note_parser import ParsedNote, TimeRange, parse_notes
+from optimizer.integrations.sheets_reader import mark_notes_as_handled, read_note_rows
+from optimizer.api.schemas import (
+    NoteImportActionResponse,
+    NoteImportMatchedOrder,
+    NoteImportTimeRange,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -547,10 +561,6 @@ def import_notes_preview(
     _auth: dict | None = Depends(require_manager_or_above),
 ) -> NoteImportPreviewResponse:
     """CURAノートを読み取り、差分プレビューを返す（dry-run）"""
-    from optimizer.integrations.note_diff import build_import_preview
-    from optimizer.integrations.note_parser import parse_notes
-    from optimizer.integrations.sheets_reader import read_note_rows
-
     # Google Sheets APIクライアント
     try:
         credentials = _get_sheets_credentials()
@@ -618,11 +628,8 @@ def import_notes_preview(
     )
 
 
-def _action_to_response(action: "NoteImportAction") -> "NoteImportActionResponse":
+def _action_to_response(action: NoteImportAction) -> NoteImportActionResponse:
     """NoteImportAction → NoteImportActionResponse 変換"""
-    from optimizer.api.schemas import NoteImportActionResponse, NoteImportMatchedOrder, NoteImportTimeRange
-    from optimizer.integrations.note_diff import NoteImportAction
-    from optimizer.integrations.note_parser import TimeRange
 
     matched = None
     if action.matched_order is not None:
@@ -690,14 +697,10 @@ def _orders_to_dicts(orders_raw: list[dict[str, object]]) -> list[dict[str, obje
 
 
 def _load_orders_for_notes(
-    db: "firestore.Client",  # type: ignore[name-defined]
-    parsed_notes: list["ParsedNote"],  # type: ignore[name-defined]
+    db: firestore_client.Client,
+    parsed_notes: list[ParsedNote],
 ) -> list[dict[str, object]]:
     """ノートの日付範囲に該当するオーダーをFirestoreから取得する"""
-    from datetime import timedelta
-
-    from optimizer.integrations.note_parser import ParsedNote
-
     if not parsed_notes:
         return []
 
@@ -748,13 +751,6 @@ def import_notes_apply(
     _auth: dict | None = Depends(require_manager_or_above),
 ) -> NoteImportApplyResponse:
     """プレビュー確認後、選択したノートアクションをFirestoreに反映する"""
-    from optimizer.integrations.note_diff import (
-        ImportActionStatus,
-        apply_import_actions,
-        build_import_preview,
-    )
-    from optimizer.integrations.note_parser import parse_notes
-    from optimizer.integrations.sheets_reader import mark_notes_as_handled, read_note_rows
 
     # Google Sheets APIクライアント
     try:

@@ -282,10 +282,13 @@ export interface NoteImportMatchedOrder {
   status: string;
 }
 
+export type NoteActionType = 'cancel' | 'update_time' | 'add_visit' | 'add_meeting' | 'add' | 'staff_unavailability' | 'unknown';
+export type ImportActionStatus = 'ready' | 'needs_review' | 'unmatched' | 'skipped';
+
 export interface NoteImportAction {
   post_id: string;
-  action_type: string;
-  status: string;
+  action_type: NoteActionType;
+  status: ImportActionStatus;
   customer_name: string | null;
   matched_customer_id: string | null;
   matched_order: NoteImportMatchedOrder | null;
