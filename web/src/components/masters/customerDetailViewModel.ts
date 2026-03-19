@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 import type { Customer, Helper, ServiceTypeDoc, DayOfWeek } from '@/types';
+import { formatFullName, formatFullNameKana } from '@/utils/name';
 
 // ── 表示ラベル定数 ──────────────────────────────────────────
 const GENDER_REQUIREMENT_LABELS: Record<string, string> = {
@@ -79,12 +80,12 @@ export interface CustomerDetailViewModel {
 
 function resolveStaffName(id: string, helpers: Map<string, Helper>): string {
   const h = helpers.get(id);
-  return h ? `${h.name.family} ${h.name.given}` : id;
+  return h ? formatFullName(h.name) : id;
 }
 
 function resolveCustomerName(id: string, customers: Map<string, Customer>): string {
   const c = customers.get(id);
-  return c ? `${c.name.family} ${c.name.given}` : id;
+  return c ? formatFullName(c.name) : id;
 }
 
 export function buildCustomerDetailViewModel(
@@ -93,10 +94,10 @@ export function buildCustomerDetailViewModel(
   customers: Map<string, Customer>,
   serviceTypes: Map<string, ServiceTypeDoc>,
 ): CustomerDetailViewModel {
-  const fullName = `${customer.name.family} ${customer.name.given}`;
+  const fullName = formatFullName(customer.name);
   const fullKana =
     customer.name.family_kana || customer.name.given_kana
-      ? `${customer.name.family_kana ?? ''} ${customer.name.given_kana ?? ''}`.trim()
+      ? formatFullNameKana(customer.name)
       : null;
 
   const preferredSet = new Set(customer.preferred_staff_ids ?? []);

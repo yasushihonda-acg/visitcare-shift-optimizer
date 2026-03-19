@@ -35,6 +35,7 @@ import { createCustomer, updateCustomer } from '@/lib/firestore/customers';
 import { geocodeAddress } from '@/lib/geocoding';
 import { useHelpers } from '@/hooks/useHelpers';
 import { useCustomers } from '@/hooks/useCustomers';
+import { formatFullName } from '@/utils/name';
 import type { Customer } from '@/types';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -496,7 +497,7 @@ export function CustomerEditDialog({
                                   className="flex-1 text-sm cursor-pointer select-none"
                                 >
                                   {h
-                                    ? `${h.name.family} ${h.name.given}`
+                                    ? formatFullName(h.name)
                                     : id}
                                   {isPreferred && (
                                     <span className="ml-2 text-xs text-amber-600 font-medium">

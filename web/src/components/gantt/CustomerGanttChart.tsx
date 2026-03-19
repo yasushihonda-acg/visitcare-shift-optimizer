@@ -10,6 +10,7 @@ import {
   getServiceColor,
 } from './constants';
 import { timeToMinutes } from '@/utils/time';
+import { formatDisplayName } from '@/utils/name';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 import type { Customer, Helper, Order } from '@/types';
 
@@ -45,7 +46,7 @@ function CustomerOrderBar({ order, chartWidth, helpers, onOrderClick }: Customer
     order.assigned_staff_ids
       .map((id) => {
         const h = helpers.get(id);
-        return h ? (h.name.short ?? `${h.name.family}${h.name.given}`) : id;
+        return h ? (formatDisplayName(h.name)) : id;
       })
       .join(' ') || '未割当';
 
@@ -126,10 +127,10 @@ export function CustomerGanttChart({
       }))
       .sort((a, b) => {
         const nameA = a.customer
-          ? (a.customer.name.short ?? `${a.customer.name.family}${a.customer.name.given}`)
+          ? (formatDisplayName(a.customer.name))
           : a.customerId;
         const nameB = b.customer
-          ? (b.customer.name.short ?? `${b.customer.name.family}${b.customer.name.given}`)
+          ? (formatDisplayName(b.customer.name))
           : b.customerId;
         return nameA.localeCompare(nameB, 'ja');
       });
@@ -174,7 +175,7 @@ export function CustomerGanttChart({
       {/* 利用者行 */}
       {customerRows.map(({ customer, customerId, orders }) => {
         const customerName = customer
-          ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
+          ? (formatDisplayName(customer.name))
           : customerId;
         return (
           <div key={customerId} className="flex border-b" style={{ height: ROW_HEIGHT_PX }}>
@@ -213,7 +214,7 @@ export function CustomerGanttChart({
             {schedule.unassignedOrders.map((order) => {
               const customer = customers.get(order.customer_id);
               const customerName = customer
-                ? (customer.name.short ?? `${customer.name.family}${customer.name.given}`)
+                ? (formatDisplayName(customer.name))
                 : order.customer_id;
               return (
                 <UnassignedOrderBar

@@ -1,5 +1,6 @@
 import type { Order, Helper, Customer, ServiceType, ServiceTypeDoc } from '@/types';
 import { timeToMinutes } from '@/utils/time';
+import { formatFullName } from '@/utils/name';
 
 // ── 型定義 ────────────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ export function aggregateStaffSummary(
     for (const helperId of order.assigned_staff_ids) {
       const existing = map.get(helperId);
       const helper = helpers.get(helperId);
-      const name = helper ? `${helper.name.family} ${helper.name.given}` : '(不明)';
+      const name = helper ? formatFullName(helper.name) : '(不明)';
       if (existing) {
         existing.visitCount += 1;
         existing.totalMinutes += duration;
@@ -88,7 +89,7 @@ export function aggregateCustomerSummary(
     const customerId = order.customer_id;
     const existing = map.get(customerId);
     const customer = customers.get(customerId);
-    const name = customer ? `${customer.name.family} ${customer.name.given}` : '(不明)';
+    const name = customer ? formatFullName(customer.name) : '(不明)';
     if (existing) {
       existing.visitCount += 1;
       existing.totalMinutes += duration;

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { HelperEditDialog } from '@/components/masters/HelperEditDialog';
 import { HelperDetailSheet } from '@/components/masters/HelperDetailSheet';
+import { formatFullName } from '@/utils/name';
 import type { Helper } from '@/types';
 
 const TRANSPORTATION_LABELS: Record<string, string> = {
@@ -135,7 +136,7 @@ export default function HelpersPage() {
                   onClick={() => openDetail(helper)}
                 >
                   <TableCell className="font-medium">
-                    {helper.name.family} {helper.name.given}
+                    {formatFullName(helper.name)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {helper.qualifications.join(', ') || '-'}

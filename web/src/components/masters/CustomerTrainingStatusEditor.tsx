@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { formatFullName } from '@/utils/name';
 import type { Customer, TrainingStatus } from '@/types';
 
 interface CustomerTrainingStatusEditorProps {
@@ -107,7 +108,7 @@ export function CustomerTrainingStatusEditor({
                 className="flex items-center gap-2 rounded-md border px-2 py-1.5"
               >
                 <span className="text-sm flex-1">
-                  {c ? `${c.name.family} ${c.name.given}` : customerId}
+                  {c ? formatFullName(c.name) : customerId}
                 </span>
                 <Select
                   value={status}
@@ -171,7 +172,7 @@ export function CustomerTrainingStatusEditor({
                 onClick={() => setSelectedCustomerId(c.id)}
               >
                 <span className="text-sm">
-                  {c.name.family} {c.name.given}
+                  {formatFullName(c.name)}
                 </span>
               </label>
             ))}

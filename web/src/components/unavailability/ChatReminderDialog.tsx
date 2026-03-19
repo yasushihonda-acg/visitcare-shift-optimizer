@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { sendChatReminder, OptimizeApiError } from '@/lib/api/optimizer';
 import { toast } from 'sonner';
+import { formatFullName } from '@/utils/name';
 import type { Helper } from '@/types';
 
 interface ChatReminderDialogProps {
@@ -83,7 +84,7 @@ export function ChatReminderDialog({
       .filter((h) => selected.has(h.id))
       .map((h) => ({
         staff_id: h.id,
-        name: `${h.name.family} ${h.name.given}`,
+        name: formatFullName(h.name),
         email: h.email!,
       }));
 
@@ -157,7 +158,7 @@ export function ChatReminderDialog({
                   onCheckedChange={() => toggleStaff(h.id)}
                 />
                 <span className="text-sm flex-1">
-                  {h.name.family} {h.name.given}
+                  {formatFullName(h.name)}
                 </span>
                 {isUnsub && (
                   <span className="text-xs text-destructive font-medium">未提出</span>
@@ -177,7 +178,7 @@ export function ChatReminderDialog({
 
         {noEmailStaff.length > 0 && (
           <p className="text-xs text-amber-600">
-            {noEmailStaff.map((h) => `${h.name.family} ${h.name.given}`).join('、')}
+            {noEmailStaff.map((h) => formatFullName(h.name)).join('、')}
             はメールアドレス未登録のため送信できません
           </p>
         )}

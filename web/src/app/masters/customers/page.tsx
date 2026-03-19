@@ -21,6 +21,7 @@ import { CustomerEditDialog } from '@/components/masters/CustomerEditDialog';
 import { CustomerDetailSheet } from '@/components/masters/CustomerDetailSheet';
 import { useCustomerDetailViewModel } from '@/components/masters/customerDetailViewModel';
 import { DAY_OF_WEEK_ORDER } from '@/types';
+import { formatFullName } from '@/utils/name';
 import type { Customer } from '@/types';
 
 /** カタカナをひらがなに変換（検索正規化用） */
@@ -247,7 +248,7 @@ export default function CustomersPage() {
                     {customer.aozora_id ?? '-'}
                   </TableCell>
                   <TableCell className="font-medium">
-                    <div>{customer.name.family} {customer.name.given}</div>
+                    <div>{formatFullName(customer.name)}</div>
                     {(customer.name.family_kana || customer.name.given_kana) && (
                       <div className="text-xs text-muted-foreground font-normal">
                         {customer.name.family_kana} {customer.name.given_kana}

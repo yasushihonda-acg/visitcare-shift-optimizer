@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { UnavailabilityEditDialog } from '@/components/masters/UnavailabilityEditDialog';
+import { formatFullName } from '@/utils/name';
 import type { StaffUnavailability } from '@/types';
 import { DAY_OF_WEEK_LABELS, DAY_OF_WEEK_ORDER } from '@/types';
 
@@ -60,7 +61,7 @@ export default function UnavailabilityPage() {
     () =>
       Array.from(helpers.values())
         .filter((h) => !submittedStaffIds.has(h.id))
-        .map((h) => ({ id: h.id, name: `${h.name.family} ${h.name.given}` })),
+        .map((h) => ({ id: h.id, name: formatFullName(h.name) })),
     [helpers, submittedStaffIds],
   );
 
@@ -189,7 +190,7 @@ export default function UnavailabilityPage() {
                 return (
                   <TableRow key={u.id} className={index % 2 === 1 ? 'bg-muted/30' : ''}>
                     <TableCell className="font-medium">
-                      {h ? `${h.name.family} ${h.name.given}` : u.staff_id}
+                      {h ? formatFullName(h.name) : u.staff_id}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

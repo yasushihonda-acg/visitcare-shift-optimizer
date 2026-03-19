@@ -8,6 +8,7 @@ import { useServiceTypes } from '@/hooks/useServiceTypes';
 import { useAuthRole } from '@/lib/auth/AuthProvider';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { formatDisplayName, formatFullName } from '@/utils/name';
 import {
   Table,
   TableBody,
@@ -84,8 +85,8 @@ export default function WeeklySchedulePage() {
 
   const filtered = useMemo(() => {
     const list = Array.from(customers.values()).sort((a, b) => {
-      const na = a.name.short ?? `${a.name.family}${a.name.given}`;
-      const nb = b.name.short ?? `${b.name.family}${b.name.given}`;
+      const na = formatDisplayName(a.name);
+      const nb = formatDisplayName(b.name);
       return na.localeCompare(nb, 'ja');
     });
     if (!search.trim()) return list;
@@ -153,8 +154,7 @@ export default function WeeklySchedulePage() {
               filtered.map((customer, index) => {
                 const total = totalWeeklySlots(customer);
                 const name =
-                  customer.name.short ??
-                  `${customer.name.family} ${customer.name.given}`;
+                  customer.name.short ?? formatFullName(customer.name);
                 return (
                   <TableRow
                     key={customer.id}
@@ -164,7 +164,7 @@ export default function WeeklySchedulePage() {
                     <TableCell
                       className="font-medium sticky left-0 z-10 border-r"
                       style={{ backgroundColor: index % 2 === 1 ? 'hsl(var(--muted) / 0.3)' : 'hsl(var(--background))' }}
-                      title={`${customer.name.family} ${customer.name.given}`}
+                      title={formatFullName(customer.name)}
                     >
                       <div className="truncate max-w-[120px]">{name}</div>
                       {(customer.name.family_kana || customer.name.given_kana) && (

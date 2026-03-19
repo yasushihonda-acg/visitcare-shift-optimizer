@@ -13,6 +13,7 @@ import { getStaffCount } from '@/lib/dnd/staffCount';
 import { computeNewStaffIds } from '@/lib/dnd/computeStaffIds';
 import { createDragDropCommand } from '@/lib/undo/commands';
 import type { UndoCommand } from '@/lib/undo/types';
+import { formatFullName } from '@/utils/name';
 
 interface UseDragAndDropInput {
   helperRows: HelperScheduleRow[];
@@ -277,7 +278,7 @@ export function useDragAndDrop(input: UseDragAndDropInput) {
         if (onCommand) {
           const targetHelper = helpers.get(targetId);
           const targetHelperName = targetHelper
-            ? `${targetHelper.name.family} ${targetHelper.name.given}`
+            ? formatFullName(targetHelper.name)
             : targetId;
           const timeLabel = shifted ? `${shifted.newStartTime}-${shifted.newEndTime}` : null;
           const label = isSameHelper

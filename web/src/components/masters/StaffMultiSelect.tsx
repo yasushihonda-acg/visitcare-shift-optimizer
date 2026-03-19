@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatFullName, formatCompactName } from '@/utils/name';
 import type { Helper, Customer, TrainingStatus, GenderRequirement } from '@/types';
 import { TRAINING_STATUS_LABELS, TRAINING_STATUS_VARIANT } from '@/lib/labels/training-status';
 
@@ -115,7 +116,7 @@ export function StaffMultiSelect({
     const hasAllowed = allowedIds.length > 0;
 
     const sortByName = (a: Helper, b: Helper) =>
-      `${a.name.family}${a.name.given}`.localeCompare(`${b.name.family}${b.name.given}`, 'ja');
+      formatCompactName(a.name).localeCompare(formatCompactName(b.name), 'ja');
 
     if (preferred.length > 0) {
       groups.push({ group: 'preferred', label: GROUP_LABELS.preferred, items: preferred.sort(sortByName) });
@@ -164,7 +165,7 @@ export function StaffMultiSelect({
           onCheckedChange={() => toggleStaff(h.id)}
         />
         <span className="text-sm">
-          {h.name.family} {h.name.given}
+          {formatFullName(h.name)}
         </span>
         <span className="text-xs text-muted-foreground ml-auto">
           {h.qualifications.join(', ') || '-'}
@@ -288,7 +289,7 @@ export function StaffMultiSelect({
             const h = helpers.get(id);
             return (
               <Badge key={id} variant="secondary" className="gap-1 pr-1">
-                {h ? `${h.name.family} ${h.name.given}` : id}
+                {h ? formatFullName(h.name) : id}
                 <button
                   type="button"
                   onClick={() => removeStaff(id)}

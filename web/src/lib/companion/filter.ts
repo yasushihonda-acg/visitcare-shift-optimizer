@@ -1,5 +1,6 @@
 import { isOverlapping } from '@/components/gantt/constants';
 import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek } from '@/types';
+import { formatCompactName } from '@/utils/name';
 
 /**
  * 同行（OJT）候補ヘルパーを返す。
@@ -38,8 +39,8 @@ export function getCompanionCandidates(input: {
 
   // 名前順ソート
   candidates.sort((a, b) =>
-    `${a.name.family}${a.name.given}`.localeCompare(
-      `${b.name.family}${b.name.given}`,
+    formatCompactName(a.name).localeCompare(
+      formatCompactName(b.name),
       'ja',
     ),
   );

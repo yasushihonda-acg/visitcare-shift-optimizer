@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
+import { formatFullName } from '@/utils/name';
 import type { Helper, Customer, TrainingStatus } from '@/types';
 
 const TRANSPORTATION_LABELS: Record<string, string> = {
@@ -76,7 +77,7 @@ export function HelperDetailSheet({
 }: HelperDetailSheetProps) {
   if (!helper) return null;
 
-  const fullName = `${helper.name.family} ${helper.name.given}`;
+  const fullName = formatFullName(helper.name);
 
   const hasWeeklyAvailability = DAY_OF_WEEK_ORDER.some(
     (d) => helper.weekly_availability[d] && helper.weekly_availability[d]!.length > 0
@@ -222,7 +223,7 @@ export function HelperDetailSheet({
                       {pendingTraining.map(([customerId, status]) => {
                         const customer = customers.get(customerId);
                         const displayName = customer
-                          ? `${customer.name.family} ${customer.name.given}`
+                          ? formatFullName(customer.name)
                           : customerId;
                         return (
                           <div key={customerId} className="flex items-center justify-between text-sm">
@@ -246,7 +247,7 @@ export function HelperDetailSheet({
                       {independentEntries.map(([customerId]) => {
                         const customer = customers.get(customerId);
                         const displayName = customer
-                          ? `${customer.name.family} ${customer.name.given}`
+                          ? formatFullName(customer.name)
                           : customerId;
                         return (
                           <Badge key={customerId} variant="default" className="text-xs">

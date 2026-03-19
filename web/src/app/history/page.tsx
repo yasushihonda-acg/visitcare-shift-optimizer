@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/sheet';
 import { useOptimizationRuns, useOptimizationRunDetail } from '@/hooks/useOptimizationRuns';
 import { useHelpers } from '@/hooks/useHelpers';
+import { formatFullName } from '@/utils/name';
 
 function StatusBadge({ status, dryRun }: { status: string; dryRun: boolean }) {
   if (dryRun) {
@@ -70,7 +71,7 @@ function RunDetailPanel({
   const { helpers } = useHelpers();
 
   const helperNameMap = new Map<string, string>();
-  helpers.forEach((h, id) => helperNameMap.set(id, `${h.name.family} ${h.name.given}`));
+  helpers.forEach((h, id) => helperNameMap.set(id, formatFullName(h.name)));
 
   if (loading || !detail) {
     return (
