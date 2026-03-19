@@ -158,13 +158,13 @@ EXPECTED_EXPORT_FIELDS = {
 class TestExportReportContract:
     """POST /export-report のFE-BE契約テスト"""
 
-    @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
-    @patch("optimizer.api.routes.build")
-    @patch("optimizer.api.routes.google.auth.default")
-    @patch("optimizer.api.routes.load_all_customers")
-    @patch("optimizer.api.routes.load_all_helpers")
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.create_monthly_report_spreadsheet")
+    @patch("optimizer.api.routes_report.build")
+    @patch("optimizer.api.routes_report.google.auth.default")
+    @patch("optimizer.api.routes_report.load_all_customers")
+    @patch("optimizer.api.routes_report.load_all_helpers")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_response_has_all_required_fields(
         self,
         mock_get_db: MagicMock,
@@ -209,8 +209,8 @@ class TestExportReportContract:
         response = client.post("/export-report", json={"year_month": "2026/02"})
         assert response.status_code == 422
 
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_not_found_returns_detail(
         self, mock_get_db: MagicMock, mock_load_orders: MagicMock
     ) -> None:
