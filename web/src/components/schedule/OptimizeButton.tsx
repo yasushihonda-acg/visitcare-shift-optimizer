@@ -16,7 +16,6 @@ import {
 import { toast } from 'sonner';
 import { runOptimize, OptimizeApiError } from '@/lib/api/optimizer';
 import { useScheduleContext } from '@/contexts/ScheduleContext';
-import { useScheduleData } from '@/hooks/useScheduleData';
 import {
   ConstraintWeightsForm,
   DEFAULT_WEIGHTS,
@@ -25,15 +24,19 @@ import {
 import { checkAllowedStaff, type AllowedStaffWarning } from '@/lib/validation/allowed-staff-check';
 import { DAY_OF_WEEK_LABELS } from '@/types';
 import { clearCompanionField } from '@/lib/firestore/updateOrder';
+import type { Customer, Helper, Order, StaffUnavailability } from '@/types';
 
 interface OptimizeButtonProps {
+  customers: Map<string, Customer>;
+  helpers: Map<string, Helper>;
+  orders: Order[];
+  unavailability: StaffUnavailability[];
   onHistoryClear?: () => void;
   onComplete?: () => void;
 }
 
-export function OptimizeButton({ onHistoryClear, onComplete }: OptimizeButtonProps = {}) {
+export function OptimizeButton({ customers, helpers, orders, unavailability, onHistoryClear, onComplete }: OptimizeButtonProps) {
   const { weekStart } = useScheduleContext();
-  const { customers, helpers, orders, unavailability } = useScheduleData(weekStart);
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
