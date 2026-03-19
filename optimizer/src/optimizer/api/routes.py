@@ -48,10 +48,13 @@ from optimizer.api.schemas import (
     ErrorResponse,
     ExportReportRequest,
     ExportReportResponse,
+    NoteImportActionResponse,
     NoteImportApplyRequest,
     NoteImportApplyResponse,
+    NoteImportMatchedOrder,
     NoteImportPreviewResponse,
     NoteImportRequest,
+    NoteImportTimeRange,
     OptimizationParametersResponse,
     OptimizationRunDetailResponse,
     OptimizationRunListResponse,
@@ -78,6 +81,14 @@ from optimizer.data.firestore_writer import (
     write_assignments,
 )
 from optimizer.engine.solver import SoftWeights, diagnose_infeasibility, solve
+from optimizer.integrations.note_diff import (
+    ImportActionStatus,
+    NoteImportAction,
+    apply_import_actions,
+    build_import_preview,
+)
+from optimizer.integrations.note_parser import ParsedNote, TimeRange, parse_notes
+from optimizer.integrations.sheets_reader import mark_notes_as_handled, read_note_rows
 from optimizer.models import Assignment, OptimizationParameters, OptimizationRunRecord
 from optimizer.notification.chat_sender import send_chat_dms
 from optimizer.report.aggregation import (
@@ -87,19 +98,6 @@ from optimizer.report.aggregation import (
     aggregate_status_summary,
 )
 from optimizer.report.sheets_writer import create_monthly_report_spreadsheet
-from optimizer.integrations.note_diff import (
-    ImportActionStatus,
-    NoteImportAction,
-    apply_import_actions,
-    build_import_preview,
-)
-from optimizer.integrations.note_parser import ParsedNote, TimeRange, parse_notes
-from optimizer.integrations.sheets_reader import mark_notes_as_handled, read_note_rows
-from optimizer.api.schemas import (
-    NoteImportActionResponse,
-    NoteImportMatchedOrder,
-    NoteImportTimeRange,
-)
 
 logger = logging.getLogger(__name__)
 

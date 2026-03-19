@@ -371,22 +371,23 @@ def _build_update_time_action(
     )
 
 
+_ADD_ACTION_CONFIG: dict[NoteActionType, tuple[str, str]] = {
+    NoteActionType.ADD_VISIT: ("hospital_visit", "受診同行"),
+    NoteActionType.ADD_MEETING: ("meeting", "担当者会議"),
+    NoteActionType.ADD: ("other", "新規"),
+}
+
+
 def _build_add_action(
     note: ParsedNote,
     customer: dict[str, Any] | None,
     action_type: NoteActionType,
 ) -> NoteImportAction:
     """追加系アクションを生成（受診同行、担当者会議、新規）"""
-    _ACTION_CONFIG: dict[NoteActionType, tuple[str, str]] = {
-        NoteActionType.ADD_VISIT: ("hospital_visit", "受診同行"),
-        NoteActionType.ADD_MEETING: ("meeting", "担当者会議"),
-        NoteActionType.ADD: ("other", "新規"),
-    }
-
     if customer is None:
         return _build_unmatched_action(note, action_type)
 
-    service_type, type_label = _ACTION_CONFIG.get(action_type, ("other", ""))
+    service_type, type_label = _ADD_ACTION_CONFIG.get(action_type, ("other", ""))
 
     new_order: dict[str, Any] = {
         "customer_id": customer["id"],
@@ -553,6 +554,7 @@ def apply_import_actions(
     for i in range(0, len(ready_actions), BATCH_LIMIT):
         batch = db.batch()
         chunk = ready_actions[i : i + BATCH_LIMIT]
+        chunk_count = 0
 
         for action in chunk:
             try:
@@ -584,13 +586,14 @@ def apply_import_actions(
                 else:
                     continue
 
-                applied += 1
+                chunk_count += 1
 
             except Exception:
                 logger.exception("Failed to prepare action post_id=%s", action.post_id)
 
         try:
             batch.commit()
+            applied += chunk_count  # commit成功後にカウント
         except Exception:
             logger.exception("Failed to commit batch (chunk %d)", i // BATCH_LIMIT)
 
