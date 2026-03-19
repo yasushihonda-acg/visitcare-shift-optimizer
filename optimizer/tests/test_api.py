@@ -460,8 +460,8 @@ class TestResetAssignmentsEndpoint:
 class TestDuplicateWeekEndpoint:
     """オーダー一括複製エンドポイントのテスト"""
 
-    @patch("optimizer.api.routes.duplicate_week_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_orders.duplicate_week_orders")
+    @patch("optimizer.api.routes_orders.get_firestore_client")
     def test_successful_duplicate(
         self,
         mock_get_db: MagicMock,
@@ -483,8 +483,8 @@ class TestDuplicateWeekEndpoint:
         assert data["skipped_count"] == 0
         assert data["target_week_start"] == "2026-02-16"
 
-    @patch("optimizer.api.routes.duplicate_week_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_orders.duplicate_week_orders")
+    @patch("optimizer.api.routes_orders.get_firestore_client")
     def test_existing_target_orders_returns_409(
         self,
         mock_get_db: MagicMock,
@@ -547,8 +547,8 @@ class TestDuplicateWeekEndpoint:
 class TestApplyUnavailabilityEndpoint:
     """POST /orders/apply-unavailability のテスト"""
 
-    @patch("optimizer.api.routes.apply_unavailability_to_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_orders.apply_unavailability_to_orders")
+    @patch("optimizer.api.routes_orders.get_firestore_client")
     def test_successful_apply(
         self,
         mock_get_db: MagicMock,
@@ -592,8 +592,8 @@ class TestApplyUnavailabilityEndpoint:
         assert response.status_code == 422
         assert "月曜日ではありません" in response.json()["detail"]
 
-    @patch("optimizer.api.routes.apply_unavailability_to_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_orders.apply_unavailability_to_orders")
+    @patch("optimizer.api.routes_orders.get_firestore_client")
     def test_no_modifications(
         self,
         mock_get_db: MagicMock,
@@ -815,8 +815,8 @@ class TestApplyUnavailabilityLogic:
 class TestApplyIrregularPatternsEndpoint:
     """POST /orders/apply-irregular-patterns のテスト"""
 
-    @patch("optimizer.api.routes.apply_irregular_patterns")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_orders.apply_irregular_patterns")
+    @patch("optimizer.api.routes_orders.get_firestore_client")
     def test_successful_apply(
         self,
         mock_get_db: MagicMock,
@@ -995,8 +995,8 @@ class TestApplyIrregularPatternsLogic:
 class TestOrderChangeNotifyEndpoint:
     """POST /notify/order-change のテスト"""
 
-    @patch("optimizer.api.routes.send_chat_dms")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_notify.send_chat_dms")
+    @patch("optimizer.api.routes_notify.get_firestore_client")
     def test_successful_notify(
         self,
         mock_get_db: MagicMock,
@@ -1030,7 +1030,7 @@ class TestOrderChangeNotifyEndpoint:
         assert data["total_targets"] == 1
         assert data["results"][0]["success"] is True
 
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_notify.get_firestore_client")
     def test_no_email_returns_zero_sent(
         self,
         mock_get_db: MagicMock,
@@ -1069,7 +1069,7 @@ class TestOrderChangeNotifyEndpoint:
 class TestDailyChecklistEndpoint:
     """GET /checklist/next-day のテスト"""
 
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_successful_checklist(
         self,
         mock_get_db: MagicMock,
@@ -1127,7 +1127,7 @@ class TestDailyChecklistEndpoint:
         assert data["staff_checklists"][0]["staff_name"] == "佐藤 花子"
         assert len(data["staff_checklists"][0]["orders"]) == 1
 
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_empty_checklist(
         self,
         mock_get_db: MagicMock,
@@ -1154,8 +1154,8 @@ class TestDailyChecklistEndpoint:
 class TestNextDayNotifyEndpoint:
     """POST /notify/next-day のテスト"""
 
-    @patch("optimizer.api.routes.send_chat_dm")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_notify.send_chat_dm")
+    @patch("optimizer.api.routes_notify.get_firestore_client")
     def test_successful_notify(
         self,
         mock_get_db: MagicMock,
@@ -1223,7 +1223,7 @@ class TestNextDayNotifyEndpoint:
         assert response.status_code == 422
         assert "未実装" in response.json()["detail"]
 
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_notify.get_firestore_client")
     def test_no_orders_returns_empty(
         self,
         mock_get_db: MagicMock,

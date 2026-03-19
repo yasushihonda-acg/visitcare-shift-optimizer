@@ -5,7 +5,11 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from optimizer.api.routes import router
+from optimizer.api.routes import router as core_router
+from optimizer.api.routes_import import router as import_router
+from optimizer.api.routes_notify import router as notify_router
+from optimizer.api.routes_orders import router as orders_router
+from optimizer.api.routes_report import router as report_router
 
 app = FastAPI(
     title="Visitcare Shift Optimizer API",
@@ -21,4 +25,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(core_router)
+app.include_router(import_router)
+app.include_router(notify_router)
+app.include_router(orders_router)
+app.include_router(report_router)

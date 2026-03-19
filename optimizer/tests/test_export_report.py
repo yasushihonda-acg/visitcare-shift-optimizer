@@ -17,13 +17,13 @@ def _make_mock_sheets_result() -> dict[str, str]:
 
 
 class TestExportReportEndpoint:
-    @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
-    @patch("optimizer.api.routes.build")
-    @patch("optimizer.api.routes.google.auth.default")
-    @patch("optimizer.api.routes.load_all_customers")
-    @patch("optimizer.api.routes.load_all_helpers")
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.create_monthly_report_spreadsheet")
+    @patch("optimizer.api.routes_report.build")
+    @patch("optimizer.api.routes_report.google.auth.default")
+    @patch("optimizer.api.routes_report.load_all_customers")
+    @patch("optimizer.api.routes_report.load_all_helpers")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_success(
         self,
         mock_get_db: MagicMock,
@@ -71,13 +71,13 @@ class TestExportReportEndpoint:
         assert data["sheets_created"] == 4
         assert data["shared_with"] is None
 
-    @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
-    @patch("optimizer.api.routes.build")
-    @patch("optimizer.api.routes.google.auth.default")
-    @patch("optimizer.api.routes.load_all_customers")
-    @patch("optimizer.api.routes.load_all_helpers")
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.create_monthly_report_spreadsheet")
+    @patch("optimizer.api.routes_report.build")
+    @patch("optimizer.api.routes_report.google.auth.default")
+    @patch("optimizer.api.routes_report.load_all_customers")
+    @patch("optimizer.api.routes_report.load_all_helpers")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_with_email_share(
         self,
         mock_get_db: MagicMock,
@@ -119,8 +119,8 @@ class TestExportReportEndpoint:
         call_kwargs = mock_create_sheet.call_args.kwargs
         assert call_kwargs["share_with_email"] == "manager@example.com"
 
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_no_orders_returns_404(
         self,
         mock_get_db: MagicMock,
@@ -153,8 +153,8 @@ class TestExportReportEndpoint:
         )
         assert response.status_code == 422
 
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_firestore_error_returns_500(
         self,
         mock_get_db: MagicMock,
@@ -171,11 +171,11 @@ class TestExportReportEndpoint:
         assert response.status_code == 500
         assert "Firestore" in response.json()["detail"]
 
-    @patch("optimizer.api.routes.build")
-    @patch("optimizer.api.routes.load_all_customers")
-    @patch("optimizer.api.routes.load_all_helpers")
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.build")
+    @patch("optimizer.api.routes_report.load_all_customers")
+    @patch("optimizer.api.routes_report.load_all_helpers")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_sheets_api_error_returns_503(
         self,
         mock_get_db: MagicMock,
@@ -210,13 +210,13 @@ class TestExportReportEndpoint:
         assert response.status_code == 503
         assert "Google Sheets API" in response.json()["detail"]
 
-    @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
-    @patch("optimizer.api.routes.build")
-    @patch("optimizer.api.routes.google.auth.default")
-    @patch("optimizer.api.routes.load_all_customers")
-    @patch("optimizer.api.routes.load_all_helpers")
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.create_monthly_report_spreadsheet")
+    @patch("optimizer.api.routes_report.build")
+    @patch("optimizer.api.routes_report.google.auth.default")
+    @patch("optimizer.api.routes_report.load_all_customers")
+    @patch("optimizer.api.routes_report.load_all_helpers")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_december_year_boundary(
         self,
         mock_get_db: MagicMock,
@@ -254,13 +254,13 @@ class TestExportReportEndpoint:
         assert response.status_code == 200
         assert response.json()["title"] == "月次レポート 2025年12月"
 
-    @patch("optimizer.api.routes.create_monthly_report_spreadsheet")
-    @patch("optimizer.api.routes.build")
-    @patch("optimizer.api.routes.google.auth.default")
-    @patch("optimizer.api.routes.load_all_customers")
-    @patch("optimizer.api.routes.load_all_helpers")
-    @patch("optimizer.api.routes.load_monthly_orders")
-    @patch("optimizer.api.routes.get_firestore_client")
+    @patch("optimizer.api.routes_report.create_monthly_report_spreadsheet")
+    @patch("optimizer.api.routes_report.build")
+    @patch("optimizer.api.routes_report.google.auth.default")
+    @patch("optimizer.api.routes_report.load_all_customers")
+    @patch("optimizer.api.routes_report.load_all_helpers")
+    @patch("optimizer.api.routes_report.load_monthly_orders")
+    @patch("optimizer.api.routes_report.get_firestore_client")
     def test_export_report_403_includes_scope_hint(
         self,
         mock_get_db: MagicMock,
