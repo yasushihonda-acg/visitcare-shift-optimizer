@@ -104,3 +104,6 @@ code,category,label,duration,care_level,units,requires_physical_care_cert,sort_o
 通所介護Ⅱ63,大規模型（Ⅰ）,通所介護Ⅱ63,8時間以上9時間未満,要介護3,885,false,103
 通所介護Ⅱ64,大規模型（Ⅰ）,通所介護Ⅱ64,8時間以上9時間未満,要介護4,1007,false,104
 通所介護Ⅱ65,大規模型（Ⅰ）,通所介護Ⅱ65,8時間以上9時間未満,要介護5,1127,false,105
+hospital_visit,訪問介護,受診同行,,,,false,106
+meeting,訪問介護,担当者会議,,,,false,107
+other,訪問介護,その他,,,,false,108

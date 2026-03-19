@@ -371,8 +371,6 @@ def _build_update_time_action(
     )
 
 
-# TODO: service_type値はFirestoreのservice_typesマスタに未登録。
-# 本番運用開始時にマスタへの追加、または既存値へのマッピングが必要。
 _ADD_ACTION_CONFIG: dict[NoteActionType, tuple[str, str]] = {
     NoteActionType.ADD_VISIT: ("hospital_visit", "受診同行"),
     NoteActionType.ADD_MEETING: ("meeting", "担当者会議"),
