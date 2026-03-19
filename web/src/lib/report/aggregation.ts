@@ -1,4 +1,5 @@
 import type { Order, Helper, Customer, ServiceType, ServiceTypeDoc } from '@/types';
+import { timeToMinutes } from '@/utils/time';
 
 // ── 型定義 ────────────────────────────────────────────────────
 
@@ -40,12 +41,6 @@ export function formatMinutesToHours(minutes: number): string {
 }
 
 // ── ユーティリティ ─────────────────────────────────────────────
-
-/** "HH:MM" → 分数 */
-export function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
 
 /** オーダーのサービス時間（分）*/
 export function orderDurationMinutes(order: Order): number {

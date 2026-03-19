@@ -2,11 +2,7 @@ import type { Order, Customer, Helper, StaffUnavailability, DayOfWeek, ServiceTy
 import { isOverlapping } from '@/components/gantt/constants';
 import { getStaffCount } from '@/lib/dnd/staffCount';
 import { getTravelMinutes } from '@/lib/travelTime';
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
+import { timeToMinutes } from '@/utils/time';
 
 function isSameDate(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&

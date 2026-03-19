@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { addDays, format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { getServiceColor, GANTT_START_HOUR, GANTT_END_HOUR, timeToMinutes } from './constants';
+import { getServiceColor, GANTT_START_HOUR, GANTT_END_HOUR } from './constants';
+import { timeToMinutes } from '@/utils/time';
 import { DAY_OF_WEEK_ORDER, DAY_OF_WEEK_LABELS } from '@/types';
 import type { DayOfWeek, Helper, Customer, Order, StaffUnavailability } from '@/types';
 import type { DaySchedule } from '@/hooks/useScheduleData';

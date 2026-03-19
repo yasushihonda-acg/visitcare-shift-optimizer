@@ -1,3 +1,5 @@
+import { timeToMinutes } from '@/utils/time';
+
 /** ガントチャート時間軸定数 */
 export const GANTT_START_HOUR = 7;
 export const GANTT_END_HOUR = 21;
@@ -16,12 +18,6 @@ export function timeToColumn(time: string): number {
   const startMinutes = GANTT_START_HOUR * 60;
   const slot = Math.round((totalMinutes - startMinutes) / MINUTES_PER_SLOT);
   return Math.max(1, Math.min(slot + 1, TOTAL_SLOTS + 1));
-}
-
-/** "HH:MM" → 開始からの分数 */
-export function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
 }
 
 /** 分数 → ピクセル位置（ガント開始からの相対位置） */
