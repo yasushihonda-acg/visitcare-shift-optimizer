@@ -233,3 +233,29 @@ class NoteImportApplyResponse(BaseModel):
     applied_count: int = Field(description="Firestoreに反映したアクション数")
     marked_count: int = Field(description="スプレッドシートで対応済みにした行数")
     total_requested: int = Field(description="リクエストされたアクション数")
+
+
+# ---------------------------------------------------------------------------
+# オーダー一括複製
+# ---------------------------------------------------------------------------
+
+
+class DuplicateWeekRequest(BaseModel):
+    source_week_start: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="コピー元週の開始日（月曜日）YYYY-MM-DD",
+        examples=["2026-02-09"],
+    )
+    target_week_start: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="コピー先週の開始日（月曜日）YYYY-MM-DD",
+        examples=["2026-02-16"],
+    )
+
+
+class DuplicateWeekResponse(BaseModel):
+    created_count: int = Field(description="作成したオーダー数")
+    skipped_count: int = Field(description="スキップしたオーダー数（対象週に既存オーダーがある場合）")
+    target_week_start: str
