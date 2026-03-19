@@ -30,20 +30,14 @@ vi.mock('@/contexts/ScheduleContext', () => ({
   }),
 }));
 
-// orders をテストごとに制御できるよう factory で提供する
+// props として渡すデフォルトデータ
 const mockOrders: Order[] = [];
-vi.mock('@/hooks/useScheduleData', () => ({
-  useScheduleData: () => ({
-    customers: new Map(),
-    helpers: new Map(),
-    orders: mockOrders,
-    unavailability: [],
-    loading: false,
-    ordersByDay: {},
-    daySchedules: [],
-    travelTimeLookup: new Map(),
-  }),
-}));
+const defaultProps = {
+  customers: new Map(),
+  helpers: new Map(),
+  orders: mockOrders,
+  unavailability: [] as import('@/types').StaffUnavailability[],
+};
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -103,7 +97,7 @@ describe('OptimizeButton 事前チェック', () => {
   it('警告なし → 直接最適化ダイアログが開く', () => {
     mockCheckAllowedStaff.mockReturnValue([]);
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('シフト最適化の実行')).toBeInTheDocument();
@@ -113,7 +107,7 @@ describe('OptimizeButton 事前チェック', () => {
   it('警告あり → 事前警告ダイアログが開く', () => {
     mockCheckAllowedStaff.mockReturnValue([WARNING_FIXTURE]);
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('最適化前の注意')).toBeInTheDocument();
@@ -123,7 +117,7 @@ describe('OptimizeButton 事前チェック', () => {
   it('警告ダイアログに利用者名・曜日・時間帯が表示される', () => {
     mockCheckAllowedStaff.mockReturnValue([WARNING_FIXTURE]);
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('山田太郎')).toBeInTheDocument();
@@ -135,7 +129,7 @@ describe('OptimizeButton 事前チェック', () => {
   it('警告ダイアログにallowedヘルパー名が表示される', () => {
     mockCheckAllowedStaff.mockReturnValue([WARNING_FIXTURE]);
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText(/佐藤一郎/)).toBeInTheDocument();
@@ -145,7 +139,7 @@ describe('OptimizeButton 事前チェック', () => {
   it('「戻って修正する」で警告ダイアログが閉じる', async () => {
     mockCheckAllowedStaff.mockReturnValue([WARNING_FIXTURE]);
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('最適化前の注意')).toBeInTheDocument();
@@ -161,7 +155,7 @@ describe('OptimizeButton 事前チェック', () => {
   it('「警告を無視して実行」で最適化ダイアログに遷移する', async () => {
     mockCheckAllowedStaff.mockReturnValue([WARNING_FIXTURE]);
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('最適化前の注意')).toBeInTheDocument();
@@ -187,7 +181,7 @@ describe('OptimizeButton 事前チェック', () => {
     };
     mockCheckAllowedStaff.mockReturnValue([WARNING_FIXTURE, warning2]);
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('山田太郎')).toBeInTheDocument();
@@ -205,7 +199,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
   });
 
   it('同行設定なし → 直接最適化ダイアログが開き、同行警告は表示されない', () => {
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('シフト最適化の実行')).toBeInTheDocument();
@@ -215,7 +209,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
   it('同行設定あり → 同行警告ダイアログが表示される', () => {
     mockOrders.push(makeOrderWithCompanion('O1'));
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('同行設定のリセット確認')).toBeInTheDocument();
@@ -226,7 +220,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
     mockOrders.push(makeOrderWithCompanion('O1'));
     mockOrders.push(makeOrderWithCompanion('O2'));
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText(/同行設定が2件あります/)).toBeInTheDocument();
@@ -235,7 +229,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
   it('同行警告でキャンセル → ダイアログが閉じ、最適化は実行されない', async () => {
     mockOrders.push(makeOrderWithCompanion('O1'));
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
     fireEvent.click(screen.getByText('キャンセル'));
 
@@ -249,7 +243,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
   it('同行警告で「リセットして実行」→ 最適化ダイアログへ遷移する', async () => {
     mockOrders.push(makeOrderWithCompanion('O1'));
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
 
     expect(screen.getByText('同行設定のリセット確認')).toBeInTheDocument();
@@ -270,7 +264,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
       solve_time_seconds: 1.2,
     });
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     // 同行警告を経由して最適化ダイアログを開く
     fireEvent.click(screen.getByText('最適化実行'));
     fireEvent.click(screen.getByText('リセットして実行'));
@@ -291,7 +285,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
       solve_time_seconds: 0.8,
     });
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
     await waitFor(() => screen.getByText('シフト最適化の実行'));
     fireEvent.click(screen.getByText('実行'));
@@ -306,7 +300,7 @@ describe('OptimizeButton 同行（OJT）設定の警告とクリア', () => {
     mockOrders.push(makeOrderWithCompanion('O1'));
     mockRunOptimize.mockRejectedValue(new Error('network error'));
 
-    render(<OptimizeButton />);
+    render(<OptimizeButton {...defaultProps} />);
     fireEvent.click(screen.getByText('最適化実行'));
     fireEvent.click(screen.getByText('リセットして実行'));
     await waitFor(() => screen.getByText('シフト最適化の実行'));

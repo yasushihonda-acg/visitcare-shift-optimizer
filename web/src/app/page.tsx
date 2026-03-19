@@ -39,7 +39,7 @@ import type { ViolationSeverity } from '@/lib/constraints/checker';
 function SchedulePage() {
   const { welcomeOpen, closeWelcome, reopenWelcome } = useWelcomeDialog();
   const { weekStart, selectedDay, setSelectedDay, viewMode, setViewMode, ganttAxis } = useScheduleContext();
-  const { customers, helpers, orderCounts, getDaySchedule, unavailability, loading, travelTimeLookup } =
+  const { customers, helpers, orders, orderCounts, getDaySchedule, unavailability, loading, travelTimeLookup } =
     useScheduleData(weekStart);
 
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -235,7 +235,7 @@ function SchedulePage() {
           {viewMode === 'day' && <BulkCompleteButton schedule={schedule} />}
           <NoteImportButton />
           <ResetButton onHistoryClear={clearHistory} />
-          <OptimizeButton onHistoryClear={clearHistory} onComplete={handleOptimizeComplete} />
+          <OptimizeButton customers={customers} helpers={helpers} orders={orders} unavailability={unavailability} onHistoryClear={clearHistory} onComplete={handleOptimizeComplete} />
         </div>
       </div>
       <StatsBar
