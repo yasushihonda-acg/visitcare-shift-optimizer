@@ -8,7 +8,7 @@ import pytest
 from optimizer.data.firestore_loader import (
     _build_staff_count_lookup,
     _date_to_day_of_week,
-    _ts_to_date_str,
+    ts_to_date_str,
     load_all_customers,
     load_all_helpers,
     load_all_service_types,
@@ -65,12 +65,12 @@ def _mock_db_with_collections(collection_data: dict[str, list[MagicMock]]) -> Ma
 class TestTsToDateStr:
     def test_datetime(self) -> None:
         dt = datetime(2026, 2, 9, 0, 0, 0)
-        assert _ts_to_date_str(dt) == "2026-02-09"
+        assert ts_to_date_str(dt) == "2026-02-09"
 
     def test_firestore_timestamp(self) -> None:
         ts = MagicMock()
         ts.to_pydatetime.return_value = datetime(2026, 2, 10, 12, 0, 0)
-        assert _ts_to_date_str(ts) == "2026-02-10"
+        assert ts_to_date_str(ts) == "2026-02-10"
 
 
 class TestDateToDay:

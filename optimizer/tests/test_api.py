@@ -1007,9 +1007,10 @@ class TestOrderChangeNotifyEndpoint:
 
         # ヘルパードキュメントモック
         helper_doc = MagicMock()
+        helper_doc.id = "H003"
         helper_doc.exists = True
         helper_doc.to_dict.return_value = {"email": "h003@example.com"}
-        db.collection.return_value.document.return_value.get.return_value = helper_doc
+        db.get_all.return_value = [helper_doc]
 
         mock_send.return_value = (1, [{"email": "h003@example.com", "success": True}])
 
@@ -1037,11 +1038,11 @@ class TestOrderChangeNotifyEndpoint:
         db = MagicMock()
         mock_get_db.return_value = db
 
-        # ヘルパーにemailがない
         helper_doc = MagicMock()
+        helper_doc.id = "H003"
         helper_doc.exists = True
         helper_doc.to_dict.return_value = {}
-        db.collection.return_value.document.return_value.get.return_value = helper_doc
+        db.get_all.return_value = [helper_doc]
 
         response = client.post(
             "/notify/order-change",
@@ -1096,31 +1097,25 @@ class TestDailyChecklistEndpoint:
         order_query.where.return_value = order_query
         order_query.stream.return_value = iter([order_doc])
 
-        # helpersドキュメント
+        # helpersドキュメント（db.get_all用）
         helper_doc = MagicMock()
+        helper_doc.id = "H003"
         helper_doc.exists = True
         helper_doc.to_dict.return_value = {
             "name": {"family": "佐藤", "given": "花子"},
         }
 
-        # customersドキュメント
+        # customersドキュメント（db.get_all用）
         customer_doc = MagicMock()
+        customer_doc.id = "C001"
         customer_doc.exists = True
         customer_doc.to_dict.return_value = {
             "name": {"family": "田中", "given": "太郎"},
         }
 
-        def collection_side_effect(name: str) -> MagicMock:
-            if name == "orders":
-                return order_query
-            mock_col = MagicMock()
-            if name == "helpers":
-                mock_col.document.return_value.get.return_value = helper_doc
-            elif name == "customers":
-                mock_col.document.return_value.get.return_value = customer_doc
-            return mock_col
-
-        db.collection.side_effect = collection_side_effect
+        db.collection.return_value = order_query
+        # get_all は helpers と customers の両方で呼ばれる
+        db.get_all.side_effect = [[helper_doc], [customer_doc]]
 
         response = client.get("/checklist/next-day?date=2026-02-11")
         assert response.status_code == 200
@@ -1187,32 +1182,26 @@ class TestNextDayNotifyEndpoint:
         order_query.where.return_value = order_query
         order_query.stream.return_value = iter([order_doc])
 
-        # ヘルパー
+        # ヘルパー（db.get_all用）
         helper_doc = MagicMock()
+        helper_doc.id = "H003"
         helper_doc.exists = True
         helper_doc.to_dict.return_value = {
             "name": {"family": "佐藤", "given": "花子"},
             "email": "h003@example.com",
         }
 
-        # 利用者
+        # 利用者（db.get_all用）
         customer_doc = MagicMock()
+        customer_doc.id = "C001"
         customer_doc.exists = True
         customer_doc.to_dict.return_value = {
             "name": {"family": "田中", "given": "太郎"},
         }
 
-        def collection_side_effect(name: str) -> MagicMock:
-            if name == "orders":
-                return order_query
-            mock_col = MagicMock()
-            if name == "helpers":
-                mock_col.document.return_value.get.return_value = helper_doc
-            elif name == "customers":
-                mock_col.document.return_value.get.return_value = customer_doc
-            return mock_col
-
-        db.collection.side_effect = collection_side_effect
+        db.collection.return_value = order_query
+        # get_all: 1回目=customer, 2回目=helper
+        db.get_all.side_effect = [[customer_doc], [helper_doc]]
 
         response = client.post(
             "/notify/next-day",
@@ -1255,3 +1244,53 @@ class TestNextDayNotifyEndpoint:
         data = response.json()
         assert data["messages_sent"] == 0
         assert data["total_targets"] == 0
+
+
+class TestTimesOverlap:
+    """_times_overlap の境界値テスト"""
+
+    def test_overlap(self) -> None:
+        from optimizer.data.firestore_writer import _times_overlap
+        assert _times_overlap("09:00", "10:00", "09:30", "11:00") is True
+
+    def test_no_overlap(self) -> None:
+        from optimizer.data.firestore_writer import _times_overlap
+        assert _times_overlap("09:00", "10:00", "10:30", "11:00") is False
+
+    def test_boundary_touching_no_overlap(self) -> None:
+        """境界接触（end == start）は重複しない"""
+        from optimizer.data.firestore_writer import _times_overlap
+        assert _times_overlap("09:00", "10:00", "10:00", "11:00") is False
+
+    def test_contained(self) -> None:
+        """一方が他方に完全に含まれる"""
+        from optimizer.data.firestore_writer import _times_overlap
+        assert _times_overlap("09:00", "12:00", "10:00", "11:00") is True
+
+    def test_same_range(self) -> None:
+        from optimizer.data.firestore_writer import _times_overlap
+        assert _times_overlap("09:00", "10:00", "09:00", "10:00") is True
+
+
+class TestShouldExcludeCustomer:
+    """_should_exclude_customer のテスト"""
+
+    def test_string_active_weeks(self) -> None:
+        """active_weeksが文字列カンマ区切りの場合"""
+        from optimizer.data.firestore_writer import _should_exclude_customer
+        from datetime import date
+
+        patterns = [{"type": "biweekly", "description": "隔週", "active_weeks": "0,2"}]
+        # 2月9日 → week index 1 → NOT in [0,2]
+        exclude, ptype, _ = _should_exclude_customer(patterns, date(2026, 2, 9))
+        assert exclude is True
+        assert ptype == "biweekly"
+
+    def test_empty_active_weeks_no_exclude(self) -> None:
+        """active_weeksが空の場合は除外しない"""
+        from optimizer.data.firestore_writer import _should_exclude_customer
+        from datetime import date
+
+        patterns = [{"type": "biweekly", "description": "隔週", "active_weeks": []}]
+        exclude, _, _ = _should_exclude_customer(patterns, date(2026, 2, 9))
+        assert exclude is False

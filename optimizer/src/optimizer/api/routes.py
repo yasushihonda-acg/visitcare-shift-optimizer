@@ -122,6 +122,20 @@ from optimizer.report.sheets_writer import create_monthly_report_spreadsheet
 logger = logging.getLogger(__name__)
 
 
+def _parse_monday(date_str: str) -> date:
+    """日付文字列をパースし月曜日であることを検証する。不正時はHTTPException。"""
+    try:
+        d = date.fromisoformat(date_str)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    if d.weekday() != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{date_str} は月曜日ではありません（weekday={d.weekday()}）",
+        )
+    return d
+
+
 def _serialize_executed_at(value: object) -> str:
     """Firestore Timestamp/datetimeをISO 8601文字列に変換"""
     if hasattr(value, "isoformat"):
@@ -876,26 +890,8 @@ def duplicate_week(
     _auth: dict | None = Depends(require_manager_or_above),
 ) -> DuplicateWeekResponse:
     """基本シフト（ソース週）のオーダーをターゲット週に一括複製"""
-    # 日付パース
-    try:
-        source_week = date.fromisoformat(req.source_week_start)
-        target_week = date.fromisoformat(req.target_week_start)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
-
-    # 月曜日チェック
-    if source_week.weekday() != 0:
-        raise HTTPException(
-            status_code=422,
-            detail=f"{req.source_week_start} は月曜日ではありません"
-            f"（weekday={source_week.weekday()}）",
-        )
-    if target_week.weekday() != 0:
-        raise HTTPException(
-            status_code=422,
-            detail=f"{req.target_week_start} は月曜日ではありません"
-            f"（weekday={target_week.weekday()}）",
-        )
+    source_week = _parse_monday(req.source_week_start)
+    target_week = _parse_monday(req.target_week_start)
 
     # 同一週チェック
     if source_week == target_week:
@@ -942,17 +938,7 @@ def apply_unavailability_endpoint(
     _auth: dict | None = Depends(require_manager_or_above),
 ) -> ApplyUnavailabilityResponse:
     """対象週の休み希望をオーダーに反映し、該当スタッフの割当を解除"""
-    try:
-        week_start = date.fromisoformat(req.week_start_date)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
-
-    if week_start.weekday() != 0:
-        raise HTTPException(
-            status_code=422,
-            detail=f"{req.week_start_date} は月曜日ではありません"
-            f"（weekday={week_start.weekday()}）",
-        )
+    week_start = _parse_monday(req.week_start_date)
 
     try:
         db = get_firestore_client()
@@ -996,17 +982,7 @@ def apply_irregular_patterns_endpoint(
     _auth: dict | None = Depends(require_manager_or_above),
 ) -> ApplyIrregularPatternsResponse:
     """対象週の不定期パターンを評価し、該当オーダーをキャンセル"""
-    try:
-        week_start = date.fromisoformat(req.week_start_date)
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
-
-    if week_start.weekday() != 0:
-        raise HTTPException(
-            status_code=422,
-            detail=f"{req.week_start_date} は月曜日ではありません"
-            f"（weekday={week_start.weekday()}）",
-        )
+    week_start = _parse_monday(req.week_start_date)
 
     try:
         db = get_firestore_client()
@@ -1061,17 +1037,17 @@ def notify_order_change(
     _auth: dict | None = Depends(require_manager_or_above),
 ) -> OrderChangeNotifyResponse:
     """オーダー変更を影響スタッフにGoogle Chat DMで通知"""
-    # ヘルパーのメールアドレスを取得
+    # ヘルパーのメールアドレスを一括取得（N+1回避）
     try:
         db = get_firestore_client()
         staff_emails: dict[str, str] = {}
-        for sid in req.affected_staff_ids:
-            doc = db.collection("helpers").document(sid).get()
-            if doc.exists:
-                d = doc.to_dict()
+        helper_refs = [db.collection("helpers").document(sid) for sid in req.affected_staff_ids]
+        for hdoc in db.get_all(helper_refs):
+            if hdoc.exists:
+                d = hdoc.to_dict()
                 email = (d or {}).get("email", "")
                 if email:
-                    staff_emails[sid] = email
+                    staff_emails[hdoc.id] = email
     except Exception as e:
         logger.error("ヘルパー情報取得失敗: %s", e, exc_info=True)
         raise HTTPException(
@@ -1153,7 +1129,7 @@ def get_daily_checklist(
     _auth: dict | None = Depends(require_manager_or_above),
 ) -> DailyChecklistResponse:
     """指定日のオーダーをヘルパー別にグルーピングしたチェックリストを返す"""
-    from optimizer.data.firestore_loader import _ts_to_date_str
+    from optimizer.data.firestore_loader import ts_to_date_str
 
     try:
         target_date = date.fromisoformat(date_param)
@@ -1203,23 +1179,24 @@ def get_daily_checklist(
                 helper_ids_needed.add(sid)
             customer_ids_needed.add(d.get("customer_id", ""))
 
-        # ヘルパー名を一括取得
-        for sid in helper_ids_needed:
-            hdoc = db.collection("helpers").document(sid).get()
-            if hdoc.exists:
-                hd = hdoc.to_dict() or {}
-                name = hd.get("name", {})
-                helper_names[sid] = f"{name.get('family', '')} {name.get('given', '')}"
+        # ヘルパー名を一括取得（N+1回避）
+        if helper_ids_needed:
+            helper_refs = [db.collection("helpers").document(sid) for sid in helper_ids_needed]
+            for hdoc in db.get_all(helper_refs):
+                if hdoc.exists:
+                    hd = hdoc.to_dict() or {}
+                    name = hd.get("name", {})
+                    helper_names[hdoc.id] = f"{name.get('family', '')} {name.get('given', '')}"
 
-        # 利用者名を一括取得
-        for cid in customer_ids_needed:
-            if not cid:
-                continue
-            cdoc = db.collection("customers").document(cid).get()
-            if cdoc.exists:
-                cd = cdoc.to_dict() or {}
-                name = cd.get("name", {})
-                customer_names[cid] = f"{name.get('family', '')} {name.get('given', '')}"
+        # 利用者名を一括取得（N+1回避）
+        customer_ids_needed.discard("")
+        if customer_ids_needed:
+            customer_refs = [db.collection("customers").document(cid) for cid in customer_ids_needed]
+            for cdoc in db.get_all(customer_refs):
+                if cdoc.exists:
+                    cd = cdoc.to_dict() or {}
+                    name = cd.get("name", {})
+                    customer_names[cdoc.id] = f"{name.get('family', '')} {name.get('given', '')}"
 
         # ヘルパー別にグルーピング
         staff_orders: dict[str, list[ChecklistOrderItem]] = {}
@@ -1334,6 +1311,7 @@ def notify_next_day(
         staff_orders: dict[str, list[dict]] = {}
         customer_names: dict[str, str] = {}
 
+        customer_ids_set: set[str] = set()
         for doc in order_docs:
             d = doc.to_dict()
             if d is None:
@@ -1341,40 +1319,55 @@ def notify_next_day(
             for sid in d.get("assigned_staff_ids", []):
                 staff_orders.setdefault(sid, []).append(d)
             cid = d.get("customer_id", "")
-            if cid and cid not in customer_names:
-                cdoc = db.collection("customers").document(cid).get()
+            if cid:
+                customer_ids_set.add(cid)
+
+        # 利用者名を一括取得（N+1回避）
+        if customer_ids_set:
+            cust_refs = [db.collection("customers").document(cid) for cid in customer_ids_set]
+            for cdoc in db.get_all(cust_refs):
                 if cdoc.exists:
                     cd = cdoc.to_dict() or {}
                     name = cd.get("name", {})
-                    customer_names[cid] = f"{name.get('family', '')} {name.get('given', '')}"
+                    customer_names[cdoc.id] = f"{name.get('family', '')} {name.get('given', '')}"
 
-        # 各ヘルパーにChat DM送信
-        results: list[NextDayNotifyResultItem] = []
-        sent_count = 0
-
-        for sid, orders in staff_orders.items():
-            # ヘルパー情報取得
-            hdoc = db.collection("helpers").document(sid).get()
+        # ヘルパー情報を一括取得
+        helper_refs = [db.collection("helpers").document(sid) for sid in staff_orders]
+        helper_docs = db.get_all(helper_refs)
+        helper_info: dict[str, tuple[str, str]] = {}  # sid → (name, email)
+        for hdoc in helper_docs:
             if not hdoc.exists:
-                results.append(NextDayNotifyResultItem(
-                    staff_id=sid, staff_name=sid, email="",
-                    success=False, orders_count=len(orders),
-                ))
                 continue
-
             hd = hdoc.to_dict() or {}
             hname = hd.get("name", {})
-            staff_name = f"{hname.get('family', '')} {hname.get('given', '')}"
-            email = hd.get("email", "")
+            helper_info[hdoc.id] = (
+                f"{hname.get('family', '')} {hname.get('given', '')}",
+                hd.get("email", ""),
+            )
 
-            if not email:
-                results.append(NextDayNotifyResultItem(
-                    staff_id=sid, staff_name=staff_name, email="",
-                    success=False, orders_count=len(orders),
-                ))
-                continue
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("翌日通知データ取得失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"翌日通知エラー: {e}"
+        ) from e
 
-            # スケジュールテキスト生成
+    # 各ヘルパーにChat DM送信（個別try/exceptで1件失敗しても継続）
+    results: list[NextDayNotifyResultItem] = []
+    sent_count = 0
+
+    for sid, orders in staff_orders.items():
+        staff_name, email = helper_info.get(sid, (sid, ""))
+
+        if not email:
+            results.append(NextDayNotifyResultItem(
+                staff_id=sid, staff_name=staff_name, email="",
+                success=False, orders_count=len(orders),
+            ))
+            continue
+
+        try:
             sorted_orders = sorted(orders, key=lambda o: o.get("start_time", ""))
             schedule_lines = []
             for o in sorted_orders:
@@ -1391,21 +1384,17 @@ def notify_next_day(
             )
 
             success = send_chat_dm(email, message)
-            if success:
-                sent_count += 1
+        except Exception:
+            logger.exception("翌日通知DM送信失敗: staff=%s", sid)
+            success = False
 
-            results.append(NextDayNotifyResultItem(
-                staff_id=sid, staff_name=staff_name, email=email,
-                success=success, orders_count=len(orders),
-            ))
+        if success:
+            sent_count += 1
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("翌日通知失敗: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"翌日通知エラー: {e}"
-        ) from e
+        results.append(NextDayNotifyResultItem(
+            staff_id=sid, staff_name=staff_name, email=email,
+            success=success, orders_count=len(orders),
+        ))
 
     return NextDayNotifyResponse(
         date=req.date,

@@ -18,14 +18,10 @@ import {
   OptimizeApiError,
   type DailyChecklistResponse,
 } from '@/lib/api/optimizer';
-import { useScheduleContext } from '@/contexts/ScheduleContext';
-
 /**
  * 翌日のオーダーをヘルパー別にグルーピングして表示するチェックリスト。
  */
 export function DailyChecklist() {
-  const { weekStart } = useScheduleContext();
-
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DailyChecklistResponse | null>(null);
