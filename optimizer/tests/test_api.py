@@ -810,3 +810,183 @@ class TestApplyUnavailabilityLogic:
         update_args = batch.update.call_args[0][1]
         assert update_args["assigned_staff_ids"] == ["H005"]
         assert update_args["status"] == "assigned"
+
+
+class TestApplyIrregularPatternsEndpoint:
+    """POST /orders/apply-irregular-patterns のテスト"""
+
+    @patch("optimizer.api.routes.apply_irregular_patterns")
+    @patch("optimizer.api.routes.get_firestore_client")
+    def test_successful_apply(
+        self,
+        mock_get_db: MagicMock,
+        mock_apply: MagicMock,
+    ) -> None:
+        from optimizer.data.firestore_writer import (
+            ApplyIrregularPatternsResult,
+            IrregularPatternExclusionInfo,
+        )
+        mock_get_db.return_value = MagicMock()
+        mock_apply.return_value = ApplyIrregularPatternsResult(
+            cancelled_count=5,
+            excluded_customers=[
+                IrregularPatternExclusionInfo(
+                    customer_id="C030", customer_name="田中 太郎",
+                    pattern_type="temporary_stop", description="入院中",
+                ),
+            ],
+        )
+
+        response = client.post(
+            "/orders/apply-irregular-patterns",
+            json={"week_start_date": "2026-02-09"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["cancelled_count"] == 5
+        assert len(data["excluded_customers"]) == 1
+        assert data["excluded_customers"][0]["pattern_type"] == "temporary_stop"
+
+    def test_not_monday_returns_422(self) -> None:
+        response = client.post(
+            "/orders/apply-irregular-patterns",
+            json={"week_start_date": "2026-02-10"},
+        )
+        assert response.status_code == 422
+
+
+class TestApplyIrregularPatternsLogic:
+    """不定期パターン適用ロジックのユニットテスト"""
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_temporary_stop_cancels_orders(self) -> None:
+        from datetime import datetime, timezone, timedelta
+        from optimizer.data.firestore_writer import apply_irregular_patterns
+
+        JST = timezone(timedelta(hours=9))
+
+        # 利用者: temporary_stop
+        customer_doc = MagicMock()
+        customer_doc.id = "C030"
+        customer_doc.to_dict.return_value = {
+            "name": {"family": "田中", "given": "太郎"},
+            "irregular_patterns": [
+                {"type": "temporary_stop", "description": "入院中"}
+            ],
+        }
+
+        # オーダー
+        order_doc = MagicMock()
+        order_doc.id = "ORD-C030"
+        order_doc.to_dict.return_value = {
+            "customer_id": "C030",
+            "status": "pending",
+        }
+
+        db = MagicMock()
+        batch = MagicMock()
+        db.batch.return_value = batch
+
+        customer_query = MagicMock()
+        customer_query.stream.return_value = iter([customer_doc])
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([order_doc])
+
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "customers":
+                return customer_query
+            return order_query
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        result = apply_irregular_patterns(db, date(2026, 2, 9))
+
+        assert result.cancelled_count == 1
+        assert len(result.excluded_customers) == 1
+        assert result.excluded_customers[0].pattern_type == "temporary_stop"
+        batch.update.assert_called_once()
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_biweekly_excludes_inactive_week(self) -> None:
+        """隔週パターン: active_weeks=[0,2]で第2週(index=1)は除外"""
+        from optimizer.data.firestore_writer import apply_irregular_patterns
+
+        customer_doc = MagicMock()
+        customer_doc.id = "C005"
+        customer_doc.to_dict.return_value = {
+            "name": {"family": "佐藤", "given": "花子"},
+            "irregular_patterns": [
+                {"type": "biweekly", "description": "隔週", "active_weeks": [0, 2]}
+            ],
+        }
+
+        order_doc = MagicMock()
+        order_doc.id = "ORD-C005"
+        order_doc.to_dict.return_value = {
+            "customer_id": "C005",
+            "status": "pending",
+        }
+
+        db = MagicMock()
+        batch = MagicMock()
+        db.batch.return_value = batch
+
+        customer_query = MagicMock()
+        customer_query.stream.return_value = iter([customer_doc])
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([order_doc])
+
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "customers":
+                return customer_query
+            return order_query
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        # 2026-02-09 = 2月9日 → (9-1)//7 = 1 → week index 1 → NOT in [0,2]
+        result = apply_irregular_patterns(db, date(2026, 2, 9))
+
+        assert result.cancelled_count == 1
+        assert result.excluded_customers[0].customer_id == "C005"
+
+    @patch("optimizer.data.firestore_writer.SERVER_TIMESTAMP", "MOCK_TS")
+    def test_biweekly_includes_active_week(self) -> None:
+        """隔週パターン: active_weeks=[0,2]で第1週(index=0)は除外しない"""
+        from optimizer.data.firestore_writer import apply_irregular_patterns
+
+        customer_doc = MagicMock()
+        customer_doc.id = "C005"
+        customer_doc.to_dict.return_value = {
+            "name": {"family": "佐藤", "given": "花子"},
+            "irregular_patterns": [
+                {"type": "biweekly", "description": "隔週", "active_weeks": [0, 2]}
+            ],
+        }
+
+        db = MagicMock()
+        customer_query = MagicMock()
+        customer_query.stream.return_value = iter([customer_doc])
+
+        order_query = MagicMock()
+        order_query.where.return_value = order_query
+        order_query.stream.return_value = iter([])
+
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "customers":
+                return customer_query
+            return order_query
+
+        db.collection.side_effect = collection_side_effect
+
+        from datetime import date
+        # 2026-02-02 = 2月2日 → (2-1)//7 = 0 → week index 0 → IN [0,2]
+        result = apply_irregular_patterns(db, date(2026, 2, 2))
+
+        assert result.cancelled_count == 0
+        assert len(result.excluded_customers) == 0

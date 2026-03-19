@@ -44,6 +44,8 @@ def _get_sheets_credentials() -> object:
 
 from optimizer.api.auth import require_manager_or_above
 from optimizer.api.schemas import (
+    ApplyIrregularPatternsRequest,
+    ApplyIrregularPatternsResponse,
     ApplyUnavailabilityRequest,
     ApplyUnavailabilityResponse,
     AssignmentResponse,
@@ -70,6 +72,7 @@ from optimizer.api.schemas import (
     ChatReminderRequest,
     ChatReminderResponse,
     ChatReminderResultItem,
+    IrregularPatternExclusion,
     UnavailabilityRemovalItem,
 )
 from optimizer.data.firestore_loader import (
@@ -81,6 +84,7 @@ from optimizer.data.firestore_loader import (
     load_optimization_input,
 )
 from optimizer.data.firestore_writer import (
+    apply_irregular_patterns,
     apply_unavailability_to_orders,
     duplicate_week_orders,
     reset_assignments,
@@ -964,5 +968,55 @@ def apply_unavailability_endpoint(
                 end_time=r.end_time,
             )
             for r in result.removals
+        ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# 不定期パターン自動判定
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/orders/apply-irregular-patterns",
+    response_model=ApplyIrregularPatternsResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def apply_irregular_patterns_endpoint(
+    req: ApplyIrregularPatternsRequest,
+    _auth: dict | None = Depends(require_manager_or_above),
+) -> ApplyIrregularPatternsResponse:
+    """対象週の不定期パターンを評価し、該当オーダーをキャンセル"""
+    try:
+        week_start = date.fromisoformat(req.week_start_date)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    if week_start.weekday() != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{req.week_start_date} は月曜日ではありません"
+            f"（weekday={week_start.weekday()}）",
+        )
+
+    try:
+        db = get_firestore_client()
+        result = apply_irregular_patterns(db, week_start)
+    except Exception as e:
+        logger.error("不定期パターン適用失敗: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"不定期パターン適用エラー: {e}"
+        ) from e
+
+    return ApplyIrregularPatternsResponse(
+        cancelled_count=result.cancelled_count,
+        excluded_customers=[
+            IrregularPatternExclusion(
+                customer_id=ex.customer_id,
+                customer_name=ex.customer_name,
+                pattern_type=ex.pattern_type,
+                description=ex.description,
+            )
+            for ex in result.excluded_customers
         ],
     )
