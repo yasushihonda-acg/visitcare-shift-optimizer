@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { timeToColumn, timeToMinutes, isOverlapping, TOTAL_SLOTS, SLOT_WIDTH_PX, calculateUnavailableBlocks, minutesToTime, addMinutesToTime, snapTo10Min, deltaToTimeShift, computeShiftedTimes } from '../constants';
+import { timeToColumn, isOverlapping, TOTAL_SLOTS, SLOT_WIDTH_PX, calculateUnavailableBlocks, minutesToTime, addMinutesToTime, snapTo10Min, deltaToTimeShift, computeShiftedTimes } from '../constants';
+import { timeToMinutes } from '@/utils/time';
 import type { AvailabilitySlot, UnavailableSlot, DayOfWeek } from '@/types';
 
 describe('timeToColumn', () => {

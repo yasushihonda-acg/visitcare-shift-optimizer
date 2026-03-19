@@ -1,4 +1,5 @@
 import type { Customer, Helper, Order, StaffUnavailability, DayOfWeek } from '@/types';
+import { timeToMinutes } from '@/utils/time';
 
 export interface AllowedStaffWarning {
   customer_id: string;
@@ -22,11 +23,6 @@ export interface CheckAllowedStaffInput {
 const DAY_OF_WEEK_ORDER: DayOfWeek[] = [
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 ];
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
 
 function getDayOfWeek(date: Date): DayOfWeek {
   const jsDay = date.getDay();

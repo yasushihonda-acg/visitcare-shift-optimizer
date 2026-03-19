@@ -7,9 +7,9 @@ import {
   GANTT_END_HOUR,
   HELPER_NAME_WIDTH_PX,
   ROW_HEIGHT_PX,
-  timeToMinutes,
   getServiceColor,
 } from './constants';
+import { timeToMinutes } from '@/utils/time';
 import type { DaySchedule } from '@/hooks/useScheduleData';
 import type { Customer, Helper, Order } from '@/types';
 

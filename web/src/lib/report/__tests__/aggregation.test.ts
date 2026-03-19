@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { timeToMinutes } from '@/utils/time';
 import {
-  timeToMinutes,
   orderDurationMinutes,
   aggregateStaffSummary,
   aggregateCustomerSummary,

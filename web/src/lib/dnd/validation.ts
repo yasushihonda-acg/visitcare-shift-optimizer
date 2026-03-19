@@ -4,10 +4,7 @@ import type { DropValidationResult } from './types';
 import { getStaffCount } from './staffCount';
 import { getTravelMinutes } from '@/lib/travelTime';
 
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
+import { timeToMinutes } from '@/utils/time';
 
 function isSameDate(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&
