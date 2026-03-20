@@ -78,6 +78,22 @@ export async function saveImportSource(
 ): Promise<void> {
   const db = getDb();
   const ref = doc(db, SETTINGS_COLLECTION, NOTE_SOURCES_DOC);
+  const snap = await getDoc(ref);
+
+  // 新ドキュメント初回作成時: レガシー cura_import の値も移行する
+  if (!snap.exists()) {
+    const legacy = await getCuraImportSettings();
+    const migratedData: Record<string, unknown> = {
+      [key]: spreadsheetId,
+      updated_at: serverTimestamp(),
+    };
+    if (legacy?.spreadsheet_id && key !== 'cura_note') {
+      migratedData.cura_note = legacy.spreadsheet_id;
+    }
+    await setDoc(ref, migratedData);
+    return;
+  }
+
   await setDoc(ref, {
     [key]: spreadsheetId,
     updated_at: serverTimestamp(),
