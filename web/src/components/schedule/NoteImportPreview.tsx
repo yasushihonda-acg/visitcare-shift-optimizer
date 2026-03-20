@@ -179,7 +179,7 @@ export function NoteImportPreview({
         <DialogHeader>
           <DialogTitle>{sourceLabel ? `${sourceLabel} インポート プレビュー` : 'ノートインポート プレビュー'}</DialogTitle>
           <DialogDescription>
-            CURAノートから読み取った変更内容を確認してください。
+            {sourceLabel ?? 'CURAノート'}から読み取った変更内容を確認してください。
             チェックを入れた項目がFirestoreに反映されます。
           </DialogDescription>
         </DialogHeader>
