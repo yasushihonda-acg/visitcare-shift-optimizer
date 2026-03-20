@@ -27,6 +27,7 @@ interface NoteImportPreviewProps {
   preview: NoteImportPreviewResponse | null;
   loading: boolean;
   onApply: (postIds: string[]) => void;
+  sourceLabel?: string;
 }
 
 const ACTION_TYPE_LABELS: Record<NoteActionType, string> = {
@@ -142,6 +143,7 @@ export function NoteImportPreview({
   preview,
   loading,
   onApply,
+  sourceLabel,
 }: NoteImportPreviewProps) {
   const readyActions = useMemo(
     () => preview?.actions.filter((a) => a.status === 'ready') ?? [],
@@ -175,9 +177,9 @@ export function NoteImportPreview({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>ノートインポート プレビュー</DialogTitle>
+          <DialogTitle>{sourceLabel ? `${sourceLabel} インポート プレビュー` : 'ノートインポート プレビュー'}</DialogTitle>
           <DialogDescription>
-            CURAノートから読み取った変更内容を確認してください。
+            {sourceLabel ?? 'CURAノート'}から読み取った変更内容を確認してください。
             チェックを入れた項目がFirestoreに反映されます。
           </DialogDescription>
         </DialogHeader>
