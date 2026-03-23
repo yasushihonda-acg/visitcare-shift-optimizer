@@ -1,0 +1,157 @@
+title: |md
+  # ToBe AIエージェント方式 システム構想図
+  ⚠ 構想段階 — 技術選定未了（ADR-018）
+|
+
+direction: down
+
+users: ユーザー層 {
+  style.fill: "#FFF3E0"
+  style.stroke: "#E65100"
+  direction: right
+
+  sarespo: サ責\n(チャットUI) {
+    shape: person
+    style.fill: "#FFF3E0"
+    style.stroke: "#E65100"
+  }
+  helpers: ヘルパー群（個別チャットUI） {
+    style.fill: "#FFF3E0"
+    style.stroke: "#E65100"
+    direction: right
+    a: ヘルパーA {shape: person; style.fill: "#FFF3E0"}
+    b: ヘルパーB {shape: person; style.fill: "#FFF3E0"}
+    n: ヘルパーN {shape: person; style.fill: "#FFF3E0"}
+  }
+  existing_ui: 既存UI\n(ガントチャート/マスタ管理) {
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+}
+
+shift_agent: シフト管理AIエージェント {
+  style.fill: "#C8E6C9"
+  style.stroke: "#4CAF50"
+  direction: down
+
+  funcs: 機能 {
+    direction: right
+    style.fill: "#C8E6C9"
+    style.stroke: "#4CAF50"
+    chat_if: チャットIF {style.fill: "#d5e8d4"}
+    gen: 段階的シフト生成 {style.fill: "#d5e8d4"}
+    check: 制約チェック {style.fill: "#d5e8d4"; style.stroke-dash: 3}
+  }
+
+  rag: RAGコンテキスト {
+    style.fill: "#f0f0f0"
+    direction: right
+    cura: CURAデータ {style.fill: "#fff2cc"}
+    helper: ヘルパー情報 {style.fill: "#fff2cc"}
+    customer: 利用者情報 {style.fill: "#fff2cc"}
+    history: シフト履歴 {style.fill: "#fff2cc"}
+  }
+
+  note: |md
+    *4フェーズ対話: 基本シフト → 当週 → 当日日中 → 当日夜間*
+  | {style.fill: transparent; style.stroke: transparent}
+}
+
+helper_agent: ヘルパー支援AIエージェント群 {
+  style.fill: "#C8E6C9"
+  style.stroke: "#4CAF50"
+  direction: down
+
+  funcs: 機能 {
+    direction: right
+    style.fill: "#C8E6C9"
+    style.stroke: "#4CAF50"
+    chat_if: 個別チャットIF {style.fill: "#d5e8d4"}
+    mental: メンタルサポート {style.fill: "#d5e8d4"}
+    work: 業務支援 {style.fill: "#d5e8d4"}
+  }
+
+  rag: パーソナライズRAG {
+    style.fill: "#f0f0f0"
+    direction: right
+    customer: 担当利用者情報 {style.fill: "#fff2cc"}
+    record: 過去業務記録 {style.fill: "#fff2cc"}
+    schedule: スケジュール {style.fill: "#fff2cc"}
+  }
+
+  note: |md
+    *ヘルパーごとにパーソナライズ（20名 × 個別コンテキスト）*
+  | {style.fill: transparent; style.stroke: transparent}
+}
+
+infra: 共通基盤（未選定） {
+  style.fill: "#EDE7F6"
+  style.stroke: "#9673a6"
+  style.stroke-dash: 3
+  direction: right
+
+  llm: LLM プロバイダ\n（未選定）\nGemini / Claude / OpenAI {
+    style.fill: "#e1d5e7"
+    style.stroke: "#9673a6"
+    style.stroke-dash: 3
+  }
+  session: セッション管理\n会話履歴 {
+    style.fill: "#e1d5e7"
+    style.stroke: "#9673a6"
+    style.stroke-dash: 3
+  }
+  rag_pipeline: RAGパイプライン\nEmbedding + 検索 {
+    style.fill: "#e1d5e7"
+    style.stroke: "#9673a6"
+    style.stroke-dash: 3
+  }
+
+  note: |md
+    *破線 = 未決定/構想段階*
+  | {style.fill: transparent; style.stroke: transparent}
+}
+
+data: データ / バックエンド層（既存資産活用） {
+  style.fill: "#E3F2FD"
+  style.stroke: "#1976D2"
+  direction: right
+
+  firestore: Cloud Firestore\n(顧客/ヘルパー/オーダー\n/移動時間/希望休) {
+    shape: cylinder
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+  cura: CURA連携\n(Sheets API) {
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+  auth: Firebase Auth\n(RBAC) {
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+  hosting: Firebase Hosting\n(Next.js) {
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+  optimizer: 既存最適化エンジン\n(PuLP+CBC)\n位置づけ未決定 {
+    style.fill: "#f5f5f5"
+    style.stroke: "#999999"
+    style.stroke-dash: 3
+  }
+}
+
+# User → Agents
+users.sarespo -> shift_agent: 対話的シフト生成 {style.stroke: "#4CAF50"}
+users.helpers -> helper_agent: メンタル＋業務支援 {style.stroke: "#4CAF50"}
+users.existing_ui -> data.hosting {style.stroke: "#6c8ebf"}
+
+# Agents → Infra
+shift_agent -> infra.llm {style.stroke-dash: 3; style.stroke: "#9673a6"}
+helper_agent -> infra.llm {style.stroke-dash: 3; style.stroke: "#9673a6"}
+
+# Agents → Data
+shift_agent -> data.firestore: データ取得/書込 {style.stroke: "#1976D2"}
+shift_agent -> data.cura {style.stroke: "#1976D2"}
+helper_agent -> data.firestore {style.stroke: "#1976D2"}
+shift_agent -> data.optimizer: 併用の可能性（未決定） {style.stroke-dash: 3; style.stroke: "#999999"}
+infra.rag_pipeline -> data.firestore {style.stroke-dash: 3; style.stroke: "#9673a6"}

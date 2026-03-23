@@ -1,0 +1,155 @@
+title: |md
+  # AsIs システム構成図（Phase 6d完了時点）
+|
+
+direction: right
+
+external: 外部システム {
+  style.fill: "#f5f5f5"
+  style.stroke: "#666666"
+
+  cura: CURAポータル {
+    style.fill: "#E8EAED"
+  }
+  sheets: Google Sheets\n(ノート/ふせん/チェックリスト) {
+    style.fill: "#E8EAED"
+  }
+  gchat: Google Chat {
+    style.fill: "#E8EAED"
+  }
+  gmail: Gmail API (DWD) {
+    style.fill: "#E8EAED"
+  }
+  karakara: カカラ {
+    style.fill: "#E8EAED"
+  }
+  ai_phone: AI電話 {
+    style.fill: "#E8EAED"
+  }
+  digital_fax: デジタルファックス {
+    style.fill: "#E8EAED"
+  }
+  kido: 城戸君システム {
+    style.fill: "#E8EAED"
+  }
+  report: 報告書アプリ {
+    style.fill: "#E8EAED"
+  }
+
+  cura -> sheets: ノート自動振分
+  ai_phone -> cura
+  digital_fax -> cura
+  karakara -> report
+}
+
+gcp: GCP / Firebase {
+  style.fill: "#E3F2FD"
+  style.stroke: "#1565C0"
+
+  hosting: Firebase Hosting\n(Next.js / React) {
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+  firestore: Cloud Firestore\n(6コレクション) {
+    shape: cylinder
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+  auth: Firebase Auth\n(RBAC Custom Claims)\nadmin / サ責 / helper {
+    style.fill: "#dae8fc"
+    style.stroke: "#6c8ebf"
+  }
+  cloudrun: Cloud Run\n(FastAPI / Python)\n最適化エンジン + REST API {
+    style.fill: "#d5e8d4"
+    style.stroke: "#82b366"
+  }
+  optimizer: PuLP + CBC\n数理最適化ソルバー {
+    style.fill: "#d5e8d4"
+    style.stroke: "#82b366"
+  }
+  maps: Google Maps\nDistance Matrix API {
+    style.fill: "#fff2cc"
+    style.stroke: "#d6b656"
+  }
+  secret: Secret Manager\n(ADC credentials) {
+    style.fill: "#fff2cc"
+    style.stroke: "#d6b656"
+  }
+
+  routes: APIエンドポイント {
+    style.fill: "#f0f0f0"
+
+    opt: "/optimize\n/optimization-runs\n/reset-assignments" {
+      style.fill: "#d5e8d4"
+    }
+    import: "/import/notes\n/import/notes/apply" {
+      style.fill: "#d5e8d4"
+    }
+    orders: "/orders/duplicate-week\n/orders/apply-unavailability\n/orders/apply-irregular-patterns" {
+      style.fill: "#d5e8d4"
+    }
+    notify: "/notify/chat-reminder\n/notify/order-change\n/notify/next-day" {
+      style.fill: "#d5e8d4"
+    }
+    report: "/export-report\n/checklist/next-day" {
+      style.fill: "#d5e8d4"
+    }
+    files: |md
+      **ファイル構成**
+      - routes.py (319行)
+      - routes_import.py (329行)
+      - routes_orders.py (161行)
+      - routes_notify.py (336行)
+      - routes_report.py (281行)
+    | {
+      style.fill: "#ffffff"
+      style.stroke: "#cccccc"
+    }
+  }
+
+  ui: UIコンポーネント (Next.js) {
+    style.fill: "#f0f0f0"
+
+    gantt: ガントチャート\n(D&D編集) {style.fill: "#dae8fc"}
+    note_import: ノート取込\n(3ソース) {style.fill: "#dae8fc"}
+    master: マスタ管理\n(利用者/ヘルパー) {style.fill: "#dae8fc"}
+    checklist: 翌日\nチェックリスト {style.fill: "#dae8fc"}
+    undo: Undo/Redo\n週複製/休み反映 {style.fill: "#dae8fc"}
+  }
+
+  auth -> hosting: 認証
+  hosting -> firestore: リアルタイムリスナー
+  hosting -> cloudrun: REST API
+  cloudrun -> firestore: Admin SDK\n読取/書込
+  cloudrun -> optimizer
+  cloudrun -> maps: 移動時間取得
+}
+
+users: ユーザー / CI/CD {
+  style.fill: "#FFF3E0"
+  style.stroke: "#E65100"
+
+  sarespo: サ責\n(サービス提供責任者) {
+    shape: person
+    style.fill: "#FFF3E0"
+  }
+  helper: ヘルパー\n(20名) {
+    shape: person
+    style.fill: "#FFF3E0"
+  }
+  github: GitHub Actions {
+    style.fill: "#FFF3E0"
+  }
+  cloudbuild: Cloud Build {
+    style.fill: "#FFF3E0"
+  }
+
+  github -> cloudbuild
+}
+
+# Cross-container edges
+external.sheets -> gcp.cloudrun: Sheets API 読取
+gcp.cloudrun -> external.gchat: DM通知
+gcp.cloudrun -> external.gmail: メール通知\n(スタブ)
+users.sarespo -> gcp.hosting: ブラウザ
+users.cloudbuild -> gcp.cloudrun: デプロイ {style.stroke-dash: 3}

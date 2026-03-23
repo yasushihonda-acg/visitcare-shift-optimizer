@@ -1,0 +1,84 @@
+title: |md
+  # AsIs 業務フロー図（Phase 6d完了時点）
+|
+
+direction: down
+
+legend: 凡例 {
+  style.fill: "#ffffff"
+  auto: 自動化済み {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  manual: 手動操作 {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  ext: 外部システム {style.fill: "#f5f5f5"; style.stroke: "#666666"}
+}
+
+phase1: Phase 1: 基本シフト作成（月次） {
+  style.fill: "#E8F5E9"
+  style.stroke: "#4CAF50"
+
+  start: 月初 {shape: oval; style.fill: "#dae8fc"}
+  cura: CURAポータル\nノート自動振分 {style.fill: "#f5f5f5"; style.stroke: "#666666"}
+  import: ノート取込\n/import/notes {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  preview: プレビュー確認\n(差分表示) {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  apply: 反映\n/import/notes/apply {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  edit: 手動編集\n(ガントD&D) {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  optimize: 最適化実行\n/optimize {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  review: 結果確認\n手動調整 {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  done: 基本シフト確定 {shape: oval; style.fill: "#dae8fc"}
+
+  note: |md
+    *3ソース対応: CURAノート / ふせん / チェックリスト*
+  | {style.fill: transparent; style.stroke: transparent}
+
+  start -> cura -> import -> preview -> apply -> edit -> optimize -> review -> done
+}
+
+phase2: Phase 2: 当週シフト作成 {
+  style.fill: "#E3F2FD"
+  style.stroke: "#1976D2"
+
+  start: 週初 {shape: oval; style.fill: "#dae8fc"}
+  dup: 週複製\n/orders/duplicate-week {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  unavail: 休み反映\n/orders/apply-\nunavailability {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  fusen: ふせん取込\n/import/notes\n(ふせんソース) {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  irreg: 不定期パターン\n/orders/apply-\nirregular-patterns {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  adjust: 手動微調整\n(ガントD&D) {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  done: 当週シフト確定 {shape: oval; style.fill: "#dae8fc"}
+
+  note: |md
+    *希望休: Google Forms 水曜締切 → 木曜催促リスト自動作成*
+  | {style.fill: transparent; style.stroke: transparent}
+
+  start -> dup -> unavail -> fusen -> irreg -> adjust -> done
+}
+
+phase3: Phase 3: 当日日中対応 {
+  style.fill: "#FFF3E0"
+  style.stroke: "#F57C00"
+
+  start: 変更発生 {shape: oval; style.fill: "#dae8fc"}
+  notify: 変更通知\n/notify/order-change {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  adjust: ヘルパー調整\n(サ責判断) {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  edit: シフト手動編集\n(ガントD&D) {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  chat: Google Chat\nDM通知 {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  done: 対応完了 {shape: oval; style.fill: "#dae8fc"}
+
+  start -> notify -> adjust -> edit -> chat -> done
+}
+
+phase4: Phase 4: 当日夜間対応 {
+  style.fill: "#FCE4EC"
+  style.stroke: "#C62828"
+
+  start: 夜間 {shape: oval; style.fill: "#dae8fc"}
+  checklist: 翌日チェックリスト\n/checklist/next-day {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  review: 翌日変更確認\n(サ責) {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  apply: 翌日変更反映\n(手動編集) {style.fill: "#fff2cc"; style.stroke: "#d6b656"}
+  dm: 翌日Chat DM通知\n/notify/next-day {style.fill: "#d5e8d4"; style.stroke: "#82b366"}
+  done: 翌日準備完了 {shape: oval; style.fill: "#dae8fc"}
+
+  start -> checklist -> review -> apply -> dm -> done
+}
+
+phase1 -> phase2: 週次 {style.stroke-dash: 3; style.stroke: "#666666"}
+phase2 -> phase3: 日次 {style.stroke-dash: 3; style.stroke: "#666666"}
+phase3 -> phase4: 夜間 {style.stroke-dash: 3; style.stroke: "#666666"}
