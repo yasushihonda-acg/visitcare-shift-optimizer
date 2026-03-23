@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-20（Phase 6d完了 / 技術負債ゼロ）
-**現在のフェーズ**: Phase 6d完了（ふせん/チェックリスト取込）、技術負債ゼロ、残りは #290 本番テストのみ
+**最終更新**: 2026-03-23（AIエージェント方式ピボット決定 / ADR-018）
+**現在のフェーズ**: Phase 6d完了 → 戦略的ピボット（ADR-018: AIエージェント＋チャットボット方式へ転換）
 
 ## 完了済みフェーズ
 
@@ -76,22 +76,59 @@ web/src/utils/
 └── name.ts    — formatFullName(), formatCompactName(), formatDisplayName(), formatFullNameKana()
 ```
 
-## 最新テスト結果サマリー（2026-03-20）
+## 直近の実装（2026-03-23）
+
+### Firestoreルール修正 + 戦略的ピボット
+
+| PR | 内容 |
+|----|------|
+| #314 | fix: isValidSettings に note_import_sources 用条件追加（Phase 6d ルール更新漏れ修正） |
+| #315 | docs: ADR-018 AIエージェント方式への戦略的ピボット + AsIs/ToBeダイアグラム |
+
+### 戦略的ピボット（ADR-018）
+
+クライアント打合せ（2026-03-23）で方針転換を決定:
+- **自動最適化（PuLP+CBC）中心** → **AIエージェント＋チャットボット形式の段階的シフト生成**
+- 2系統のAIエージェント:
+  1. **シフト管理AI**: サ責との対話でシフトを段階的に生成（RAG: CURAデータ+ヘルパー/利用者情報）
+  2. **ヘルパー支援AI**: 各ヘルパー個別のメンタルサポート＋業務支援（パーソナライズRAG）
+- 既存最適化エンジン（PuLP+CBC）の位置づけは**未決定**（併存）
+
+### 新規ダイアグラム（`docs/diagrams/`）
+
+| ファイル | 内容 |
+|---------|------|
+| asis-system-architecture.* | AsIsシステム構成図（draw.io + D2） |
+| asis-business-flow.* | AsIs業務フロー図（draw.io + D2） |
+| tobe-ai-agent-architecture.* | ToBe AIエージェント構想図（draw.io + D2） |
+
+## 最新テスト結果サマリー（2026-03-23）
 
 - **Optimizer**: 372件 pass
-- **Web (Next.js)**: 1,086件 pass（+10件: time/nameユーティリティテスト追加）
+- **Web (Next.js)**: 1,086件 pass
 - **TypeScript型チェック**: tsc --noEmit PASS
-- **Firestore Rules**: 114件 pass
+- **Firestore Rules**: 121件 pass（+7件: note_import_sources テスト追加）
 
 ## 次のアクション（優先度順）
 
+### 既存タスク
 1. **本番テスト (#290)**: ノート取込（CURAノート/ふせん/チェックリスト全ソース）を本番環境で検証
-2. **email通知チャネル**: ADR-016 Gmail API DWD設定完了後に `POST /notify/next-day` の email channel を実装
+
+### AIエージェント方式（ADR-018 次ステップ）
+2. **LLMプロバイダ選定・検証**（ADR-019予定）
+3. **RAGパイプライン設計**
+4. **チャットUIプロトタイプ**
+5. **既存最適化エンジン位置づけ決定**
+6. **ヘルパー支援エージェント要件定義**
 
 ## GitHub Issuesサマリー
 
-- **オープンIssue**: 1件
-  - Phase 6a本番テスト: #290
+- **オープンIssue**: 5件
+  - #290 Phase 6a: 本番環境でのノート取込動作確認 [P1]
+  - #316 ADR-019: LLMプロバイダ選定・検証 [P1]
+  - #317 RAGパイプライン設計 [P1]
+  - #318 既存最適化エンジン（PuLP+CBC）の位置づけ決定 [P1]
+  - #319 ADR-001/ADR-006 のステータス更新 [P2]（#318 解決後）
 
 ## データアクセス方法
 
@@ -119,7 +156,8 @@ cd web && npm run dev  # → http://localhost:3000
 ## 重要なドキュメント
 
 - `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
-- `docs/adr/` — ADR-001〜ADR-017
+- `docs/adr/` — ADR-001〜ADR-018
+- `docs/diagrams/` — AsIs/ToBe ダイアグラム（draw.io + D2）
 - `shared/types/` — TypeScript型定義
 - `optimizer/src/optimizer/` — 最適化エンジン + API（routes分割済み）
 - `web/src/` — Next.js フロントエンド
