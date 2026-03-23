@@ -1355,4 +1355,70 @@ describe('settings - デモモード（hasNoRole）', () => {
       setDoc(doc(authed.firestore(), 'settings', 'notification'), validSettingsData)
     );
   });
+
+  it('デモモードユーザーは note_import_sources を作成できる', async () => {
+    const authed = testEnv.authenticatedContext('demo-user');
+    await assertSucceeds(
+      setDoc(doc(authed.firestore(), 'settings', 'note_import_sources'), {
+        cura_note: 'spreadsheet-id-1',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+});
+
+// ============================================================
+// settings/note_import_sources: 複数インポートソース設定
+// ============================================================
+
+describe('settings/note_import_sources - admin 書き込み', () => {
+  it('admin は note_import_sources を新規作成できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'settings', 'note_import_sources'), {
+        cura_note: 'spreadsheet-id-1',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+
+  it('admin は note_import_sources を更新できる（merge）', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'settings', 'note_import_sources'), {
+        cura_note: 'spreadsheet-id-1',
+        updated_at: serverTimestamp(),
+      });
+    });
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'settings', 'note_import_sources'), {
+        fusen: 'spreadsheet-id-2',
+        updated_at: serverTimestamp(),
+      }, { merge: true })
+    );
+  });
+
+  it('admin は 3ソース全てを設定できる', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertSucceeds(
+      setDoc(doc(admin.firestore(), 'settings', 'note_import_sources'), {
+        cura_note: 'spreadsheet-id-1',
+        fusen: 'spreadsheet-id-2',
+        checklist: 'spreadsheet-id-3',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
+});
+
+describe('settings/note_import_sources - バリデーション', () => {
+  it('ソースキーなしのデータは書き込み拒否される', async () => {
+    const admin = testEnv.authenticatedContext('admin-1', { role: 'admin' });
+    await assertFails(
+      setDoc(doc(admin.firestore(), 'settings', 'note_import_sources'), {
+        invalid_key: 'some-value',
+        updated_at: serverTimestamp(),
+      })
+    );
+  });
 });
