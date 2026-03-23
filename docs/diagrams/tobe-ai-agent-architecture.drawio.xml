@@ -1,0 +1,185 @@
+<mxfile host="draw.io" modified="2026-03-23" agent="Claude" version="24.0" type="device">
+  <diagram id="tobe-ai-agent" name="ToBe AI Agent Architecture">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1800" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="ToBe AIエージェント方式 システム構想図" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="600" y="20" width="600" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Warning: 構想段階 - 技術選定未了（ADR-018）" style="text;html=1;fontSize=13;fontStyle=2;align=center;verticalAlign=middle;fontColor=#CC0000;" vertex="1" parent="1">
+          <mxGeometry x="650" y="55" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 1: User Layer (Orange) -->
+        <mxCell id="layer_user" value="ユーザー層" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="2100" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="user_sa" value="サ責&#xa;（チャットUI）" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="layer_user">
+          <mxGeometry x="200" y="50" width="40" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="user_helperA" value="ヘルパーA&#xa;（個別チャットUI）" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="layer_user">
+          <mxGeometry x="600" y="50" width="40" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="user_helperB" value="ヘルパーB&#xa;（個別チャットUI）" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="layer_user">
+          <mxGeometry x="740" y="50" width="40" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="user_helperN" value="...&#xa;ヘルパーN&#xa;（個別チャットUI）" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="layer_user">
+          <mxGeometry x="880" y="50" width="40" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="user_existing_ui" value="既存UI&#xa;（ガントチャート・マスタ管理）" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="layer_user">
+          <mxGeometry x="1400" y="60" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 2: AI Agent Layer (Green, New) -->
+        <mxCell id="layer_agent" value="AIエージェント層（新規）" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="420" width="2100" height="700" as="geometry" />
+        </mxCell>
+
+        <!-- Shift Management AI Agent -->
+        <mxCell id="agent_shift" value="シフト管理AIエージェント" style="swimlane;startSize=28;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;container=1;collapsible=0;" vertex="1" parent="layer_agent">
+          <mxGeometry x="40" y="50" width="480" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="shift_chat" value="チャットIF" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="agent_shift">
+          <mxGeometry x="30" y="40" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="shift_logic" value="段階的シフト生成ロジック" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="agent_shift">
+          <mxGeometry x="30" y="100" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="shift_constraint" value="制約チェック" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;dashed=1;" vertex="1" parent="agent_shift">
+          <mxGeometry x="260" y="40" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="shift_rag" value="RAGコンテキスト" style="swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#82b366;fontSize=10;container=1;collapsible=0;" vertex="1" parent="agent_shift">
+          <mxGeometry x="30" y="160" width="410" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="rag_cura" value="CURAデータ" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="shift_rag">
+          <mxGeometry x="10" y="30" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="rag_helper" value="ヘルパー情報" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="shift_rag">
+          <mxGeometry x="110" y="30" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="rag_customer" value="利用者情報" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="shift_rag">
+          <mxGeometry x="210" y="30" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="rag_history" value="シフト履歴" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="shift_rag">
+          <mxGeometry x="310" y="30" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="shift_note" value="4フェーズ対話サポート" style="text;html=1;fontSize=10;fontStyle=2;fillColor=none;" vertex="1" parent="agent_shift">
+          <mxGeometry x="30" y="320" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Helper Support AI Agent Group -->
+        <mxCell id="agent_helper" value="ヘルパー支援AIエージェント群" style="swimlane;startSize=28;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;container=1;collapsible=0;" vertex="1" parent="layer_agent">
+          <mxGeometry x="560" y="50" width="480" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="helper_chat" value="個別チャットIF" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="agent_helper">
+          <mxGeometry x="30" y="40" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="helper_mental" value="メンタルサポート" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="agent_helper">
+          <mxGeometry x="30" y="100" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="helper_work" value="業務支援" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="agent_helper">
+          <mxGeometry x="260" y="100" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="helper_rag" value="パーソナライズRAG" style="swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#82b366;fontSize=10;container=1;collapsible=0;" vertex="1" parent="agent_helper">
+          <mxGeometry x="30" y="160" width="410" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="hrag_customer" value="担当利用者情報" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="helper_rag">
+          <mxGeometry x="10" y="30" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hrag_record" value="過去業務記録" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="helper_rag">
+          <mxGeometry x="140" y="30" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hrag_schedule" value="スケジュール" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="helper_rag">
+          <mxGeometry x="270" y="30" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="helper_note" value="20名 x 個別コンテキスト" style="text;html=1;fontSize=10;fontStyle=2;fillColor=none;" vertex="1" parent="agent_helper">
+          <mxGeometry x="30" y="300" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- LLM Provider -->
+        <mxCell id="llm" value="LLMプロバイダ（未選定）&#xa;Gemini / Claude / OpenAI" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;dashed=1;fontSize=12;" vertex="1" parent="layer_agent">
+          <mxGeometry x="1120" y="80" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Session Management -->
+        <mxCell id="session" value="セッション管理" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;dashed=1;fontSize=12;" vertex="1" parent="layer_agent">
+          <mxGeometry x="1120" y="180" width="260" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- RAG Pipeline -->
+        <mxCell id="rag_pipeline" value="RAGパイプライン" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;dashed=1;fontSize=12;" vertex="1" parent="layer_agent">
+          <mxGeometry x="1120" y="270" width="260" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Layer 3: Data/Backend Layer (Blue, Existing) -->
+        <mxCell id="layer_data" value="データ / バックエンド層（既存資産）" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;container=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1160" width="2100" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="data_firestore" value="Cloud Firestore" style="shape=cylinder3;whiteSpace=wrap;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="layer_data">
+          <mxGeometry x="80" y="60" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="data_cura" value="CURA連携&#xa;（Sheets API）" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="layer_data">
+          <mxGeometry x="340" y="65" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="data_auth" value="Firebase Auth&#xa;（RBAC）" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;size=15;fontSize=11;" vertex="1" parent="layer_data">
+          <mxGeometry x="600" y="65" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="data_hosting" value="Firebase Hosting&#xa;（Next.js）" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="layer_data">
+          <mxGeometry x="860" y="65" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="data_optimizer" value="既存最適化エンジン&#xa;PuLP + CBC&#xa;（位置づけ未決定）" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;dashed=1;fontSize=11;" vertex="1" parent="layer_data">
+          <mxGeometry x="1120" y="55" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Connections: User -> Agent Layer -->
+        <mxCell id="c1" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="user_sa" target="agent_shift" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="user_helperA" target="agent_helper" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="user_helperB" target="agent_helper" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="user_helperN" target="agent_helper" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Existing UI -> Data layer -->
+        <mxCell id="c5" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="user_existing_ui" target="data_hosting" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Agent -> LLM -->
+        <mxCell id="c6" value="" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="agent_shift" target="llm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="agent_helper" target="llm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Agent -> Data Layer -->
+        <mxCell id="c8" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="agent_shift" target="data_firestore" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="agent_shift" target="data_cura" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="agent_shift" target="data_optimizer" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="agent_helper" target="data_firestore" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- RAG Pipeline -> Data -->
+        <mxCell id="c12" value="" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="rag_pipeline" target="data_firestore" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
