@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-23（AIエージェント方式ピボット決定 / ADR-018）
-**現在のフェーズ**: Phase 6d完了 → 戦略的ピボット（ADR-018: AIエージェント＋チャットボット方式へ転換）
+**最終更新**: 2026-03-30（AIエージェント基盤構築 + ヘルパー支援AIセキュリティ）
+**現在のフェーズ**: AIエージェント方式 Phase 1実装中（ADR-018/019/020: ADK + Gemini 2.5 Flash）
 
 ## 完了済みフェーズ
 
@@ -76,59 +76,76 @@ web/src/utils/
 └── name.ts    — formatFullName(), formatCompactName(), formatDisplayName(), formatFullNameKana()
 ```
 
+## 直近の実装（2026-03-30）
+
+### AIエージェント基盤構築 + セキュリティ対応
+
+| PR | 内容 |
+|----|------|
+| #320 | feat: AIエージェント基盤構築（ADK + Gemini 2.5 Flash） |
+| #325 | feat: ヘルパー支援AIのデータスコーピング（P0セキュリティ） |
+
+### #320 AIエージェント基盤（ADR-019/ADR-020）
+
+- **LLMプロバイダ**: Gemini 2.5 Flash（デフォルト）/ Pro（複雑タスク）、Vertex AI asia-northeast1
+- **フレームワーク**: Google ADK 1.28 (Python 3.12)
+- **2系統エージェント**:
+  - `shift_manager`: サ責用、Firestoreフルアクセスツール7個
+  - `helper_support`: ヘルパー用、スコープ付きツール4個（P0セキュリティ対応済み）
+- **セッション**: InMemory → Firestore SessionService (Phase 2)
+- **新規ディレクトリ**: `agent/` (shift_manager + helper_support)
+- **Firestoreスキーマ拡張**: `chat_sessions` コレクション追加
+- **Closes**: #316 (LLMプロバイダ選定), #318 (最適化エンジン位置づけ: 内部ツール併用), #319 (ADR更新)
+
+### #325 ヘルパー支援AIのデータスコーピング
+
+| ツール（変更前） | ツール（変更後） | 理由 |
+|----------------|----------------|------|
+| `get_customers`（全顧客） | `get_my_customer_info` | 担当利用者のみ |
+| `get_helper_availability`（全ヘルパー） | `get_my_profile` / `get_my_schedule` | 自分の情報のみ |
+| `get_weekly_orders`（全オーダー） | `get_my_orders` | 自分担当のみ |
+
+- Firebase Auth `helper_id` カスタムクレームをADK Stateに注入
+- Closes #321
+
 ## 直近の実装（2026-03-23）
 
 ### Firestoreルール修正 + 戦略的ピボット
 
 | PR | 内容 |
 |----|------|
-| #314 | fix: isValidSettings に note_import_sources 用条件追加（Phase 6d ルール更新漏れ修正） |
+| #314 | fix: isValidSettings に note_import_sources 用条件追加 |
 | #315 | docs: ADR-018 AIエージェント方式への戦略的ピボット + AsIs/ToBeダイアグラム |
 
-### 戦略的ピボット（ADR-018）
+## 最新テスト結果サマリー（2026-03-30）
 
-クライアント打合せ（2026-03-23）で方針転換を決定:
-- **自動最適化（PuLP+CBC）中心** → **AIエージェント＋チャットボット形式の段階的シフト生成**
-- 2系統のAIエージェント:
-  1. **シフト管理AI**: サ責との対話でシフトを段階的に生成（RAG: CURAデータ+ヘルパー/利用者情報）
-  2. **ヘルパー支援AI**: 各ヘルパー個別のメンタルサポート＋業務支援（パーソナライズRAG）
-- 既存最適化エンジン（PuLP+CBC）の位置づけは**未決定**（併存）
-
-### 新規ダイアグラム（`docs/diagrams/`）
-
-| ファイル | 内容 |
-|---------|------|
-| asis-system-architecture.* | AsIsシステム構成図（draw.io + D2） |
-| asis-business-flow.* | AsIs業務フロー図（draw.io + D2） |
-| tobe-ai-agent-architecture.* | ToBe AIエージェント構想図（draw.io + D2） |
-
-## 最新テスト結果サマリー（2026-03-23）
-
+- **Agent**: CIジョブ pass（ruff lint + import + ツール登録確認）
 - **Optimizer**: 372件 pass
-- **Web (Next.js)**: 1,086件 pass
+- **Web (Next.js)**: 1,086件 pass（#325 CI確認中）
 - **TypeScript型チェック**: tsc --noEmit PASS
-- **Firestore Rules**: 121件 pass（+7件: note_import_sources テスト追加）
+- **Firestore Rules**: 121件 pass
+- **注意**: E2Eテスト / Optimizerテスト: #325 CI実行中（in_progress）
 
 ## 次のアクション（優先度順）
 
-### 既存タスク
-1. **本番テスト (#290)**: ノート取込（CURAノート/ふせん/チェックリスト全ソース）を本番環境で検証
+### AIエージェント方式（即座に対応すべき）
+1. **test_scoped_tools.py 実装 (#322)**: スコープ付きツールのテスト（担当外アクセス拒否確認）
+2. **RAGパイプライン設計 (#317)**
+3. **チャットUIプロトタイプ**
+4. **段階的ロールアウト計画 (#324)**
+5. **LLMゴールデンセットテスト (#323)**
 
-### AIエージェント方式（ADR-018 次ステップ）
-2. **LLMプロバイダ選定・検証**（ADR-019予定）
-3. **RAGパイプライン設計**
-4. **チャットUIプロトタイプ**
-5. **既存最適化エンジン位置づけ決定**
-6. **ヘルパー支援エージェント要件定義**
+### 既存タスク
+6. **本番テスト (#290)**: ノート取込（CURAノート/ふせん/チェックリスト全ソース）を本番環境で検証
 
 ## GitHub Issuesサマリー
 
 - **オープンIssue**: 5件
   - #290 Phase 6a: 本番環境でのノート取込動作確認 [P1]
-  - #316 ADR-019: LLMプロバイダ選定・検証 [P1]
   - #317 RAGパイプライン設計 [P1]
-  - #318 既存最適化エンジン（PuLP+CBC）の位置づけ決定 [P1]
-  - #319 ADR-001/ADR-006 のステータス更新 [P2]（#318 解決後）
+  - #322 AIエージェント: API認証テスト追加 [P1]
+  - #323 AIエージェント: LLMゴールデンセットテスト作成 [P1]
+  - #324 AIエージェント: 段階的ロールアウト計画（Stage 0-4）[P1]
 
 ## データアクセス方法
 
