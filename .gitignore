@@ -54,6 +54,9 @@ build/
 # Firebase Emulator export data
 seed/emulator-data/
 
+# Production data (personal information)
+seed/data/production/
+
 # Python package lock (uv)
 optimizer/uv.lock
 docs/diagrams/*.svg
