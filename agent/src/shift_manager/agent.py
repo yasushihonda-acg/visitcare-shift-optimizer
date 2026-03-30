@@ -10,7 +10,7 @@ from src.shift_manager.tools.order_tools import get_weekly_orders
 from src.shift_manager.tools.schedule_tools import check_constraints, suggest_assignment
 
 root_agent = Agent(
-    model=f"vertexai/{GEMINI_MODEL_DEFAULT}",
+    model=GEMINI_MODEL_DEFAULT,
     name="shift_manager",
     description="訪問介護シフト管理AIアシスタント。サ責を支援し対話的にシフト作成をサポートする。",
     instruction=SHIFT_MANAGER_SYSTEM_PROMPT,

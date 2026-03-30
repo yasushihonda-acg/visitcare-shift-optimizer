@@ -29,7 +29,7 @@ async def _ask_agent(runner: Runner, user_id: str, session_id: str, message: str
     """エージェントにメッセージを送り応答テキストを返す。"""
     content = genai_types.Content(
         role="user",
-        parts=[genai_types.Part.from_text(message)],
+        parts=[genai_types.Part.from_text(text=message)],
     )
     response = ""
     async for event in runner.run_async(

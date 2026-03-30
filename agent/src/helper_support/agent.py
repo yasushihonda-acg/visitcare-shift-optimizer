@@ -17,7 +17,7 @@ from src.helper_support.tools.scoped_tools import (
 from src.shared.config import GEMINI_MODEL_DEFAULT
 
 root_agent = Agent(
-    model=f"vertexai/{GEMINI_MODEL_DEFAULT}",
+    model=GEMINI_MODEL_DEFAULT,
     name="helper_support",
     description="訪問介護ヘルパー個別支援AIアシスタント。メンタルサポートと業務お困りごと対応。",
     instruction=HELPER_SUPPORT_SYSTEM_PROMPT,

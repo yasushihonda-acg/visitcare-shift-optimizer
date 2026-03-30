@@ -116,7 +116,7 @@ async def _run_chat(
 
     content = genai_types.Content(
         role="user",
-        parts=[genai_types.Part.from_text(req.message)],
+        parts=[genai_types.Part.from_text(text=req.message)],
     )
 
     try:
