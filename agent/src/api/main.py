@@ -78,6 +78,15 @@ async def _run_chat(
     user_id = auth["uid"] if auth else "demo-user"
     session_id = req.session_id or str(uuid.uuid4())
 
+    # 認証情報からユーザースコープのStateを構築
+    initial_state: dict = {}
+    if auth:
+        # Firebase Auth カスタムクレームからhelper_idを取得しStateに注入
+        # ヘルパー支援AIのスコープ付きツールがこの値でデータをフィルタリングする
+        helper_id = auth.get("helper_id")
+        if helper_id:
+            initial_state["user:helper_id"] = helper_id
+
     try:
         session = await session_service.get_session(
             app_name=app_name,
@@ -89,6 +98,7 @@ async def _run_chat(
                 app_name=app_name,
                 user_id=user_id,
                 session_id=session_id,
+                state=initial_state,
             )
     except Exception as e:
         logger.error("セッション管理エラー [session_id=%s]: %s", session_id, e)
