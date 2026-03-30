@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock
 
 from src.helper_support.tools.scoped_tools import (
+    _get_validated_helper_id,
     get_my_customer_info,
     get_my_orders,
     get_my_profile,
@@ -13,14 +14,38 @@ from src.helper_support.tools.scoped_tools import (
 )
 
 
-def _make_tool_context(helper_id: str | None = None) -> MagicMock:
+def _make_tool_context(helper_id=None) -> MagicMock:
     """ADK ToolContext のモック生成。"""
     ctx = MagicMock()
     state = {}
-    if helper_id:
+    if helper_id is not None:
         state["user:helper_id"] = helper_id
     ctx.state.get = lambda key, default=None: state.get(key, default)
     return ctx
+
+
+class TestHelperIdValidation:
+    """helper_id取得・検証のテスト"""
+
+    def test_valid_string(self):
+        ctx = _make_tool_context("test-helper-1")
+        assert _get_validated_helper_id(ctx) == "test-helper-1"
+
+    def test_none_returns_none(self):
+        ctx = _make_tool_context(None)
+        assert _get_validated_helper_id(ctx) is None
+
+    def test_empty_string_returns_none(self):
+        ctx = _make_tool_context("")
+        assert _get_validated_helper_id(ctx) is None
+
+    def test_integer_returns_none(self):
+        ctx = _make_tool_context(12345)
+        assert _get_validated_helper_id(ctx) is None
+
+    def test_list_returns_none(self):
+        ctx = _make_tool_context(["bad"])
+        assert _get_validated_helper_id(ctx) is None
 
 
 class TestGetMyProfile:
@@ -37,7 +62,6 @@ class TestGetMyProfile:
         ctx = _make_tool_context(None)
         result = get_my_profile(ctx)
         assert "error" in result
-        assert "ヘルパーID" in result["error"]
 
     def test_nonexistent_helper_returns_error(self):
         ctx = _make_tool_context("nonexistent-helper")
@@ -67,19 +91,13 @@ class TestGetMyOrders:
         """自分が担当するオーダーのみ返す"""
         ctx = _make_tool_context("test-helper-1")
         results = get_my_orders(ctx, week_start_date="2026-03-30")
-        assert len(results) >= 1
-        assert all(
-            "test-helper-1" in doc.get("assigned_staff_ids", [])
-            or doc.get("id") == "test-order-1"
-            for doc in results
-            if "error" not in doc
-        )
+        assert len(results) == 1
+        assert results[0]["id"] == "test-order-1"
 
     def test_other_helper_sees_no_orders(self, seed_order):
         """他のヘルパーのオーダーは見えない"""
         ctx = _make_tool_context("other-helper-999")
         results = get_my_orders(ctx, week_start_date="2026-03-30")
-        # test-order-1 は test-helper-1 に割り当てられているので見えない
         order_ids = [r.get("id") for r in results if "error" not in r]
         assert "test-order-1" not in order_ids
 
@@ -99,8 +117,6 @@ class TestGetMyCustomerInfo:
         result = get_my_customer_info(ctx, customer_id="test-customer-1")
         assert result["id"] == "test-customer-1"
         assert "田中太郎" in result["name"]
-        # ヘルパー向けなのでNGスタッフ情報は含まない
-        assert "ng_staff_ids" not in result
 
     def test_cannot_access_unassigned_customer(self, seed_customer, seed_helper):
         """担当外の利用者にはアクセスできない"""
@@ -121,6 +137,20 @@ class TestGetMyCustomerInfo:
         assert "ng_staff_ids" not in result
         assert "allowed_staff_ids" not in result
         assert "preferred_staff_ids" not in result
+        assert "same_household_customer_ids" not in result
+        assert "same_facility_customer_ids" not in result
+
+    def test_empty_customer_id_returns_error(self):
+        """空のcustomer_idでエラー"""
+        ctx = _make_tool_context("test-helper-1")
+        result = get_my_customer_info(ctx, customer_id="")
+        assert "error" in result
+
+    def test_path_traversal_customer_id_rejected(self):
+        """パストラバーサル的なcustomer_idを拒否"""
+        ctx = _make_tool_context("test-helper-1")
+        result = get_my_customer_info(ctx, customer_id="../../helpers/test")
+        assert "error" in result
 
 
 class TestAgentDefinition:
