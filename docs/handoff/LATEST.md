@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-30（AIエージェント基盤構築 + ヘルパー支援AIセキュリティ）
-**現在のフェーズ**: AIエージェント方式 Phase 1実装中（ADR-018/019/020: ADK + Gemini 2.5 Flash）
+**最終更新**: 2026-03-30（AIエージェント Stage 0完了 + RAG設計決定）
+**現在のフェーズ**: AIエージェント方式 Phase 2a準備中（Stage 0完了、RAG方針確定）
 
 ## 完了済みフェーズ
 
@@ -12,10 +12,8 @@
 - **Phase 4a-4d**: D&D手動編集、UIデザイン改善、マスタ管理（customers/helpers/unavailability）
 - **Phase 4d-security**: RBAC (Custom Claims 3役体系) + Firestoreセキュリティルール
 - **Phase 5b**: メール通知スタブ、Gmail API DWD、Google Chat DM催促、利用者軸ビュー、Undo/Redo
-- **Phase 6a**: CURAノート取込・基本シフト反映自動化（sheets_reader/note_parser/note_diff + API + UI）
-- **Phase 6b**: 当週シフト作成効率化（一括複製・休み希望反映・不定期パターン・当週ノート反映）
-- **Phase 6c**: 当日対応効率化（変更通知・翌日チェックリスト・翌日Chat DM通知）
-- **Phase 6d**: ふせん/チェックリスト取込（既存ノート取込UIの複数ソース対応で実現、バックエンド変更なし）
+- **Phase 6a-6d**: CURAノート取込、当週シフト効率化、当日対応効率化、ふせん/チェックリスト取込
+- **AIエージェント Phase 1**: ADK基盤 + セキュリティ + 認証テスト + Stage 0完了
 - **詳細アーカイブ**: `docs/handoff/archive/`
 
 ## デプロイURL
@@ -23,129 +21,82 @@
 - **Web App**: https://visitcare-shift-optimizer.web.app
 - **Optimizer API**: https://shift-optimizer-1045989697649.asia-northeast1.run.app
 
-## 直近の実装（2026-03-19〜20）
+## 直近の実装（2026-03-30 後半セッション）
 
-### Phase 6b-6c 一括実装（#301-#309）
-
-| PR | 内容 |
-|----|------|
-| #301 | service_typesマスタに hospital_visit/meeting/other 追加 |
-| #302 | 基本→当週シフト一括複製API+UI（`/orders/duplicate-week`） |
-| #303 | 休み希望の自動反映API+UI（`/orders/apply-unavailability`） |
-| #304 | 不定期パターン自動判定API（`/orders/apply-irregular-patterns`） |
-| #305 | オーダー変更通知API（`/notify/order-change`） |
-| #306 | 翌日チェックリストAPI+UI（`/checklist/next-day`、`DailyChecklist.tsx`） |
-| #307 | 翌日Chat DM通知API（`/notify/next-day`） |
-| #308 | 品質ゲート対応（N+1→db.get_all、1件失敗=全件中断バグ修正、Literal型化、DRY抽出） |
-| #309 | routes.pyドメイン別分割（1,404行→319行） |
-
-### routes.py 分割後の構成
-
-```
-optimizer/api/
-├── routes.py          (319行) /health, /optimize, /optimization-runs, /reset-assignments
-├── routes_import.py   (329行) /import/notes, /import/notes/apply
-├── routes_orders.py   (161行) /orders/duplicate-week, /orders/apply-*
-├── routes_notify.py   (336行) /notify/chat-reminder, /notify/order-change, /notify/next-day
-├── routes_report.py   (281行) /export-report, /checklist/next-day
-└── routes_common.py    (66行) 共通ユーティリティ
-```
-
-### 新規UIコンポーネント
-
-- `WeekDuplicateButton.tsx` — 週複製ボタン（ダイアログ付き）
-- `UnavailabilityApplyButton.tsx` — 休み反映ボタン
-- `DailyChecklist.tsx` — 翌日チェックリスト（ヘルパー別テーブル表示）
-
-## 直近の実装（2026-03-20 後半）
-
-### 技術負債解消（#310-#312）
-
-| PR | Issue | 内容 |
-|----|-------|------|
-| #310 | #270 | timeToMinutes を `web/src/utils/time.ts` に統合（7箇所→1箇所） |
-| #311 | #271 | ヘルパー/利用者名フォーマットを `web/src/utils/name.ts` に統合（40箇所→4関数） |
-| #312 | #272 | OptimizeButton の Firestore 二重サブスクリプション解消（props渡しに変更） |
-| #313 | #299,#300 | ノート取込の複数ソース対応（CURAノート/ふせん/チェックリスト） |
-
-### 新規共通ユーティリティ
-
-```
-web/src/utils/
-├── time.ts    — timeToMinutes()
-└── name.ts    — formatFullName(), formatCompactName(), formatDisplayName(), formatFullNameKana()
-```
-
-## 直近の実装（2026-03-30）
-
-### AIエージェント基盤構築 + セキュリティ対応
+### テスト基盤 + Stage 0実行 + RAG設計決定
 
 | PR | 内容 |
 |----|------|
-| #320 | feat: AIエージェント基盤構築（ADK + Gemini 2.5 Flash） |
-| #325 | feat: ヘルパー支援AIのデータスコーピング（P0セキュリティ） |
+| #326 | test: API認証テスト26件（AUTH-01〜AUTH-07）— #322 Closes |
+| #327 | test: LLMゴールデンセットテスト12件（Stage 0ゲート）— #323 Closes |
+| #328 | fix: Vertex AI設定をADK公式パターンに修正（Stage 0で発見） |
 
-### #320 AIエージェント基盤（ADR-019/ADR-020）
+### Stage 0 結果
 
-- **LLMプロバイダ**: Gemini 2.5 Flash（デフォルト）/ Pro（複雑タスク）、Vertex AI asia-northeast1
-- **フレームワーク**: Google ADK 1.28 (Python 3.12)
-- **2系統エージェント**:
-  - `shift_manager`: サ責用、Firestoreフルアクセスツール7個
-  - `helper_support`: ヘルパー用、スコープ付きツール4個（P0セキュリティ対応済み）
-- **セッション**: InMemory → Firestore SessionService (Phase 2)
-- **新規ディレクトリ**: `agent/` (shift_manager + helper_support)
-- **Firestoreスキーマ拡張**: `chat_sessions` コレクション追加
-- **Closes**: #316 (LLMプロバイダ選定), #318 (最適化エンジン位置づけ: 内部ツール併用), #319 (ADR更新)
+| 実行 | 結果 | 失敗（偶発） |
+|------|------|-------------|
+| 1回目 | 11/12 (91.7%) | Q2: LLM中間応答のみ |
+| 2回目 | 11/12 (91.7%) | H2: 空応答 |
 
-### #325 ヘルパー支援AIのデータスコーピング
+各失敗は単体再実行でパス → LLM非決定性。ゲート基準達成。
 
-| ツール（変更前） | ツール（変更後） | 理由 |
-|----------------|----------------|------|
-| `get_customers`（全顧客） | `get_my_customer_info` | 担当利用者のみ |
-| `get_helper_availability`（全ヘルパー） | `get_my_profile` / `get_my_schedule` | 自分の情報のみ |
-| `get_weekly_orders`（全オーダー） | `get_my_orders` | 自分担当のみ |
+### Stage 0で発見・修正したバグ（PR #328）
 
-- Firebase Auth `helper_id` カスタムクレームをADK Stateに注入
-- Closes #321
+- `Part.from_text()` → キーワード引数 `text=` に修正（google-genai 1.69）
+- `vertexai/gemini-2.5-flash` → `gemini-2.5-flash`（ADK公式はプレフィックスなし + `GOOGLE_GENAI_USE_VERTEXAI` 環境変数）
+- config.pyにVertex AI環境変数のデフォルト設定追加
 
-## 直近の実装（2026-03-23）
+### RAGパイプライン設計決定（#317）
 
-### Firestoreルール修正 + 戦略的ピボット
+QAセカンドオピニオンを経て確定:
 
-| PR | 内容 |
-|----|------|
-| #314 | fix: isValidSettings に note_import_sources 用条件追加 |
-| #315 | docs: ADR-018 AIエージェント方式への戦略的ピボット + AsIs/ToBeダイアグラム |
+| 選択肢 | 判定 |
+|--------|------|
+| **LLM-as-retriever**（構造化ツール + 全ノート返却） | **採用（Phase 2a）** |
+| Firestore Vector Search | 待機（Phase 2b、必要時） |
+| Vertex AI Vector Search ($280+/月) | 却下 |
+| Vertex AI RAG Engine ($65+/月) | 却下 |
 
-## 最新テスト結果サマリー（2026-03-30）
+理由: データ規模（500ノート ≈ 25K-50Kトークン）がGeminiの1Mコンテキストに余裕で収まる。
 
-- **Agent**: CIジョブ pass（ruff lint + import + ツール登録確認）
-- **Optimizer**: 372件 pass
-- **Web (Next.js)**: 1,086件 pass（#325 CI確認中）
-- **TypeScript型チェック**: tsc --noEmit PASS
-- **Firestore Rules**: 121件 pass
-- **注意**: E2Eテスト / Optimizerテスト: #325 CI実行中（in_progress）
+**QAが発見した重大な盲点:**
+1. CURAノートがFirestoreに永続化されていない（`notes`コレクション未設計）
+2. customer.notesフィールドがツールから未公開
+3. ヘルパー支援AIがケア観察データにアクセス不能
 
 ## 次のアクション（優先度順）
 
-### AIエージェント方式（即座に対応すべき）
-1. **test_scoped_tools.py 実装 (#322)**: スコープ付きツールのテスト（担当外アクセス拒否確認）
-2. **RAGパイプライン設計 (#317)**
-3. **チャットUIプロトタイプ**
-4. **段階的ロールアウト計画 (#324)**
-5. **LLMゴールデンセットテスト (#323)**
+### Phase 2a: ノートアクセス基盤（#317 残作業）
+1. 既存 `notes` フィールドを `get_customer_detail` / `get_my_customer_info` に追加
+2. `notes` コレクション設計 + CURAノート永続化パイプライン
+3. `get_customer_notes(customer_id)` ツール追加
+4. ノート検索用ゴールデンセストテスト3-5件追加
+
+### Stage 1 準備（#324）
+5. Cloud Runデプロイ（agent/） + Cloud Logging設定
+6. チャットUIプロトタイプ
 
 ### 既存タスク
-6. **本番テスト (#290)**: ノート取込（CURAノート/ふせん/チェックリスト全ソース）を本番環境で検証
+7. 本番テスト (#290): ノート取込を本番環境で検証
 
 ## GitHub Issuesサマリー
 
-- **オープンIssue**: 5件
-  - #290 Phase 6a: 本番環境でのノート取込動作確認 [P1]
-  - #317 RAGパイプライン設計 [P1]
-  - #322 AIエージェント: API認証テスト追加 [P1]
-  - #323 AIエージェント: LLMゴールデンセットテスト作成 [P1]
-  - #324 AIエージェント: 段階的ロールアウト計画（Stage 0-4）[P1]
+| # | タイトル | 状態 |
+|---|---------|------|
+| #290 | 本番環境でのノート取込動作確認 | Open [P1] |
+| #317 | RAGパイプライン設計 | Open [P1] — 方針確定済み、実装待ち |
+| #324 | 段階的ロールアウト計画（Stage 0-4） | Open [P1] — Stage 0完了 |
+
+**クローズ済み（本セッション）**: #322, #323
+
+## テスト結果サマリー（2026-03-30）
+
+- **Agent**: 32 passed, 12 skipped（LLMテストはCIスキップ）
+- **Optimizer**: 全パス
+- **Web (Next.js)**: 全パス
+- **Firestore Rules**: 全パス
+- **E2E**: 全パス
+- CI全5ジョブ SUCCESS
 
 ## データアクセス方法
 
@@ -153,39 +104,19 @@ web/src/utils/
 # 一括起動（推奨、ローカル Emulator）
 ./scripts/dev-start.sh
 
+# LLMゴールデンセットテスト（Gemini API呼び出し）
+cd agent && GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=visitcare-shift-optimizer GOOGLE_CLOUD_LOCATION=asia-northeast1 .venv/bin/python -m pytest tests/test_llm_quality.py -v --run-llm
+
 # 最適化エンジン テスト
 cd optimizer && .venv/bin/pytest tests/ -v
-
-# 最適化API（ローカル、ポート8081）
-cd optimizer && ALLOW_UNAUTHENTICATED=true .venv/bin/uvicorn optimizer.api.main:app --reload --port 8081
-
-# Next.js dev
-cd web && npm run dev  # → http://localhost:3000
 ```
-
-## CI/CD（ADR-010）
-
-- **GitHub Actions**: `.github/workflows/ci.yml`
-- **認証**: Workload Identity Federation（JSON鍵不使用）
-- PR時: test-optimizer + test-web 並列実行
-- main push時: テスト通過後にCloud Build + Firebase Hosting + Firestoreルール 並列デプロイ
 
 ## 重要なドキュメント
 
-- `docs/schema/firestore-schema.md`, `data-model.mermaid` — データモデル定義
-- `docs/adr/` — ADR-001〜ADR-018
-- `docs/diagrams/` — AsIs/ToBe ダイアグラム（draw.io + D2）
-- `shared/types/` — TypeScript型定義
-- `optimizer/src/optimizer/` — 最適化エンジン + API（routes分割済み）
-- `web/src/` — Next.js フロントエンド
-
-## GCP Sheets エクスポート（本番環境設定まとめ）
-
-採用アプローチ: Authorized User ADC を Secret Manager に保存（`google-adc-credentials`）
-
-## 参考資料（ローカルExcel）
-
-プロジェクトディレクトリに以下のExcel/Wordファイルあり（.gitignore済み）:
-- `シフト作成_編集ファイル(基本シフト)20251231.xlsx` - 基本シフト4シート
-- `Excel（...）マクロ.docx` - VBAマクロソース
-- `訪問介護　不定期 のコピー.xlsx` - 不定期パターン（利用者別シート）
+- `docs/schema/firestore-schema.md` — データモデル定義
+- `docs/adr/ADR-018` — AIエージェント方式ピボット
+- `docs/adr/ADR-019` — LLMプロバイダ選定（Gemini 2.5 Flash）
+- `docs/adr/ADR-020` — エージェントアーキテクチャ
+- `agent/` — AIエージェント（ADK + FastAPI）
+- `optimizer/` — 最適化エンジン + API
+- `web/` — Next.js フロントエンド
