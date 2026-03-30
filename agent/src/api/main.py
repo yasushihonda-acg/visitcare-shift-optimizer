@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from src.helper_support.agent import root_agent as helper_support_agent
 from src.shared.auth import require_helper, require_manager_or_above
-from src.shared.config import CORS_ORIGINS
+from src.shared.config import ALLOW_UNAUTHENTICATED, CORS_ORIGINS
 from src.shift_manager.agent import root_agent as shift_manager_agent
 
 logger = logging.getLogger(__name__)
@@ -78,6 +78,20 @@ async def _run_chat(
     user_id = auth["uid"] if auth else "demo-user"
     session_id = req.session_id or str(uuid.uuid4())
 
+    # 認証情報からユーザースコープのStateを構築
+    initial_state: dict = {}
+    if auth:
+        helper_id = auth.get("helper_id")
+        if helper_id:
+            initial_state["user:helper_id"] = helper_id
+    elif ALLOW_UNAUTHENTICATED:
+        import os
+
+        dev_helper_id = os.environ.get("DEV_HELPER_ID")
+        if dev_helper_id:
+            initial_state["user:helper_id"] = dev_helper_id
+            logger.info("DEV MODE: DEV_HELPER_ID=%s", dev_helper_id)
+
     try:
         session = await session_service.get_session(
             app_name=app_name,
@@ -89,6 +103,12 @@ async def _run_chat(
                 app_name=app_name,
                 user_id=user_id,
                 session_id=session_id,
+                state=initial_state,
+            )
+        elif initial_state and not session.state.get("user:helper_id"):
+            # 既存セッションにhelper_idが未設定の場合、ログ警告
+            logger.warning(
+                "既存セッションにhelper_id未設定 [session_id=%s]", session_id,
             )
     except Exception as e:
         logger.error("セッション管理エラー [session_id=%s]: %s", session_id, e)
