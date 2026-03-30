@@ -42,3 +42,6 @@ python_version = "3.12"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "llm: LLMゴールデンセットテスト（Gemini API呼び出し。--run-llmで有効化）",
+]

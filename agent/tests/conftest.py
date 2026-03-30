@@ -10,6 +10,18 @@ os.environ["GCP_PROJECT_ID"] = "visitcare-shift-optimizer"
 os.environ["ALLOW_UNAUTHENTICATED"] = "true"
 
 
+def pytest_addoption(parser):
+    parser.addoption("--run-llm", action="store_true", default=False, help="LLMテストを実行")
+
+
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--run-llm"):
+        skip_llm = pytest.mark.skip(reason="--run-llm が指定されていません")
+        for item in items:
+            if "llm" in item.keywords:
+                item.add_marker(skip_llm)
+
+
 @pytest.fixture
 def firestore_client():
     """Firestoreエミュレータ接続クライアント"""
