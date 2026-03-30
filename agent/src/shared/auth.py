@@ -67,7 +67,16 @@ async def require_role(request: Request, allowed_roles: set[str]) -> dict | None
         return None
 
     role = decoded.get("role")
+    if not role:
+        logger.warning("ロールクレームが未設定 [uid=%s]", decoded.get("uid", "unknown"))
+        raise HTTPException(
+            status_code=403, detail="ロールが設定されていません。管理者にお問い合わせください。",
+        )
     if role not in allowed_roles:
+        logger.warning(
+            "権限不足 [uid=%s, role=%s, required=%s]",
+            decoded.get("uid", "unknown"), role, allowed_roles,
+        )
         raise HTTPException(status_code=403, detail="権限がありません")
     return decoded
 
@@ -78,5 +87,5 @@ async def require_manager_or_above(request: Request) -> dict | None:
 
 
 async def require_helper(request: Request) -> dict | None:
-    """helper ロールを要求。"""
+    """helper, service_manager, admin いずれかのロールを要求。"""
     return await require_role(request, {"admin", "service_manager", "helper"})

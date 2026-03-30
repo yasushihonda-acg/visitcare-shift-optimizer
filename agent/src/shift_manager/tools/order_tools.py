@@ -1,8 +1,10 @@
 """オーダーデータ参照ツール"""
 
-from google.adk.tools import FunctionTool
+import logging
 
 from src.shared.firestore_client import get_firestore_client
+
+logger = logging.getLogger(__name__)
 
 
 def get_weekly_orders(
@@ -22,13 +24,17 @@ def get_weekly_orders(
     Returns:
         オーダーリスト
     """
-    db = get_firestore_client()
-    query = db.collection("orders").where("week_start_date", "==", week_start_date)
+    try:
+        db = get_firestore_client()
+        query = db.collection("orders").where("week_start_date", "==", week_start_date)
 
-    if status_filter:
-        query = query.where("status", "==", status_filter)
+        if status_filter:
+            query = query.where("status", "==", status_filter)
 
-    docs = query.stream()
+        docs = query.stream()
+    except Exception as e:
+        logger.error("オーダーデータ取得失敗 [week=%s]: %s", week_start_date, e)
+        return [{"error": f"オーダーデータの取得に失敗しました: {type(e).__name__}"}]
 
     results = []
     for doc in docs:
@@ -56,6 +62,3 @@ def get_weekly_orders(
         })
 
     return results
-
-
-get_weekly_orders_tool = FunctionTool(get_weekly_orders)

@@ -24,7 +24,7 @@ def seed_customer(firestore_client):
     """テスト用利用者データ"""
     doc_ref = firestore_client.collection("customers").document("test-customer-1")
     doc_ref.set({
-        "name": {"last_name": "田中", "first_name": "太郎"},
+        "name": {"family": "田中", "given": "太郎"},
         "address": "東京都新宿区1-1-1",
         "ng_staff_ids": ["helper-ng"],
         "allowed_staff_ids": [],
@@ -51,7 +51,7 @@ def seed_helper(firestore_client):
     """テスト用ヘルパーデータ"""
     doc_ref = firestore_client.collection("helpers").document("test-helper-1")
     doc_ref.set({
-        "name": {"last_name": "佐藤", "first_name": "花子"},
+        "name": {"family": "佐藤", "given": "花子"},
         "can_physical_care": True,
         "transportation": "bicycle",
         "employment_type": "full_time",

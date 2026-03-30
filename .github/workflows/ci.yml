@@ -176,7 +176,7 @@ jobs:
 
   deploy-hosting:
     name: Deploy Hosting (Firebase)
-    needs: [test-optimizer, test-web, test-firestore-rules, test-e2e, test-agent]
+    needs: [test-optimizer, test-web, test-firestore-rules, test-e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

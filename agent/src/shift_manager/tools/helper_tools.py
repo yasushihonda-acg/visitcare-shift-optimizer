@@ -1,8 +1,10 @@
 """ヘルパーデータ参照ツール"""
 
-from google.adk.tools import FunctionTool
+import logging
 
 from src.shared.firestore_client import get_firestore_client
+
+logger = logging.getLogger(__name__)
 
 
 def get_helpers(name_query: str = "", qualification_filter: str = "") -> list[dict]:
@@ -15,8 +17,12 @@ def get_helpers(name_query: str = "", qualification_filter: str = "") -> list[di
     Returns:
         ヘルパーリスト
     """
-    db = get_firestore_client()
-    docs = db.collection("helpers").stream()
+    try:
+        db = get_firestore_client()
+        docs = db.collection("helpers").stream()
+    except Exception as e:
+        logger.error("ヘルパーデータ取得失敗: %s: %s", type(e).__name__, e)
+        return [{"error": f"ヘルパーデータの取得に失敗しました: {type(e).__name__}"}]
 
     results = []
     for doc in docs:
@@ -25,7 +31,7 @@ def get_helpers(name_query: str = "", qualification_filter: str = "") -> list[di
             continue
 
         name = data.get("name", {})
-        full_name = f"{name.get('last_name', '')}{name.get('first_name', '')}"
+        full_name = f"{name.get('family', '')}{name.get('given', '')}"
 
         if name_query and name_query not in full_name:
             continue
@@ -56,9 +62,13 @@ def get_helper_availability(helper_id: str, week_start_date: str = "") -> dict:
     Returns:
         週次スケジュール + 希望休情報
     """
-    db = get_firestore_client()
+    try:
+        db = get_firestore_client()
+        helper_doc = db.collection("helpers").document(helper_id).get()
+    except Exception as e:
+        logger.error("ヘルパー詳細取得失敗 [id=%s]: %s", helper_id, e)
+        return {"error": f"ヘルパーデータの取得に失敗しました: {type(e).__name__}"}
 
-    helper_doc = db.collection("helpers").document(helper_id).get()
     if not helper_doc.exists:
         return {"error": f"ヘルパー {helper_id} が見つかりません"}
 
@@ -69,7 +79,7 @@ def get_helper_availability(helper_id: str, week_start_date: str = "") -> dict:
     name = data.get("name", {})
     result: dict = {
         "id": helper_id,
-        "name": f"{name.get('last_name', '')}{name.get('first_name', '')}",
+        "name": f"{name.get('family', '')}{name.get('given', '')}",
         "weekly_availability": data.get("weekly_availability", {}),
         "preferred_hours": data.get("preferred_hours", {}),
         "available_hours": data.get("available_hours", {}),
@@ -77,22 +87,22 @@ def get_helper_availability(helper_id: str, week_start_date: str = "") -> dict:
     }
 
     if week_start_date:
-        unavail_docs = (
-            db.collection("staff_unavailability")
-            .where("staff_id", "==", helper_id)
-            .where("week_start_date", "==", week_start_date)
-            .stream()
-        )
-        for udoc in unavail_docs:
-            udata = udoc.to_dict()
-            if udata:
-                result["unavailable_dates"].append({
-                    "date": udata.get("date", ""),
-                    "reason": udata.get("reason", ""),
-                })
+        try:
+            unavail_docs = (
+                db.collection("staff_unavailability")
+                .where("staff_id", "==", helper_id)
+                .where("week_start_date", "==", week_start_date)
+                .stream()
+            )
+            for udoc in unavail_docs:
+                udata = udoc.to_dict()
+                if udata:
+                    result["unavailable_dates"].append({
+                        "date": udata.get("date", ""),
+                        "reason": udata.get("reason", ""),
+                    })
+        except Exception as e:
+            logger.error("希望休データ取得失敗 [helper=%s]: %s", helper_id, e)
+            result["unavailable_dates_error"] = str(e)
 
     return result
-
-
-get_helpers_tool = FunctionTool(get_helpers)
-get_helper_availability_tool = FunctionTool(get_helper_availability)

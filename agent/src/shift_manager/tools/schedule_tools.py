@@ -1,6 +1,10 @@
-"""スケジュール関連ツール（既存最適化エンジン連携）"""
+"""スケジュール関連ツール（既存最適化エンジン連携予定）"""
 
-from google.adk.tools import FunctionTool
+import logging
+
+from src.shared.firestore_client import get_firestore_client
+
+logger = logging.getLogger(__name__)
 
 
 async def check_constraints(
@@ -12,6 +16,9 @@ async def check_constraints(
 ) -> dict:
     """指定のヘルパーを利用者に割り当てた場合の制約チェックを行う。
 
+    現在チェックする制約: NGスタッフ、ホワイトリスト、性別要件、推奨スタッフ。
+    date/start_time/end_timeは将来の時間帯ベース制約チェック用（現在未使用）。
+
     Args:
         customer_id: 利用者ID
         helper_id: ヘルパーID
@@ -20,14 +27,15 @@ async def check_constraints(
         end_time: 終了時刻（HH:MM形式）
 
     Returns:
-        制約チェック結果（violations: 違反リスト、warnings: 警告リスト）
+        制約チェック結果（is_valid, violations, warnings）
     """
-    from src.shared.firestore_client import get_firestore_client
-
-    db = get_firestore_client()
-
-    customer_doc = db.collection("customers").document(customer_id).get()
-    helper_doc = db.collection("helpers").document(helper_id).get()
+    try:
+        db = get_firestore_client()
+        customer_doc = db.collection("customers").document(customer_id).get()
+        helper_doc = db.collection("helpers").document(helper_id).get()
+    except Exception as e:
+        logger.error("制約チェック用データ取得失敗: %s", e)
+        return {"error": f"データの取得に失敗しました: {type(e).__name__}"}
 
     if not customer_doc.exists:
         return {"error": f"利用者 {customer_id} が見つかりません"}
@@ -50,9 +58,6 @@ async def check_constraints(
         violations.append(
             f"ヘルパー {helper_id} は利用者 {customer_id} の許可スタッフリストに含まれていません"
         )
-
-    # 資格チェック（サービス種別による）
-    # TODO: service_type から身体介護かどうか判定するロジック追加
 
     # 性別要件チェック
     gender_req = customer.get("gender_requirement", "any")
@@ -81,6 +86,8 @@ async def suggest_assignment(
 ) -> dict:
     """既存最適化エンジンを呼び出し、制約を満たすスタッフ候補を取得する。
 
+    NOTE: Phase 2で実装予定。現在はスタブ。
+
     Args:
         customer_id: 利用者ID
         date: 日付（YYYY-MM-DD形式）
@@ -90,8 +97,6 @@ async def suggest_assignment(
     Returns:
         候補スタッフリスト（スコア付き）
     """
-    # NOTE: optimizer APIに/api/suggestエンドポイントを追加予定
-    # 現時点ではスタブ実装
     return {
         "note": "最適化エンジン連携は Phase 2 で実装予定",
         "customer_id": customer_id,
@@ -99,7 +104,3 @@ async def suggest_assignment(
         "time_slot": f"{start_time}-{end_time}",
         "candidates": [],
     }
-
-
-check_constraints_tool = FunctionTool(check_constraints)
-suggest_assignment_tool = FunctionTool(suggest_assignment)

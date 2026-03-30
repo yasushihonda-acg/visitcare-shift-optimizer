@@ -1,8 +1,10 @@
 """利用者データ参照ツール"""
 
-from google.adk.tools import FunctionTool
+import logging
 
 from src.shared.firestore_client import get_firestore_client
+
+logger = logging.getLogger(__name__)
 
 
 def get_customers(name_query: str = "") -> list[dict]:
@@ -14,8 +16,12 @@ def get_customers(name_query: str = "") -> list[dict]:
     Returns:
         利用者リスト（id, 名前, 住所を含む）
     """
-    db = get_firestore_client()
-    docs = db.collection("customers").stream()
+    try:
+        db = get_firestore_client()
+        docs = db.collection("customers").stream()
+    except Exception as e:
+        logger.error("利用者データ取得失敗: %s: %s", type(e).__name__, e)
+        return [{"error": f"利用者データの取得に失敗しました: {type(e).__name__}"}]
 
     results = []
     for doc in docs:
@@ -24,7 +30,7 @@ def get_customers(name_query: str = "") -> list[dict]:
             continue
 
         name = data.get("name", {})
-        full_name = f"{name.get('last_name', '')}{name.get('first_name', '')}"
+        full_name = f"{name.get('family', '')}{name.get('given', '')}"
 
         if name_query and name_query not in full_name:
             continue
@@ -33,8 +39,8 @@ def get_customers(name_query: str = "") -> list[dict]:
             "id": doc.id,
             "name": full_name,
             "address": data.get("address", ""),
-            "has_ng_staff": len(data.get("ng_staff_ids", [])) > 0,
-            "has_whitelist": len(data.get("allowed_staff_ids", [])) > 0,
+            "has_ng_staff": bool(data.get("ng_staff_ids")),
+            "has_whitelist": bool(data.get("allowed_staff_ids")),
             "gender_requirement": data.get("gender_requirement", "any"),
         })
 
@@ -50,8 +56,12 @@ def get_customer_detail(customer_id: str) -> dict:
     Returns:
         利用者の詳細情報（名前、住所、制約、週間サービス等）
     """
-    db = get_firestore_client()
-    doc = db.collection("customers").document(customer_id).get()
+    try:
+        db = get_firestore_client()
+        doc = db.collection("customers").document(customer_id).get()
+    except Exception as e:
+        logger.error("利用者詳細取得失敗 [id=%s]: %s", customer_id, e)
+        return {"error": f"利用者データの取得に失敗しました: {type(e).__name__}"}
 
     if not doc.exists:
         return {"error": f"利用者 {customer_id} が見つかりません"}
@@ -75,7 +85,7 @@ def get_customer_detail(customer_id: str) -> dict:
 
     return {
         "id": doc.id,
-        "name": f"{name.get('last_name', '')}{name.get('first_name', '')}",
+        "name": f"{name.get('family', '')}{name.get('given', '')}",
         "address": data.get("address", ""),
         "ng_staff_ids": data.get("ng_staff_ids", []),
         "allowed_staff_ids": data.get("allowed_staff_ids", []),
@@ -85,7 +95,3 @@ def get_customer_detail(customer_id: str) -> dict:
         "same_household_customer_ids": data.get("same_household_customer_ids", []),
         "same_facility_customer_ids": data.get("same_facility_customer_ids", []),
     }
-
-
-get_customers_tool = FunctionTool(get_customers)
-get_customer_detail_tool = FunctionTool(get_customer_detail)

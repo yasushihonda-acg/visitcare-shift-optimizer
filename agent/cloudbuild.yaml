@@ -42,5 +42,5 @@ substitutions:
   _IMAGE_NAME: visitcare-agent
   _SERVICE_NAME: visitcare-agent
   _CORS_ORIGINS: 'https://visitcare-shift-optimizer.web.app,https://visitcare-shift-optimizer.firebaseapp.com,http://localhost:3000'
-  _ALLOW_UNAUTHENTICATED: 'true'
+  _ALLOW_UNAUTHENTICATED: 'false'
   _OPTIMIZER_API_URL: 'https://shift-optimizer-1045989697649.asia-northeast1.run.app'
