@@ -27,7 +27,12 @@ visitcare-shift-optimizer/
 │   ├── scripts/             # バリデーション・インポートスクリプト
 │   └── tests/               # Vitest テスト
 ├── firebase/                # Firestore rules, indexes
-├── optimizer/               # Python最適化エンジン（Cloud Run）※Phase 2a
+├── optimizer/               # Python最適化エンジン（Cloud Run）※AIエージェントの内部ツール
+├── agent/                   # AIエージェント（Cloud Run）※ADR-018/019/020
+│   ├── src/shift_manager/   # シフト管理AI（サ責向け）
+│   ├── src/helper_support/  # ヘルパー支援AI（ヘルパー向け）
+│   ├── src/shared/          # 共通モジュール（認証、Firestore等）
+│   └── src/api/             # FastAPI + ADK Runner
 ├── web/                     # Next.js フロントエンド ※Phase 3a
 ├── scripts/                 # 開発ツール
 │   └── dev-start.sh         # ローカル一括起動スクリプト

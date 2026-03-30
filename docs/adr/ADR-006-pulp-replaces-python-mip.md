@@ -1,7 +1,9 @@
 # ADR-006: PuLP + CBC に変更（Python-MIPから移行）
 
 ## ステータス
-Accepted（2026-02-09）
+Modified（2026-03-30）— ADR-018/ADR-020により、単独サービスからAIエージェントの内部ツールへ役割変更。PuLP+CBCエンジンは引き続き存続する。
+
+> 元ステータス: Accepted（2026-02-09）
 
 ## コンテキスト
 ADR-001 で Python-MIP + CBC を選定していたが、Python-MIP は Python 3.12 で安定版リリースがない（1.16rc0のみ、クラッシュ報告あり）。GitHub Issue #376 が2025年5月時点でも未解決。
