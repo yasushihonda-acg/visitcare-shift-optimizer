@@ -11,6 +11,33 @@
 | `travel_times` | ~2,550 | 拠点間移動時間キャッシュ |
 | `staff_unavailability` | 随時 | スタッフ希望休 |
 | `settings` | 1 | アプリ設定（通知設定等） |
+| `chat_sessions` | 随時 | AIエージェントチャットセッション（ADR-020） |
+
+---
+
+## chat_sessions
+
+AIエージェントとのチャットセッションメタデータ。UI側でのセッション一覧表示・検索に使用。
+ADK内部のセッション管理（`adk_sessions`）とは分離し、アプリレベルの関心事のみ管理する。
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `user_id` | `string` | ○ | Firebase Auth UID |
+| `agent_type` | `string` | ○ | `"shift_manager"` \| `"helper_support"` |
+| `adk_session_id` | `string` | ○ | ADK SessionService のセッションID（紐付け用） |
+| `title` | `string` | ○ | セッションタイトル（自動生成 or ユーザー設定） |
+| `message_count` | `number` | ○ | メッセージ数 |
+| `status` | `string` | ○ | `"active"` \| `"archived"` |
+| `created_at` | `Timestamp` | ○ | 作成日時 |
+| `updated_at` | `Timestamp` | ○ | 最終更新日時 |
+
+**複合インデックス**:
+- `user_id` ASC, `updated_at` DESC（ユーザーのセッション一覧、新しい順）
+- `user_id` ASC, `agent_type` ASC, `status` ASC（エージェント種別 × ステータスでの絞り込み）
+
+**備考**:
+- ADK SessionService は内部的に Firestore を使用し、`adk_sessions` プレフィックスのコレクションを自動管理する
+- `chat_sessions` はADKの実装詳細に依存せず、アプリケーション固有の要件（一覧表示、検索、アーカイブ等）を満たす
 
 ---
 
