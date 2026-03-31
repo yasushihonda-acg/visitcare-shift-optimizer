@@ -144,20 +144,15 @@ def solve(
     # --- 割当可能ペアの事前計算（変数枝刈り） ---
     feasible_pairs = _compute_feasible_pairs(inp)
 
-    # --- 決定変数: x[h_id, o_id] = ヘルパーhをオーダーoに割り当てるか ---
+    # --- 決定変数: feasibleペアのみ生成（メモリ削減） ---
     x: dict[tuple[str, str], pulp.LpVariable] = {}
-    for h in helpers:
-        for o in orders:
-            if (h.id, o.id) in feasible_pairs:
-                x[h.id, o.id] = pulp.LpVariable(f"x_{h.id}_{o.id}", cat="Binary")
-            else:
-                # 割当不可能なペアは定数0で固定
-                x[h.id, o.id] = pulp.LpVariable(f"x_{h.id}_{o.id}", cat="Binary", upBound=0)
+    for h_id, o_id in feasible_pairs:
+        x[h_id, o_id] = pulp.LpVariable(f"x_{h_id}_{o_id}", cat="Binary")
 
     # --- 基本制約: 各オーダーに必要人数を割り当てる ---
     for o in orders:
         prob += (
-            pulp.lpSum(x[h.id, o.id] for h in helpers) == o.staff_count,
+            pulp.lpSum(x.get((h.id, o.id), 0) for h in helpers) == o.staff_count,
             f"assign_{o.id}",
         )
 
@@ -186,7 +181,10 @@ def solve(
     assignments: list[Assignment] = []
     if prob.status == pulp.constants.LpStatusOptimal:
         for o in orders:
-            staff_ids = [h.id for h in helpers if pulp.value(x[h.id, o.id]) > 0.5]
+            staff_ids = [
+                h.id for h in helpers
+                if (h.id, o.id) in x and pulp.value(x[h.id, o.id]) > 0.5
+            ]
             assignments.append(Assignment(order_id=o.id, staff_ids=staff_ids))
 
     return OptimizationResult(
@@ -243,7 +241,10 @@ def _build_objective(
                             continue
                         tt = travel_lookup.get((c1, c2), 0.0)
                         if tt > 0:
-                            objective += w.travel * tt * (x[h.id, o1.id] + x[h.id, o2.id]) / 2
+                            v1 = x.get((h.id, o1.id), 0)
+                            v2 = x.get((h.id, o2.id), 0)
+                            if v1 != 0 or v2 != 0:
+                                objective += w.travel * tt * (v1 + v2) / 2
 
     # --- 2. 推奨スタッフ優先 ---
     if w.preferred_staff > 0:
@@ -258,7 +259,9 @@ def _build_objective(
                 continue
             for h in inp.helpers:
                 if (o.customer_id, h.id) not in preferred_pairs:
-                    objective += w.preferred_staff * x[h.id, o.id]
+                    v = x.get((h.id, o.id), 0)
+                    if v != 0:
+                        objective += w.preferred_staff * v
 
     # --- 3. 稼働バランス（preferred_hours乖離ペナルティ） ---
     if w.workload_balance > 0:
@@ -286,8 +289,9 @@ def _add_workload_balance(
     for h in inp.helpers:
         # 各ヘルパーの合計稼働時間（分）
         total_minutes = pulp.lpSum(
-            (_time_to_minutes(o.end_time) - _time_to_minutes(o.start_time)) * x[h.id, o.id]
+            (_time_to_minutes(o.end_time) - _time_to_minutes(o.start_time)) * x.get((h.id, o.id), 0)
             for o in inp.orders
+            if (h.id, o.id) in x
         )
 
         pref_max_min = h.preferred_hours.max * 60
@@ -351,7 +355,9 @@ def _add_staff_continuity(
             y = pulp.LpVariable(f"y_{cid}_{h.id}", lowBound=0, upBound=1)
 
             for o in customer_orders:
-                prob += y >= x[h.id, o.id], f"cont_y_{cid}_{h.id}_{o.id}"
+                v = x.get((h.id, o.id), 0)
+                if v != 0:
+                    prob += y >= v, f"cont_y_{cid}_{h.id}_{o.id}"
 
             objective += weight * y
 
@@ -388,23 +394,17 @@ def diagnose_infeasibility(
     # --- 1. ソフトカバレッジ MIP ---
     prob = pulp.LpProblem("diagnose", pulp.LpMinimize)
 
-    # 決定変数: feasible_pairs 外は upBound=0 で固定
+    # 決定変数: feasibleペアのみ生成
     x: dict[tuple[str, str], pulp.LpVariable] = {}
-    for h in helpers:
-        for o in orders:
-            if (h.id, o.id) in feasible_pairs:
-                x[h.id, o.id] = pulp.LpVariable(f"x_{h.id}_{o.id}", cat="Binary")
-            else:
-                x[h.id, o.id] = pulp.LpVariable(
-                    f"x_{h.id}_{o.id}", cat="Binary", upBound=0
-                )
+    for h_id, o_id in feasible_pairs:
+        x[h_id, o_id] = pulp.LpVariable(f"x_{h_id}_{o_id}", cat="Binary")
 
     # coverage 不足スラック変数（unmet[o] = staff_count - assigned）
     unmet_vars: dict[str, pulp.LpVariable] = {}
     for o in orders:
         unmet = pulp.LpVariable(f"unmet_{o.id}", lowBound=0, upBound=o.staff_count)
         unmet_vars[o.id] = unmet
-        assigned = pulp.lpSum(x[h.id, o.id] for h in helpers)
+        assigned = pulp.lpSum(x.get((h.id, o.id), 0) for h in helpers)
         prob += unmet >= o.staff_count - assigned, f"soft_cover_{o.id}"
         # 過剰割当は禁止（staff_count を超えない）
         prob += assigned <= o.staff_count, f"max_cover_{o.id}"
