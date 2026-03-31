@@ -56,7 +56,8 @@ def _add_qualification_constraint(
         if not h.can_physical_care:
             for o in inp.orders:
                 if _requires_physical_care_cert(o.service_type, inp):
-                    prob += x[h.id, o.id] == 0, f"qual_{h.id}_{o.id}"
+                    if (h.id, o.id) in x:
+                        prob += x[h.id, o.id] == 0, f"qual_{h.id}_{o.id}"
 
 
 def _add_no_overlap_constraint(
@@ -84,10 +85,10 @@ def _add_no_overlap_constraint(
     # 各ヘルパーに対して重複ペア制約を追加
     for h in inp.helpers:
         for o1, o2 in overlap_pairs:
-            prob += (
-                x[h.id, o1.id] + x[h.id, o2.id] <= 1,
-                f"no_overlap_{h.id}_{o1.id}_{o2.id}",
-            )
+            v1 = x.get((h.id, o1.id))
+            v2 = x.get((h.id, o2.id))
+            if v1 is not None and v2 is not None:
+                prob += v1 + v2 <= 1, f"no_overlap_{h.id}_{o1.id}_{o2.id}"
 
 
 def _add_ng_staff_constraint(
@@ -103,7 +104,7 @@ def _add_ng_staff_constraint(
 
     for o in inp.orders:
         for h in inp.helpers:
-            if (o.customer_id, h.id) in ng_pairs:
+            if (o.customer_id, h.id) in ng_pairs and (h.id, o.id) in x:
                 prob += x[h.id, o.id] == 0, f"ng_{h.id}_{o.id}"
 
 
@@ -124,7 +125,7 @@ def _add_allowed_staff_constraint(
             continue  # allowed 未設定 = 制限なし
         allowed_ids = allowed_by_customer[o.customer_id]
         for h in inp.helpers:
-            if h.id not in allowed_ids:
+            if h.id not in allowed_ids and (h.id, o.id) in x:
                 prob += x[h.id, o.id] == 0, f"allowed_{h.id}_{o.id}"
 
 
@@ -140,7 +141,7 @@ def _add_gender_constraint(
         if c.gender_requirement == GenderRequirement.ANY:
             continue
         for h in inp.helpers:
-            if h.gender.value != c.gender_requirement.value:
+            if h.gender.value != c.gender_requirement.value and (h.id, o.id) in x:
                 prob += x[h.id, o.id] == 0, f"gender_{h.id}_{o.id}"
 
 
@@ -156,8 +157,9 @@ def _add_availability_constraint(
         for o in inp.orders:
             dow = o.day_of_week
             slots = h.weekly_availability.get(dow, [])
+            if (h.id, o.id) not in x:
+                continue  # 既に枝刈り済み
             if not slots:
-                # この曜日に勤務設定がない → 割当不可
                 prob += x[h.id, o.id] == 0, f"avail_day_{h.id}_{o.id}"
                 continue
 
@@ -183,19 +185,20 @@ def _add_unavailability_constraint(
             for o in inp.orders:
                 if o.date != slot.date:
                     continue
+                if (su.staff_id, o.id) not in x:
+                    continue
                 if slot.all_day:
                     prob += (
                         x[su.staff_id, o.id] == 0,
                         f"unavail_{su.staff_id}_{o.id}_{slot.date}",
                     )
                 else:
-                    # 時間帯指定: 重複チェック
                     if slot.start_time and slot.end_time:
                         us = _time_to_minutes(slot.start_time)
                         ue = _time_to_minutes(slot.end_time)
                         os_ = _time_to_minutes(o.start_time)
                         oe = _time_to_minutes(o.end_time)
-                        if os_ < ue and us < oe:  # 重複
+                        if os_ < ue and us < oe:
                             prob += (
                                 x[su.staff_id, o.id] == 0,
                                 f"unavail_t_{su.staff_id}_{o.id}_{slot.date}",
@@ -219,10 +222,14 @@ def _add_household_constraint(
             seen.add(pair)
             # 両オーダーに同じヘルパーを割当
             for h in inp.helpers:
-                prob += (
-                    x[h.id, o.id] == x[h.id, o.linked_order_id],
-                    f"linked_{h.id}_{o.id}_{o.linked_order_id}",
-                )
+                v1 = x.get((h.id, o.id))
+                v2 = x.get((h.id, o.linked_order_id))
+                if v1 is not None and v2 is not None:
+                    prob += v1 == v2, f"linked_{h.id}_{o.id}_{o.linked_order_id}"
+                elif v1 is not None:
+                    prob += v1 == 0, f"linked_force0_{h.id}_{o.id}"
+                elif v2 is not None:
+                    prob += v2 == 0, f"linked_force0_{h.id}_{o.linked_order_id}"
 
 
 def _add_travel_time_constraint(
@@ -268,10 +275,10 @@ def _add_travel_time_constraint(
     # 各ヘルパーに対して制約追加
     for h in inp.helpers:
         for oid1, oid2, suffix in travel_conflict_pairs:
-            prob += (
-                x[h.id, oid1] + x[h.id, oid2] <= 1,
-                f"travel_{h.id}_{suffix}",
-            )
+            v1 = x.get((h.id, oid1))
+            v2 = x.get((h.id, oid2))
+            if v1 is not None and v2 is not None:
+                prob += v1 + v2 <= 1, f"travel_{h.id}_{suffix}"
 
 
 def _add_training_constraint(
@@ -286,7 +293,8 @@ def _add_training_constraint(
                 continue  # 複数人体制なら研修中でもOK
             training = h.customer_training_status.get(o.customer_id)
             if training in (TrainingStatus.NOT_VISITED, TrainingStatus.TRAINING):
-                prob += x[h.id, o.id] == 0, f"training_{h.id}_{o.id}"
+                if (h.id, o.id) in x:
+                    prob += x[h.id, o.id] == 0, f"training_{h.id}_{o.id}"
 
 
 def _add_walk_distance_constraint(
@@ -325,7 +333,7 @@ def _add_walk_distance_constraint(
     # 徒歩スタッフにのみ制約追加
     for h in walk_helpers:
         for oid1, oid2, suffix in walk_conflict_pairs:
-            prob += (
-                x[h.id, oid1] + x[h.id, oid2] <= 1,
-                f"walk_dist_{h.id}_{suffix}",
-            )
+            v1 = x.get((h.id, oid1))
+            v2 = x.get((h.id, oid2))
+            if v1 is not None and v2 is not None:
+                prob += v1 + v2 <= 1, f"walk_dist_{h.id}_{suffix}"
