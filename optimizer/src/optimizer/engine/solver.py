@@ -161,7 +161,10 @@ def solve(
     worst_status = "Optimal"
     n_days = len(orders_by_date)
     # ステータス優先順位（小さいほど深刻）
-    _STATUS_PRIORITY = {"Infeasible": 0, "Not Solved": 1, "Feasible": 2, "Optimal": 3}
+    _STATUS_PRIORITY = {
+        "Infeasible": 0, "Unbounded": 0, "Unknown": 0,
+        "Not Solved": 1, "Feasible": 2, "Optimal": 3,
+    }
 
     sorted_dates = sorted(orders_by_date.items())
     for day_index, (date_str, day_orders) in enumerate(sorted_dates):
@@ -169,6 +172,12 @@ def solve(
         elapsed = time.time() - start_time
         if elapsed >= time_limit_seconds:
             # 時間切れ: 残りオーダーを未割当として返す
+            logger.warning(
+                "Time budget exhausted at day %d/%d (%s): "
+                "marking %d orders as unassigned (elapsed=%.1fs, limit=%ds)",
+                day_index + 1, n_days, date_str,
+                len(day_orders), elapsed, time_limit_seconds,
+            )
             for o in day_orders:
                 all_assignments.append(Assignment(order_id=o.id, staff_ids=[]))
                 total_unassigned += 1
@@ -276,8 +285,13 @@ def _solve_single(
     status = status_map.get(prob.status, "Unknown")
 
     # incumbent解がある場合（time limit到達時でも解を抽出可能）
-    has_incumbent = pulp.value(prob.objective) is not None
-    if status == "Not Solved" and has_incumbent:
+    # NOTE: pulp.value(prob.objective)はInfeasible/Unboundedでも非Noneを返すため、
+    # prob.statusでガードしてNot Solved時のみincumbent判定する
+    has_incumbent = (
+        prob.status == pulp.constants.LpStatusNotSolved
+        and pulp.value(prob.objective) is not None
+    )
+    if has_incumbent:
         status = "Feasible"
 
     assignments: list[Assignment] = []
@@ -297,7 +311,7 @@ def _solve_single(
 
     return OptimizationResult(
         assignments=assignments,
-        objective_value=pulp.value(prob.objective) or 0.0,
+        objective_value=obj_val if (obj_val := pulp.value(prob.objective)) is not None else 0.0,
         solve_time_seconds=round(solve_time, 3),
         status=status,
         unassigned_count=unassigned_count,
