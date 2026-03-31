@@ -122,4 +122,6 @@ class TestWalkDistanceConstraint:
             staff_unavailabilities=[], staff_constraints=[],
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        # 徒歩スタッフのみで遠距離訪問2件 → ペナルティ付きOptimal（一部未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1

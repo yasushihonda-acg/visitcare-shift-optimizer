@@ -37,3 +37,5 @@ class OptimizationResult(BaseModel):
     objective_value: float
     solve_time_seconds: float
     status: str  # "Optimal", "Feasible", "Infeasible", "Not Solved"
+    unassigned_count: int = 0  # staff_ids空のオーダー数
+    partial_count: int = 0  # staff_ids < staff_count のオーダー数

@@ -85,4 +85,6 @@ class TestGenderConstraint:
             travel_times=[], staff_unavailabilities=[], staff_constraints=[],
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        # 条件を満たすスタッフがいない → ペナルティ付きOptimal（未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1

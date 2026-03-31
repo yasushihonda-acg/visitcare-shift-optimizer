@@ -61,4 +61,6 @@ class TestNgStaffConstraint:
             staff_constraints=[StaffConstraint(customer_id="C1", staff_id="H1", constraint_type="ng")],
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        # 全ヘルパーがNG → ペナルティ付きOptimal（未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1

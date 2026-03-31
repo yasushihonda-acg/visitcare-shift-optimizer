@@ -115,8 +115,8 @@ class TestVariablePruning:
         assert result.status == "Optimal"
         assert result.assignments[0].staff_ids == ["h002"]
 
-    def test_zero_feasible_order_infeasible(self) -> None:
-        """全ヘルパーが枝刈りされたオーダー → Infeasible"""
+    def test_zero_feasible_order_unassigned(self) -> None:
+        """全ヘルパーが枝刈りされたオーダー → Optimal（未割当）"""
         inp = _make_input(
             helpers=[
                 _make_helper("h001", weekly_availability={
@@ -125,7 +125,8 @@ class TestVariablePruning:
             ],
         )
         result = solve(inp, time_limit_seconds=10)
-        assert result.status == "Infeasible"
+        assert result.status == "Optimal"
+        assert result.unassigned_count == 1
 
     def test_multiple_orders_partial_pruning(self) -> None:
         """複数オーダーで一部が枝刈りされても全体は成功"""
@@ -181,8 +182,9 @@ class TestVariablePruning:
         ]
         inp = _make_input(helpers=helpers, customers=customers, orders=orders)
         result = solve(inp, time_limit_seconds=10)
-        # 1ヘルパーで同時間帯2オーダーは不可能 → Infeasible
-        assert result.status == "Infeasible"
+        # 1ヘルパーで同時間帯2オーダー → 1つ割当、1つ未割当
+        assert result.status == "Optimal"
+        assert result.unassigned_count == 1
 
     def test_workload_balance_with_sparse_x(self) -> None:
         """ワークロードバランスがsparse辞書でも動作する"""

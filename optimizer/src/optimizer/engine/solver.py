@@ -129,8 +129,79 @@ def solve(
     inp: OptimizationInput,
     time_limit_seconds: int = 180,
     weights: SoftWeights | None = None,
+    decompose_by_day: bool = True,
 ) -> OptimizationResult:
-    """最適化を実行し、結果を返す"""
+    """最適化を実行し、結果を返す
+
+    decompose_by_day=Trueの場合、オーダーを日付ごとに分割して
+    独立にソルブする（メモリ・時間削減）。
+    """
+    if not decompose_by_day:
+        return _solve_single(inp, time_limit_seconds, weights)
+
+    # --- 曜日分割モード ---
+    start_time = time.time()
+    orders_by_date: dict[str, list[Order]] = {}
+    for o in inp.orders:
+        orders_by_date.setdefault(o.date, []).append(o)
+
+    if len(orders_by_date) <= 1:
+        # 1日分しかない → 分割不要
+        return _solve_single(inp, time_limit_seconds, weights)
+
+    # 日ごとに独立してソルブ
+    all_assignments: list[Assignment] = []
+    total_objective = 0.0
+    total_unassigned = 0
+    total_partial = 0
+    worst_status = "Optimal"
+    n_days = len(orders_by_date)
+    per_day_limit = max(30, time_limit_seconds // n_days)
+
+    for date_str, day_orders in sorted(orders_by_date.items()):
+        # この日に必要な利用者IDを特定
+        customer_ids = {o.customer_id for o in day_orders}
+        day_customers = [c for c in inp.customers if c.id in customer_ids]
+
+        # 日単位の入力を構築
+        day_inp = OptimizationInput(
+            customers=day_customers,
+            helpers=inp.helpers,
+            orders=day_orders,
+            travel_times=inp.travel_times,
+            staff_unavailabilities=inp.staff_unavailabilities,
+            staff_constraints=inp.staff_constraints,
+            service_type_configs=inp.service_type_configs,
+        )
+
+        day_result = _solve_single(day_inp, per_day_limit, weights)
+
+        all_assignments.extend(day_result.assignments)
+        total_objective += day_result.objective_value
+        total_unassigned += day_result.unassigned_count
+        total_partial += day_result.partial_count
+
+        # ステータス: 最悪のものを採用
+        if day_result.status != "Optimal":
+            worst_status = day_result.status
+
+    total_time = time.time() - start_time
+    return OptimizationResult(
+        assignments=all_assignments,
+        objective_value=round(total_objective, 6),
+        solve_time_seconds=round(total_time, 3),
+        status=worst_status,
+        unassigned_count=total_unassigned,
+        partial_count=total_partial,
+    )
+
+
+def _solve_single(
+    inp: OptimizationInput,
+    time_limit_seconds: int = 180,
+    weights: SoftWeights | None = None,
+) -> OptimizationResult:
+    """単一期間の最適化を実行する（分割なし）"""
     start_time = time.time()
     w = weights or SoftWeights()
 
@@ -149,19 +220,25 @@ def solve(
     for h_id, o_id in feasible_pairs:
         x[h_id, o_id] = pulp.LpVariable(f"x_{h_id}_{o_id}", cat="Binary")
 
-    # --- 基本制約: 各オーダーに必要人数を割り当てる ---
+    # --- 基本制約: カバレッジ（<= staff_count + ペナルティで緩和） ---
+    COVERAGE_PENALTY = 1000  # 未割当1人あたりのペナルティ（他重みの100倍以上）
+    unmet: dict[str, pulp.LpVariable] = {}  # order_id → 不足人数
     for o in orders:
-        prob += (
-            pulp.lpSum(x.get((h.id, o.id), 0) for h in helpers) == o.staff_count,
-            f"assign_{o.id}",
-        )
+        assigned_sum = pulp.lpSum(x.get((h.id, o.id), 0) for h in helpers)
+        # 割当人数 <= staff_count（上限制約）
+        prob += assigned_sum <= o.staff_count, f"assign_upper_{o.id}"
+        # 不足人数のスラック変数: unmet_o >= staff_count - assigned_sum
+        u = pulp.LpVariable(f"unmet_{o.id}", lowBound=0, cat="Integer")
+        prob += u >= o.staff_count - assigned_sum, f"unmet_def_{o.id}"
+        unmet[o.id] = u
 
     # --- 制約の追加（外部から呼べるよう分離） ---
     _add_constraints(prob, x, inp, travel_lookup)
 
-    # --- 目的関数: 重み付き加算 ---
+    # --- 目的関数: 重み付き加算 + カバレッジペナルティ ---
     objective = _build_objective(x, inp, travel_lookup, prob, w)
-    prob += objective, "total_cost"
+    coverage_penalty = pulp.lpSum(COVERAGE_PENALTY * unmet[o.id] for o in orders)
+    prob += objective + coverage_penalty, "total_cost"
 
     # --- ソルバー実行 ---
     solver = pulp.PULP_CBC_CMD(msg=0, timeLimit=time_limit_seconds)
@@ -179,6 +256,8 @@ def solve(
     status = status_map.get(prob.status, "Unknown")
 
     assignments: list[Assignment] = []
+    unassigned_count = 0
+    partial_count = 0
     if prob.status == pulp.constants.LpStatusOptimal:
         for o in orders:
             staff_ids = [
@@ -186,12 +265,18 @@ def solve(
                 if (h.id, o.id) in x and pulp.value(x[h.id, o.id]) > 0.5
             ]
             assignments.append(Assignment(order_id=o.id, staff_ids=staff_ids))
+            if len(staff_ids) == 0:
+                unassigned_count += 1
+            elif len(staff_ids) < o.staff_count:
+                partial_count += 1
 
     return OptimizationResult(
         assignments=assignments,
         objective_value=pulp.value(prob.objective) or 0.0,
         solve_time_seconds=round(solve_time, 3),
         status=status,
+        unassigned_count=unassigned_count,
+        partial_count=partial_count,
     )
 
 
