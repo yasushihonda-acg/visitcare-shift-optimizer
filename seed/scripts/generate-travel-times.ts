@@ -9,7 +9,9 @@ import {
   type TravelTimeResult,
 } from './utils/google-maps-client.js';
 
-const DATA_DIR = resolve(import.meta.dirname, '../data');
+const DATA_DIR = process.env.SEED_DATA_DIR
+  ? resolve(process.env.SEED_DATA_DIR)
+  : resolve(import.meta.dirname, '../data');
 
 /** キャッシュ有効期間（30日） */
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;

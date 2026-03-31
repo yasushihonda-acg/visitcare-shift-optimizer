@@ -4,7 +4,9 @@ import { parseCSV } from './utils/csv-parser.js';
 import { batchWrite, getDB } from './utils/firestore-client.js';
 import { buildHouseholdFacilityGroups } from './utils/household-groups.js';
 
-const DATA_DIR = resolve(import.meta.dirname, '../data');
+const DATA_DIR = process.env.SEED_DATA_DIR
+  ? resolve(process.env.SEED_DATA_DIR)
+  : resolve(import.meta.dirname, '../data');
 
 interface CustomerRow {
   id: string;
@@ -118,7 +120,10 @@ export async function importCustomers(): Promise<number> {
           ...(c.given_kana ? { given_kana: c.given_kana } : {}),
         },
         address: c.address,
-        location: { lat: parseFloat(c.lat), lng: parseFloat(c.lng) },
+        location: {
+          lat: parseFloat(c.lat) || 0,
+          lng: parseFloat(c.lng) || 0,
+        },
         ng_staff_ids: ngStaffIds,
         allowed_staff_ids: allowedStaffIds,
         preferred_staff_ids: preferredStaffIds,

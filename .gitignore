@@ -56,6 +56,7 @@ seed/emulator-data/
 
 # Production data (personal information)
 seed/data/production/
+seed/data/production-subset/
 
 # Python package lock (uv)
 optimizer/uv.lock

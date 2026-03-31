@@ -45,9 +45,23 @@ async function assignSampleOrders(): Promise<number> {
   return assignCount;
 }
 
-function parseArgs(): { week?: string; weeks?: string[]; ordersOnly?: boolean } {
+function parseArgs(): {
+  week?: string;
+  weeks?: string[];
+  ordersOnly?: boolean;
+  dataDir?: string;
+  skipValidation?: boolean;
+  skipAssign?: boolean;
+} {
   const args = process.argv.slice(2);
-  const result: { week?: string; weeks?: string[]; ordersOnly?: boolean } = {};
+  const result: {
+    week?: string;
+    weeks?: string[];
+    ordersOnly?: boolean;
+    dataDir?: string;
+    skipValidation?: boolean;
+    skipAssign?: boolean;
+  } = {};
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--week' && args[i + 1]) {
       result.week = args[i + 1];
@@ -57,13 +71,27 @@ function parseArgs(): { week?: string; weeks?: string[]; ordersOnly?: boolean } 
       i++;
     } else if (args[i] === '--orders-only') {
       result.ordersOnly = true;
+    } else if (args[i] === '--data-dir' && args[i + 1]) {
+      result.dataDir = args[i + 1];
+      i++;
+    } else if (args[i] === '--skip-validation') {
+      result.skipValidation = true;
+    } else if (args[i] === '--skip-assign') {
+      result.skipAssign = true;
     }
   }
   return result;
 }
 
 async function main() {
-  const { week, weeks, ordersOnly } = parseArgs();
+  const { week, weeks, ordersOnly, dataDir, skipValidation, skipAssign } = parseArgs();
+
+  // --data-dir 指定時は SEED_DATA_DIR 環境変数を設定（子モジュールに伝搬）
+  if (dataDir) {
+    const { resolve } = await import('path');
+    process.env.SEED_DATA_DIR = resolve(dataDir);
+    console.log(`📂 Data directory: ${process.env.SEED_DATA_DIR}`);
+  }
 
   console.log('=== Seed Data Import ===\n');
 
@@ -77,16 +105,20 @@ async function main() {
   }
 
   // 1. バリデーション
-  console.log('📋 Validating CSV data...');
-  const errors = validateAll();
-  if (errors.length > 0) {
-    console.error(`❌ ${errors.length} validation error(s) found:`);
-    for (const e of errors) {
-      console.error(`  ${e.file}${e.row ? `:${e.row}` : ''} ${e.field ? `[${e.field}]` : ''} ${e.message}`);
+  if (skipValidation) {
+    console.log('⏭️  Skipping validation (--skip-validation)\n');
+  } else {
+    console.log('📋 Validating CSV data...');
+    const errors = validateAll();
+    if (errors.length > 0) {
+      console.error(`❌ ${errors.length} validation error(s) found:`);
+      for (const e of errors) {
+        console.error(`  ${e.file}${e.row ? `:${e.row}` : ''} ${e.field ? `[${e.field}]` : ''} ${e.message}`);
+      }
+      process.exit(1);
     }
-    process.exit(1);
+    console.log('✅ All validations passed\n');
   }
-  console.log('✅ All validations passed\n');
 
   if (ordersOnly) {
     // ordersのみ再生成（週を切り替える時・複数週追加時に便利）
@@ -106,9 +138,14 @@ async function main() {
       totalOrders += orderCount;
     }
 
-    const assignedCount = await assignSampleOrders();
-    console.log(`\n   total orders: ${totalOrders}`);
-    console.log(`   assigned: ${assignedCount}/${totalOrders}`);
+    if (skipAssign) {
+      console.log(`\n   total orders: ${totalOrders}`);
+      console.log('   assigned: skipped (--skip-assign)');
+    } else {
+      const assignedCount = await assignSampleOrders();
+      console.log(`\n   total orders: ${totalOrders}`);
+      console.log(`   assigned: ${assignedCount}/${totalOrders}`);
+    }
 
     console.log('\n✅ Import complete!');
     process.exit(0);
@@ -144,11 +181,20 @@ async function main() {
     totalOrders += orderCount;
   }
 
-  const assignedCount = await assignSampleOrders();
-  console.log(`   assigned: ${assignedCount}/${totalOrders}`);
+  if (skipAssign) {
+    console.log('   assigned: skipped (--skip-assign)');
+  } else {
+    const assignedCount = await assignSampleOrders();
+    console.log(`   assigned: ${assignedCount}/${totalOrders}`);
+  }
 
-  const travelTimeCount = await generateTravelTimes();
-  console.log(`   travel_times: ${travelTimeCount}`);
+  let travelTimeCount = 0;
+  if (skipValidation) {
+    console.log('   travel_times: skipped (no lat/lng data)');
+  } else {
+    travelTimeCount = await generateTravelTimes();
+    console.log(`   travel_times: ${travelTimeCount}`);
+  }
 
   const unavailCount = await importStaffUnavailability(targetWeeks[0]);
   console.log(`   staff_unavailability: ${unavailCount}`);

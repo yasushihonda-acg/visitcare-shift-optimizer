@@ -4,7 +4,9 @@ import { parseCSV } from './utils/csv-parser.js';
 import { batchWrite, getDB } from './utils/firestore-client.js';
 import { normalizeAddress } from './utils/normalize-address.js';
 
-const DATA_DIR = resolve(import.meta.dirname, '../data');
+const DATA_DIR = process.env.SEED_DATA_DIR
+  ? resolve(process.env.SEED_DATA_DIR)
+  : resolve(import.meta.dirname, '../data');
 
 const DAY_TO_OFFSET: Record<string, number> = {
   monday: 0,

@@ -3,7 +3,9 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { parseCSV } from './utils/csv-parser.js';
 import { batchWrite } from './utils/firestore-client.js';
 
-const DATA_DIR = resolve(import.meta.dirname, '../data');
+const DATA_DIR = process.env.SEED_DATA_DIR
+  ? resolve(process.env.SEED_DATA_DIR)
+  : resolve(import.meta.dirname, '../data');
 
 interface HelperRow {
   id: string;

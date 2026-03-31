@@ -1,7 +1,9 @@
 import { resolve } from 'path';
 import { parseCSV } from './utils/csv-parser.js';
 
-const DATA_DIR = resolve(import.meta.dirname, '../data');
+const DATA_DIR = process.env.SEED_DATA_DIR
+  ? resolve(process.env.SEED_DATA_DIR)
+  : resolve(import.meta.dirname, '../data');
 
 interface ValidationError {
   file: string;
