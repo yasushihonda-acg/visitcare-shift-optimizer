@@ -1,10 +1,11 @@
 import { resolve } from 'path';
 import { Timestamp } from 'firebase-admin/firestore';
 import { parseCSV } from './utils/csv-parser.js';
+import { getDataDir } from './utils/data-dir.js';
 import { batchWrite, getDB } from './utils/firestore-client.js';
 import { buildHouseholdFacilityGroups } from './utils/household-groups.js';
 
-const DATA_DIR = resolve(import.meta.dirname, '../data');
+const DATA_DIR = getDataDir(import.meta.dirname);
 
 interface CustomerRow {
   id: string;
@@ -62,8 +63,13 @@ export async function importCustomers(): Promise<number> {
   // 世帯/施設グループを構築
   const groups = buildHouseholdFacilityGroups(customers);
 
+  let missingCoordCount = 0;
+
   const docs = customers.map((c) => {
     const { sameHousehold, sameFacility } = groups.get(c.id)!;
+    if (!c.lat || !c.lng || Number.isNaN(parseFloat(c.lat))) {
+      missingCoordCount++;
+    }
     // 曜日別サービス枠を構築
     const customerServices = services.filter((s) => s.customer_id === c.id);
     const weeklyServices: Record<string, Array<{
@@ -118,7 +124,10 @@ export async function importCustomers(): Promise<number> {
           ...(c.given_kana ? { given_kana: c.given_kana } : {}),
         },
         address: c.address,
-        location: { lat: parseFloat(c.lat), lng: parseFloat(c.lng) },
+        location: {
+          lat: parseFloat(c.lat) || 0,
+          lng: parseFloat(c.lng) || 0,
+        },
         ng_staff_ids: ngStaffIds,
         allowed_staff_ids: allowedStaffIds,
         preferred_staff_ids: preferredStaffIds,
@@ -142,6 +151,10 @@ export async function importCustomers(): Promise<number> {
       },
     };
   });
+
+  if (missingCoordCount > 0) {
+    console.warn(`   ⚠️  ${missingCoordCount}/${customers.length} customers have missing lat/lng (defaulted to 0,0)`);
+  }
 
   return batchWrite('customers', docs);
 }
