@@ -72,6 +72,8 @@ class OptimizationRunResponse(BaseModel):
     solve_time_seconds: float
     total_orders: int
     assigned_count: int
+    unassigned_count: int = Field(default=0, description="未割当オーダー数")
+    partial_count: int = Field(default=0, description="部分割当オーダー数")
     parameters: OptimizationParametersResponse
 
 

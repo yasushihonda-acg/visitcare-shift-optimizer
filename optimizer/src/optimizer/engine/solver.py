@@ -135,6 +135,10 @@ def solve(
 
     decompose_by_day=Trueの場合、オーダーを日付ごとに分割して
     独立にソルブする（メモリ・時間削減）。
+
+    NOTE: 日次分割により週次ワークロードバランスと担当継続性は
+    日単位の最適化に分断される。継続性は1日4件以上の利用者のみ有効。
+    TODO: Phase 2で週間リバランスパスを検討（ADR-019参照）
     """
     if not decompose_by_day:
         return _solve_single(inp, time_limit_seconds, weights)
@@ -156,9 +160,24 @@ def solve(
     total_partial = 0
     worst_status = "Optimal"
     n_days = len(orders_by_date)
-    per_day_limit = max(30, time_limit_seconds // n_days)
+    # ステータス優先順位（小さいほど深刻）
+    _STATUS_PRIORITY = {"Infeasible": 0, "Not Solved": 1, "Feasible": 2, "Optimal": 3}
 
-    for date_str, day_orders in sorted(orders_by_date.items()):
+    sorted_dates = sorted(orders_by_date.items())
+    for day_index, (date_str, day_orders) in enumerate(sorted_dates):
+        # time budget: 経過時間を差し引いて残りを均等配分
+        elapsed = time.time() - start_time
+        if elapsed >= time_limit_seconds:
+            # 時間切れ: 残りオーダーを未割当として返す
+            for o in day_orders:
+                all_assignments.append(Assignment(order_id=o.id, staff_ids=[]))
+                total_unassigned += 1
+            worst_status = "Feasible"
+            continue
+        remaining = max(10, time_limit_seconds - elapsed)
+        remaining_days = n_days - day_index
+        per_day_limit = max(10, int(remaining / remaining_days))
+
         # この日に必要な利用者IDを特定
         customer_ids = {o.customer_id for o in day_orders}
         day_customers = [c for c in inp.customers if c.id in customer_ids]
@@ -181,8 +200,8 @@ def solve(
         total_unassigned += day_result.unassigned_count
         total_partial += day_result.partial_count
 
-        # ステータス: 最悪のものを採用
-        if day_result.status != "Optimal":
+        # ステータス: 最悪（優先順位が低い）ものを採用
+        if _STATUS_PRIORITY.get(day_result.status, -1) < _STATUS_PRIORITY.get(worst_status, 99):
             worst_status = day_result.status
 
     total_time = time.time() - start_time
@@ -255,10 +274,15 @@ def _solve_single(
     }
     status = status_map.get(prob.status, "Unknown")
 
+    # incumbent解がある場合（time limit到達時でも解を抽出可能）
+    has_incumbent = pulp.value(prob.objective) is not None
+    if status == "Not Solved" and has_incumbent:
+        status = "Feasible"
+
     assignments: list[Assignment] = []
     unassigned_count = 0
     partial_count = 0
-    if prob.status == pulp.constants.LpStatusOptimal:
+    if prob.status == pulp.constants.LpStatusOptimal or has_incumbent:
         for o in orders:
             staff_ids = [
                 h.id for h in helpers
