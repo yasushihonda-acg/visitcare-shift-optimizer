@@ -149,19 +149,25 @@ def solve(
     for h_id, o_id in feasible_pairs:
         x[h_id, o_id] = pulp.LpVariable(f"x_{h_id}_{o_id}", cat="Binary")
 
-    # --- 基本制約: 各オーダーに必要人数を割り当てる ---
+    # --- 基本制約: カバレッジ（<= staff_count + ペナルティで緩和） ---
+    COVERAGE_PENALTY = 1000  # 未割当1人あたりのペナルティ（他重みの100倍以上）
+    unmet: dict[str, pulp.LpVariable] = {}  # order_id → 不足人数
     for o in orders:
-        prob += (
-            pulp.lpSum(x.get((h.id, o.id), 0) for h in helpers) == o.staff_count,
-            f"assign_{o.id}",
-        )
+        assigned_sum = pulp.lpSum(x.get((h.id, o.id), 0) for h in helpers)
+        # 割当人数 <= staff_count（上限制約）
+        prob += assigned_sum <= o.staff_count, f"assign_upper_{o.id}"
+        # 不足人数のスラック変数: unmet_o >= staff_count - assigned_sum
+        u = pulp.LpVariable(f"unmet_{o.id}", lowBound=0, cat="Integer")
+        prob += u >= o.staff_count - assigned_sum, f"unmet_def_{o.id}"
+        unmet[o.id] = u
 
     # --- 制約の追加（外部から呼べるよう分離） ---
     _add_constraints(prob, x, inp, travel_lookup)
 
-    # --- 目的関数: 重み付き加算 ---
+    # --- 目的関数: 重み付き加算 + カバレッジペナルティ ---
     objective = _build_objective(x, inp, travel_lookup, prob, w)
-    prob += objective, "total_cost"
+    coverage_penalty = pulp.lpSum(COVERAGE_PENALTY * unmet[o.id] for o in orders)
+    prob += objective + coverage_penalty, "total_cost"
 
     # --- ソルバー実行 ---
     solver = pulp.PULP_CBC_CMD(msg=0, timeLimit=time_limit_seconds)
@@ -179,19 +185,28 @@ def solve(
     status = status_map.get(prob.status, "Unknown")
 
     assignments: list[Assignment] = []
+    unassigned_count = 0
+    partial_count = 0
     if prob.status == pulp.constants.LpStatusOptimal:
+        order_map = {o.id: o for o in orders}
         for o in orders:
             staff_ids = [
                 h.id for h in helpers
                 if (h.id, o.id) in x and pulp.value(x[h.id, o.id]) > 0.5
             ]
             assignments.append(Assignment(order_id=o.id, staff_ids=staff_ids))
+            if len(staff_ids) == 0:
+                unassigned_count += 1
+            elif len(staff_ids) < order_map[o.id].staff_count:
+                partial_count += 1
 
     return OptimizationResult(
         assignments=assignments,
         objective_value=pulp.value(prob.objective) or 0.0,
         solve_time_seconds=round(solve_time, 3),
         status=status,
+        unassigned_count=unassigned_count,
+        partial_count=partial_count,
     )
 
 

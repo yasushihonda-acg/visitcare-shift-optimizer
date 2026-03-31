@@ -66,7 +66,9 @@ class TestNoOverlapConstraint:
             travel_times=[], staff_unavailabilities=[], staff_constraints=[],
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        # 1ヘルパーで同時間帯2オーダー → ペナルティ付きOptimal（一部未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1
 
     def test_non_overlapping_same_helper_ok(self) -> None:
         """時間帯が重複しない → 同一ヘルパーが両方担当可能"""

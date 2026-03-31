@@ -112,8 +112,9 @@ class TestAllowedStaffConstraint:
         )
         result = solve(inp)
         # H001はNG+allowed両方 → NG優先でH001禁止、H002は allowed制約で禁止
-        # → 割り当て可能スタッフなし → Infeasible
-        assert result.status == "Infeasible"
+        # → 割り当て可能スタッフなし → ペナルティ付きOptimal（未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1
 
     def test_allowed_staff_can_be_assigned(self) -> None:
         """allowed_staff_ids が空でない場合、リスト内のスタッフは NG がなければ割り当て可"""
@@ -133,8 +134,9 @@ class TestAllowedStaffConstraint:
     def test_all_allowed_staff_unavailable_infeasible(self) -> None:
         """全allowedスタッフが希望休 → 割り当て不可 → Infeasible"""
         result = solve(_allowed_with_unavailabilities(["H001", "H002"]))
-        # H001/H002は希望休、H003はallowed外 → 割り当て不可
-        assert result.status == "Infeasible"
+        # H001/H002は希望休、H003はallowed外 → 割り当て不可 → ペナルティ付きOptimal（未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1
 
     def test_partial_allowed_staff_unavailable_optimal(self) -> None:
         """allowedスタッフの一部が希望休 → 残りで割り当て可"""

@@ -109,8 +109,10 @@ class TestIntegration:
         order_map = {o.id: o for o in inp.orders}
         for a in result.assignments:
             expected = order_map[a.order_id].staff_count
-            assert len(a.staff_ids) == expected, (
-                f"Order {a.order_id}: expected {expected} staff, got {len(a.staff_ids)}"
+            # カバレッジ制約緩和（<= staff_count + penalty）により、
+            # 割当不可オーダーはstaff_ids=[]（未割当）や部分割当（< expected）になりうる
+            assert len(a.staff_ids) <= expected, (
+                f"Order {a.order_id}: expected at most {expected} staff, got {len(a.staff_ids)}"
             )
 
     def test_no_qualification_violation(self, seed_data_dir: Path) -> None:

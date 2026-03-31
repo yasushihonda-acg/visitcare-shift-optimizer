@@ -112,7 +112,9 @@ class TestQualificationConstraint:
             service_type_configs=_CERT_CONFIGS,
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        # 無資格者しかいない → ペナルティ付きOptimal（未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1
 
     def test_unqualified_not_assigned_to_mixed(self) -> None:
         """無資格者は資格必要サービス（身体1生活1・Ⅱ）に割り当てられない"""
@@ -152,7 +154,9 @@ class TestQualificationConstraint:
             service_type_configs=mixed_configs,
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        # 無資格者しかいないのに資格必要混合サービス → ペナルティ付きOptimal（未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1
 
     def test_unqualified_can_do_prevention(self) -> None:
         """無資格者は資格不要サービスに割り当て可能"""
@@ -186,7 +190,9 @@ class TestDynamicQualificationConstraint:
             ],
         )
         result = solve(inp)
-        assert result.status == "Infeasible"  # 無資格者しかいないので割当不可
+        # 無資格者しかいないので割当不可 → ペナルティ付きOptimal（未割当）
+        assert result.status == "Optimal"
+        assert result.unassigned_count >= 1
 
     def test_dynamic_requires_cert_false(self) -> None:
         """service_type_configsでrequires_cert=falseの種別は資格不問（通常は資格必要でも）"""

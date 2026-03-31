@@ -127,7 +127,8 @@ class TestSolveBasic:
             staff_constraints=[],
         )
         result = solve(inp)
-        assert result.status == "Infeasible"
+        assert result.status == "Optimal"
+        assert result.unassigned_count == 1  # ヘルパーなし → 未割当
 
     def test_solve_time_recorded(self) -> None:
         """実行時間が記録される"""

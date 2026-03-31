@@ -159,6 +159,8 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
         orders_updated=orders_updated,
         total_orders=len(inp.orders),
         assigned_count=len(result.assignments),
+        unassigned_count=result.unassigned_count,
+        partial_count=result.partial_count,
     )
 
 

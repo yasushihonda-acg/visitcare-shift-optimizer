@@ -49,6 +49,8 @@ class OptimizeResponse(BaseModel):
     orders_updated: int = Field(description="Firestoreに書き戻したオーダー数")
     total_orders: int = Field(description="最適化対象オーダー総数")
     assigned_count: int = Field(description="割当成功オーダー数")
+    unassigned_count: int = Field(default=0, description="未割当オーダー数（スタッフ0人）")
+    partial_count: int = Field(default=0, description="部分割当オーダー数（スタッフ < 必要人数）")
 
 
 class OptimizationParametersResponse(BaseModel):
