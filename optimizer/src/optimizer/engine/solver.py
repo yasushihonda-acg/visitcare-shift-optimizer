@@ -129,8 +129,79 @@ def solve(
     inp: OptimizationInput,
     time_limit_seconds: int = 180,
     weights: SoftWeights | None = None,
+    decompose_by_day: bool = True,
 ) -> OptimizationResult:
-    """最適化を実行し、結果を返す"""
+    """最適化を実行し、結果を返す
+
+    decompose_by_day=Trueの場合、オーダーを日付ごとに分割して
+    独立にソルブする（メモリ・時間削減）。
+    """
+    if not decompose_by_day:
+        return _solve_single(inp, time_limit_seconds, weights)
+
+    # --- 曜日分割モード ---
+    start_time = time.time()
+    orders_by_date: dict[str, list[Order]] = {}
+    for o in inp.orders:
+        orders_by_date.setdefault(o.date, []).append(o)
+
+    if len(orders_by_date) <= 1:
+        # 1日分しかない → 分割不要
+        return _solve_single(inp, time_limit_seconds, weights)
+
+    # 日ごとに独立してソルブ
+    all_assignments: list[Assignment] = []
+    total_objective = 0.0
+    total_unassigned = 0
+    total_partial = 0
+    worst_status = "Optimal"
+    n_days = len(orders_by_date)
+    per_day_limit = max(30, time_limit_seconds // n_days)
+
+    for date_str, day_orders in sorted(orders_by_date.items()):
+        # この日に必要な利用者IDを特定
+        customer_ids = {o.customer_id for o in day_orders}
+        day_customers = [c for c in inp.customers if c.id in customer_ids]
+
+        # 日単位の入力を構築
+        day_inp = OptimizationInput(
+            customers=day_customers,
+            helpers=inp.helpers,
+            orders=day_orders,
+            travel_times=inp.travel_times,
+            staff_unavailabilities=inp.staff_unavailabilities,
+            staff_constraints=inp.staff_constraints,
+            service_type_configs=inp.service_type_configs,
+        )
+
+        day_result = _solve_single(day_inp, per_day_limit, weights)
+
+        all_assignments.extend(day_result.assignments)
+        total_objective += day_result.objective_value
+        total_unassigned += day_result.unassigned_count
+        total_partial += day_result.partial_count
+
+        # ステータス: 最悪のものを採用
+        if day_result.status != "Optimal":
+            worst_status = day_result.status
+
+    total_time = time.time() - start_time
+    return OptimizationResult(
+        assignments=all_assignments,
+        objective_value=round(total_objective, 6),
+        solve_time_seconds=round(total_time, 3),
+        status=worst_status,
+        unassigned_count=total_unassigned,
+        partial_count=total_partial,
+    )
+
+
+def _solve_single(
+    inp: OptimizationInput,
+    time_limit_seconds: int = 180,
+    weights: SoftWeights | None = None,
+) -> OptimizationResult:
+    """単一期間の最適化を実行する（分割なし）"""
     start_time = time.time()
     w = weights or SoftWeights()
 
