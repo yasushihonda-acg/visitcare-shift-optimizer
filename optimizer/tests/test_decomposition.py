@@ -283,15 +283,18 @@ class TestDecomposeByDay:
         # solve_time_seconds は time_limit_seconds + マージンに収まる
         assert result.solve_time_seconds <= 65  # 5秒マージン
 
-    def test_status_aggregation_priority(self) -> None:
-        """日ごとのステータスが優先順位制で集約される"""
+    def test_status_aggregation_multi_day_optimal(self) -> None:
+        """複数日が全てOptimal → 集約結果もOptimal"""
         helpers = [_make_helper("h001")]
         customers = [_make_customer("c001")]
-        orders = [_make_order("o001", "c001", DayOfWeek.MONDAY)]
+        orders = [
+            _make_order("o001", "c001", DayOfWeek.MONDAY),
+            _make_order("o002", "c001", DayOfWeek.TUESDAY),
+        ]
         inp = OptimizationInput(
             customers=customers, helpers=helpers, orders=orders,
             travel_times=[], staff_unavailabilities=[], staff_constraints=[],
         )
-        # 1日のみの正常ケースでOptimalが返る
         result = solve(inp, time_limit_seconds=10, decompose_by_day=True)
         assert result.status == "Optimal"
+        assert result.unassigned_count == 0

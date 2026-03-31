@@ -216,6 +216,8 @@ def list_optimization_runs(
                 solve_time_seconds=data.get("solve_time_seconds", 0.0),
                 total_orders=data.get("total_orders", 0),
                 assigned_count=data.get("assigned_count", 0),
+                unassigned_count=data.get("unassigned_count", 0),
+                partial_count=data.get("partial_count", 0),
                 parameters=OptimizationParametersResponse(
                     time_limit_seconds=params.get("time_limit_seconds", 180),
                     w_travel=params.get("w_travel", 1.0),
@@ -273,6 +275,8 @@ def get_optimization_run(
         solve_time_seconds=data.get("solve_time_seconds", 0.0),
         total_orders=data.get("total_orders", 0),
         assigned_count=data.get("assigned_count", 0),
+        unassigned_count=data.get("unassigned_count", 0),
+        partial_count=data.get("partial_count", 0),
         parameters=OptimizationParametersResponse(
             time_limit_seconds=params.get("time_limit_seconds", 180),
             w_travel=params.get("w_travel", 1.0),

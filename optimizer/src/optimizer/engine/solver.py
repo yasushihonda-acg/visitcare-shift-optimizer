@@ -138,7 +138,7 @@ def solve(
 
     NOTE: 日次分割により週次ワークロードバランスと担当継続性は
     日単位の最適化に分断される。継続性は1日4件以上の利用者のみ有効。
-    TODO: Phase 2で週間リバランスパスを検討（ADR-019参照）
+    TODO: Phase 2で週間リバランスパスを検討（ADR-021参照）
     """
     if not decompose_by_day:
         return _solve_single(inp, time_limit_seconds, weights)
@@ -172,7 +172,8 @@ def solve(
             for o in day_orders:
                 all_assignments.append(Assignment(order_id=o.id, staff_ids=[]))
                 total_unassigned += 1
-            worst_status = "Feasible"
+            if _STATUS_PRIORITY.get("Feasible", 2) < _STATUS_PRIORITY.get(worst_status, 99):
+                worst_status = "Feasible"
             continue
         remaining = max(10, time_limit_seconds - elapsed)
         remaining_days = n_days - day_index
@@ -431,7 +432,7 @@ def _add_staff_continuity(
     y[c,h] = ヘルパーhが利用者cの少なくとも1件を担当するか（連続変数0-1）
     → y[c,h]の合計を最小化 = 担当スタッフ数を最小化
 
-    計算効率のため、3件以上のオーダーを持つ利用者のみ対象とし、
+    計算効率のため、4件以上のオーダーを持つ利用者のみ対象とし、
     資格・曜日で明らかに不可能なヘルパーは除外する。
     """
     orders_by_customer: dict[str, list[Order]] = {}
