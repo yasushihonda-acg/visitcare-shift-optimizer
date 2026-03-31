@@ -227,9 +227,9 @@ def _add_household_constraint(
                 if v1 is not None and v2 is not None:
                     prob += v1 == v2, f"linked_{h.id}_{o.id}_{o.linked_order_id}"
                 elif v1 is not None:
-                    prob += v1 == 0, f"linked_force0_{h.id}_{o.id}"
+                    prob += v1 == 0, f"linked_force0_{h.id}_{o.id}_{o.linked_order_id}"
                 elif v2 is not None:
-                    prob += v2 == 0, f"linked_force0_{h.id}_{o.linked_order_id}"
+                    prob += v2 == 0, f"linked_force0_{h.id}_{o.linked_order_id}_{o.id}"
 
 
 def _add_travel_time_constraint(
