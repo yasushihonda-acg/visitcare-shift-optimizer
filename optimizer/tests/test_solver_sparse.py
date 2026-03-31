@@ -4,8 +4,6 @@ Step 2: infeasibleペアのLpVariable生成をスキップし、
 x辞書をfeasible_pairsのみにすることで、メモリと変数数を削減する。
 """
 
-import pytest
-
 from optimizer.engine.solver import solve, _compute_feasible_pairs, SoftWeights
 from optimizer.models import (
     AvailabilitySlot,
@@ -18,7 +16,6 @@ from optimizer.models import (
     Order,
     StaffConstraint,
     StaffConstraintType,
-    TravelTime,
 )
 
 
