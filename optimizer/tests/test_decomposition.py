@@ -235,3 +235,66 @@ class TestDecomposeByDay:
         result = solve(inp, time_limit_seconds=10, decompose_by_day=True)
         assert result.status == "Optimal"
         assert result.partial_count == 2  # 各日1件ずつ部分割当
+
+    def test_continuity_within_single_day(self) -> None:
+        """日次分割後も、1日内に4件以上あれば継続性ペナルティが機能する"""
+        helpers = [_make_helper("h001"), _make_helper("h002")]
+        customers = [_make_customer("c001")]
+        # 月曜に4件（継続性の閾値以上）→ 同一ヘルパーに集約されやすい
+        orders = [
+            _make_order(f"o{i}", "c001", DayOfWeek.MONDAY,
+                        start_time=f"{9+i:02d}:00", end_time=f"{10+i:02d}:00")
+            for i in range(4)
+        ]
+        inp = OptimizationInput(
+            customers=customers, helpers=helpers, orders=orders,
+            travel_times=[], staff_unavailabilities=[], staff_constraints=[],
+        )
+        # 継続性重みを高く設定
+        weights = SoftWeights(
+            workload_balance=0, travel=0,
+            preferred_staff=0, continuity=50.0,
+        )
+        result = solve(
+            inp, time_limit_seconds=10,
+            weights=weights, decompose_by_day=True,
+        )
+        assert result.status == "Optimal"
+        assert result.unassigned_count == 0
+        # 継続性ペナルティにより、できるだけ少ないヘルパーに集約
+        assigned_helpers = set()
+        for a in result.assignments:
+            assigned_helpers.update(a.staff_ids)
+        assert len(assigned_helpers) == 1  # 1人のヘルパーが全4件担当
+
+    def test_time_budget_respects_limit(self) -> None:
+        """time_limit_secondsが全日分を通しての上限として守られる"""
+        helpers = [_make_helper("h001")]
+        customers = [_make_customer("c001")]
+        orders = [
+            _make_order(f"o{i}", "c001", day)
+            for i, day in enumerate(DAYS)
+        ]
+        inp = OptimizationInput(
+            customers=customers, helpers=helpers, orders=orders,
+            travel_times=[], staff_unavailabilities=[], staff_constraints=[],
+        )
+        result = solve(inp, time_limit_seconds=60, decompose_by_day=True)
+        # solve_time_seconds は time_limit_seconds + マージンに収まる
+        assert result.solve_time_seconds <= 65  # 5秒マージン
+
+    def test_status_aggregation_multi_day_optimal(self) -> None:
+        """複数日が全てOptimal → 集約結果もOptimal"""
+        helpers = [_make_helper("h001")]
+        customers = [_make_customer("c001")]
+        orders = [
+            _make_order("o001", "c001", DayOfWeek.MONDAY),
+            _make_order("o002", "c001", DayOfWeek.TUESDAY),
+        ]
+        inp = OptimizationInput(
+            customers=customers, helpers=helpers, orders=orders,
+            travel_times=[], staff_unavailabilities=[], staff_constraints=[],
+        )
+        result = solve(inp, time_limit_seconds=10, decompose_by_day=True)
+        assert result.status == "Optimal"
+        assert result.unassigned_count == 0

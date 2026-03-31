@@ -117,6 +117,9 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
                 status_code=500, detail=f"Firestore書き戻しエラー: {e}"
             ) from e
 
+    # assigned_count: 完全割当のオーダー数（未割当・部分割当を除外）
+    assigned_count = max(0, len(result.assignments) - result.unassigned_count - result.partial_count)
+
     # 最適化実行記録を保存（dry_runでも記録）
     try:
         params = OptimizationParameters(
@@ -139,7 +142,9 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
             objective_value=result.objective_value,
             solve_time_seconds=result.solve_time_seconds,
             total_orders=len(inp.orders),
-            assigned_count=len(result.assignments) - result.unassigned_count,
+            assigned_count=assigned_count,
+            unassigned_count=result.unassigned_count,
+            partial_count=result.partial_count,
             parameters=params,
             assignments=assignments,
         )
@@ -158,7 +163,7 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
         status=result.status,
         orders_updated=orders_updated,
         total_orders=len(inp.orders),
-        assigned_count=len(result.assignments) - result.unassigned_count,
+        assigned_count=assigned_count,
         unassigned_count=result.unassigned_count,
         partial_count=result.partial_count,
     )
@@ -214,6 +219,8 @@ def list_optimization_runs(
                 solve_time_seconds=data.get("solve_time_seconds", 0.0),
                 total_orders=data.get("total_orders", 0),
                 assigned_count=data.get("assigned_count", 0),
+                unassigned_count=data.get("unassigned_count", 0),
+                partial_count=data.get("partial_count", 0),
                 parameters=OptimizationParametersResponse(
                     time_limit_seconds=params.get("time_limit_seconds", 180),
                     w_travel=params.get("w_travel", 1.0),
@@ -271,6 +278,8 @@ def get_optimization_run(
         solve_time_seconds=data.get("solve_time_seconds", 0.0),
         total_orders=data.get("total_orders", 0),
         assigned_count=data.get("assigned_count", 0),
+        unassigned_count=data.get("unassigned_count", 0),
+        partial_count=data.get("partial_count", 0),
         parameters=OptimizationParametersResponse(
             time_limit_seconds=params.get("time_limit_seconds", 180),
             w_travel=params.get("w_travel", 1.0),

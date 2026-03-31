@@ -30,5 +30,7 @@ class OptimizationRunRecord(BaseModel):
     solve_time_seconds: float
     total_orders: int
     assigned_count: int
+    unassigned_count: int = 0
+    partial_count: int = 0
     assignments: list[Assignment]
     parameters: OptimizationParameters

@@ -21,6 +21,8 @@ EXPECTED_FIELDS = {
     "orders_updated",
     "total_orders",
     "assigned_count",
+    "unassigned_count",
+    "partial_count",
 }
 
 
