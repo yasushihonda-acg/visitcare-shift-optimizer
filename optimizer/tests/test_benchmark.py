@@ -8,7 +8,7 @@ import random
 
 import pytest
 
-from optimizer.engine.solver import solve, SoftWeights
+from optimizer.engine.solver import solve, SoftWeights, _compute_feasible_pairs
 from optimizer.models import (
     AvailabilitySlot,
     Customer,
@@ -187,3 +187,94 @@ class TestBenchmark:
         print(f"  Status: {result.status}, Time: {result.solve_time_seconds:.1f}s")
         # Cloud Run 1Gi制限（OSオーバーヘッド除くと約800MB）
         assert peak_mb < 800, f"メモリ使用量が高すぎます: {peak_mb:.1f} MB"
+
+
+@pytest.mark.benchmark
+class TestScaleBaseline:
+    """本番スケール対応のベースライン計測
+
+    改善前の現状を記録する。改善後に同じテストで比較する。
+    """
+
+    def test_variable_pruning_effectiveness(self) -> None:
+        """変数枝刈りの効果を計測 — feasible_pairs / total_pairs"""
+        inp = _generate_data(n_helpers=50, n_customers=350)
+        feasible = _compute_feasible_pairs(inp)
+
+        total = len(inp.helpers) * len(inp.orders)
+        ratio = len(feasible) / total if total > 0 else 0
+
+        print(f"\n[枝刈り] ヘルパー: {len(inp.helpers)}, オーダー: {len(inp.orders)}")
+        print(f"  全ペア: {total:,}, feasible: {len(feasible):,}")
+        print(f"  枝刈り率: {(1-ratio)*100:.1f}% 削減")
+        # ベースライン記録（テストデータは全員全日勤務のため枝刈り率は低い）
+        # 本番データではNG制約・可用性制限で大幅に枝刈りされる
+        assert ratio <= 1.0  # 記録のみ
+
+    def test_variable_pruning_with_constraints(self) -> None:
+        """NG制約・パート勤務ありの枝刈り効果"""
+        inp = _generate_data(n_helpers=50, n_customers=350)
+        rng = random.Random(99)
+
+        # 30%のヘルパーをパート（月水金のみ）に変更
+        for h in inp.helpers[:15]:
+            object.__setattr__(h, "weekly_availability", {
+                DayOfWeek.MONDAY: [AvailabilitySlot(start_time="09:00", end_time="15:00")],
+                DayOfWeek.WEDNESDAY: [AvailabilitySlot(start_time="09:00", end_time="15:00")],
+                DayOfWeek.FRIDAY: [AvailabilitySlot(start_time="09:00", end_time="15:00")],
+            })
+
+        # NG制約追加（各利用者に平均3人のNGヘルパー）
+        ng_constraints = []
+        for c in inp.customers:
+            ng_helpers = rng.sample([h.id for h in inp.helpers], k=min(3, len(inp.helpers)))
+            for hid in ng_helpers:
+                ng_constraints.append(StaffConstraint(
+                    customer_id=c.id, staff_id=hid,
+                    constraint_type=StaffConstraintType.NG,
+                ))
+        object.__setattr__(inp, "staff_constraints", ng_constraints)
+
+        feasible = _compute_feasible_pairs(inp)
+        total = len(inp.helpers) * len(inp.orders)
+        ratio = len(feasible) / total if total > 0 else 0
+
+        print(f"\n[枝刈り+制約] 全ペア: {total:,}, feasible: {len(feasible):,}")
+        print(f"  枝刈り率: {(1-ratio)*100:.1f}% 削減")
+        print(f"  NG制約: {len(ng_constraints)}")
+        # パート勤務+NG制約で少なくとも20%は枝刈りされるはず
+        assert ratio < 0.85
+
+    def test_extra_large_1600_orders(self) -> None:
+        """10x規模（~1,600オーダー/50ヘルパー）— ベースライン記録"""
+        inp = _generate_data(n_helpers=50, n_customers=500)
+        feasible = _compute_feasible_pairs(inp)
+        total = len(inp.helpers) * len(inp.orders)
+
+        print(f"\n[10x規模] ヘルパー: {len(inp.helpers)}, オーダー: {len(inp.orders)}")
+        print(f"  全ペア: {total:,}, feasible: {len(feasible):,}")
+
+        result = solve(inp, time_limit_seconds=180)
+        print(f"  Status: {result.status}, Time: {result.solve_time_seconds:.1f}s")
+        print(f"  割当: {len(result.assignments)}/{len(inp.orders)}")
+        # 180秒以内に何かしらの結果が返ることを確認
+        assert result.status in ("Optimal", "Feasible", "Infeasible", "Not Solved")
+        assert result.solve_time_seconds < 180
+
+    def test_staff_count_anomaly(self) -> None:
+        """staff_count異常値（本番データのローテーション要員数7-44）の影響"""
+        inp = _generate_data(n_helpers=20, n_customers=50)
+        # 一部のオーダーにstaff_count=7を設定（本番データの典型的な異常値）
+        anomaly_count = 0
+        for o in inp.orders[:5]:
+            object.__setattr__(o, "staff_count", 7)
+            anomaly_count += 1
+
+        print(f"\n[staff_count異常] 対象: {anomaly_count}件 (staff_count=7)")
+        print(f"  ヘルパー数: {len(inp.helpers)} — staff_count=7は割当不可能")
+
+        result = solve(inp, time_limit_seconds=60)
+        print(f"  Status: {result.status}")
+        # 20ヘルパーで7人同時割当は可能だが、他のオーダーとの競合でInfeasibleの可能性
+        # 現状の == 制約では Infeasible になりやすい
+        assert result.status in ("Optimal", "Feasible", "Infeasible")
