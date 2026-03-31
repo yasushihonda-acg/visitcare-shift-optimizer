@@ -7,11 +7,18 @@ Usage: python scripts/create_production_subset.py
 """
 
 import csv
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 SRC = Path("seed/data/production")
 DST = Path("seed/data/production-subset")
+
+
+def check_src_dir():
+    if not SRC.exists():
+        print(f"ERROR: {SRC} が見つかりません。先に python scripts/excel_to_csv.py を実行してください。", file=sys.stderr)
+        sys.exit(1)
 
 
 def load_csv(path: Path) -> list[dict]:
@@ -28,6 +35,7 @@ def write_csv(path: Path, rows: list[dict], fields: list[str]):
 
 
 def main():
+    check_src_dir()
     DST.mkdir(parents=True, exist_ok=True)
 
     # Load source data

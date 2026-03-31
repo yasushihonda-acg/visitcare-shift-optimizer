@@ -6,10 +6,27 @@ Usage: python scripts/analyze_production_data.py
 """
 
 import csv
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
 DATA_DIR = Path("seed/data/production")
+
+REQUIRED_FILES = [
+    "customers.csv", "helpers.csv", "customer-services.csv",
+    "customer-staff-constraints.csv", "helper-availability.csv",
+    "manual-assignments.csv",
+]
+
+
+def check_data_dir():
+    if not DATA_DIR.exists():
+        print(f"ERROR: {DATA_DIR} が見つかりません。先に python scripts/excel_to_csv.py を実行してください。", file=sys.stderr)
+        sys.exit(1)
+    missing = [f for f in REQUIRED_FILES if not (DATA_DIR / f).exists()]
+    if missing:
+        print(f"ERROR: {DATA_DIR} に不足ファイル: {', '.join(missing)}", file=sys.stderr)
+        sys.exit(1)
 
 
 def load_csv(name: str) -> list[dict]:
@@ -197,6 +214,8 @@ def analyze_availability_coverage(assignments, helpers, availability):
 
 
 def main():
+    check_data_dir()
+
     print("=" * 60)
     print("  本番データ分析レポート")
     print("=" * 60)

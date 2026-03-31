@@ -1,6 +1,7 @@
 import { resolve } from 'path';
 import { Timestamp } from 'firebase-admin/firestore';
 import { parseCSV } from './utils/csv-parser.js';
+import { getDataDir } from './utils/data-dir.js';
 import { batchWrite, getDB } from './utils/firestore-client.js';
 import {
   fetchTravelTimesFromGoogleMaps,
@@ -9,9 +10,7 @@ import {
   type TravelTimeResult,
 } from './utils/google-maps-client.js';
 
-const DATA_DIR = process.env.SEED_DATA_DIR
-  ? resolve(process.env.SEED_DATA_DIR)
-  : resolve(import.meta.dirname, '../data');
+const DATA_DIR = getDataDir(import.meta.dirname);
 
 /** キャッシュ有効期間（30日） */
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;

@@ -45,23 +45,19 @@ async function assignSampleOrders(): Promise<number> {
   return assignCount;
 }
 
-function parseArgs(): {
+interface ImportArgs {
   week?: string;
   weeks?: string[];
   ordersOnly?: boolean;
   dataDir?: string;
   skipValidation?: boolean;
   skipAssign?: boolean;
-} {
+  skipTravelTimes?: boolean;
+}
+
+function parseArgs(): ImportArgs {
   const args = process.argv.slice(2);
-  const result: {
-    week?: string;
-    weeks?: string[];
-    ordersOnly?: boolean;
-    dataDir?: string;
-    skipValidation?: boolean;
-    skipAssign?: boolean;
-  } = {};
+  const result: ImportArgs = {};
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--week' && args[i + 1]) {
       result.week = args[i + 1];
@@ -78,13 +74,15 @@ function parseArgs(): {
       result.skipValidation = true;
     } else if (args[i] === '--skip-assign') {
       result.skipAssign = true;
+    } else if (args[i] === '--skip-travel-times') {
+      result.skipTravelTimes = true;
     }
   }
   return result;
 }
 
 async function main() {
-  const { week, weeks, ordersOnly, dataDir, skipValidation, skipAssign } = parseArgs();
+  const { week, weeks, ordersOnly, dataDir, skipValidation, skipAssign, skipTravelTimes } = parseArgs();
 
   // --data-dir 指定時は SEED_DATA_DIR 環境変数を設定（子モジュールに伝搬）
   if (dataDir) {
@@ -189,8 +187,8 @@ async function main() {
   }
 
   let travelTimeCount = 0;
-  if (skipValidation) {
-    console.log('   travel_times: skipped (no lat/lng data)');
+  if (skipTravelTimes) {
+    console.log('   travel_times: skipped (--skip-travel-times)');
   } else {
     travelTimeCount = await generateTravelTimes();
     console.log(`   travel_times: ${travelTimeCount}`);
