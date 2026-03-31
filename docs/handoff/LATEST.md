@@ -1,7 +1,7 @@
 # ハンドオフメモ - visitcare-shift-optimizer
 
-**最終更新**: 2026-03-30（AIエージェント Stage 0完了 + RAG設計決定）
-**現在のフェーズ**: AIエージェント方式 Phase 2a準備中（Stage 0完了、RAG方針確定）
+**最終更新**: 2026-03-31（最適化エンジン本番スケール対応 完了）
+**現在のフェーズ**: 本番デプロイ可能 + AIエージェント Phase 2a準備中
 
 ## 完了済みフェーズ
 
@@ -14,6 +14,7 @@
 - **Phase 5b**: メール通知スタブ、Gmail API DWD、Google Chat DM催促、利用者軸ビュー、Undo/Redo
 - **Phase 6a-6d**: CURAノート取込、当週シフト効率化、当日対応効率化、ふせん/チェックリスト取込
 - **AIエージェント Phase 1**: ADK基盤 + セキュリティ + 認証テスト + Stage 0完了
+- **本番スケール対応**: 変数枝刈り+カバレッジ緩和+曜日分割+レビュー修正（406テスト、PR #330-334）
 - **詳細アーカイブ**: `docs/handoff/archive/`
 
 ## デプロイURL
@@ -21,102 +22,43 @@
 - **Web App**: https://visitcare-shift-optimizer.web.app
 - **Optimizer API**: https://shift-optimizer-1045989697649.asia-northeast1.run.app
 
-## 直近の実装（2026-03-30 後半セッション）
+## 直近の実装（2026-03-31 セッション）
 
-### テスト基盤 + Stage 0実行 + RAG設計決定
+### 最適化エンジン本番スケール対応（全5PR完了）
 
 | PR | 内容 |
 |----|------|
-| #326 | test: API認証テスト26件（AUTH-01〜AUTH-07）— #322 Closes |
-| #327 | test: LLMゴールデンセットテスト12件（Stage 0ゲート）— #323 Closes |
-| #328 | fix: Vertex AI設定をADK公式パターンに修正（Stage 0で発見） |
+| #330 | 本番データ精度検証ツール（Excel→CSV変換、2,393顧客/176ヘルパー/10,245サービス） |
+| #331 | ベンチマーク拡張（160/500/1000オーダー規模） |
+| #332 | 変数枝刈り（sparse x dict、変数88%削減） |
+| #333 | カバレッジ制約緩和（Infeasible解消）+ 曜日分割（メモリ・時間削減） |
+| #334 | Codexレビュー指摘12件修正（assigned_count/Feasible/time_budget/has_incumbent等） |
 
-### Stage 0 結果
+### 品質回帰マトリクス結果
 
-| 実行 | 結果 | 失敗（偶発） |
-|------|------|-------------|
-| 1回目 | 11/12 (91.7%) | Q2: LLM中間応答のみ |
-| 2回目 | 11/12 (91.7%) | H2: 空応答 |
+| 指標 | Weekly | Daily | 評価 |
+|------|--------|-------|------|
+| 割当カバレッジ | 100% | 100% | 同等 |
+| 継続性（1人担当率） | 35% | 39% | 同等 |
+| ワークロード偏差 | stdev=1.8 | stdev=6.2 | **劣化（許容）** |
 
-各失敗は単体再実行でパス → LLM非決定性。ゲート基準達成。
+### ADR
 
-### Stage 0で発見・修正したバグ（PR #328）
+- **ADR-021**: 日次分割による週次最適化品質のトレードオフ（仕様受容）
 
-- `Part.from_text()` → キーワード引数 `text=` に修正（google-genai 1.69）
-- `vertexai/gemini-2.5-flash` → `gemini-2.5-flash`（ADK公式はプレフィックスなし + `GOOGLE_GENAI_USE_VERTEXAI` 環境変数）
-- config.pyにVertex AI環境変数のデフォルト設定追加
+## 既知の課題
 
-### RAGパイプライン設計決定（#317）
+### P1: ワークロードバランス劣化
+- 日次分割により特定ヘルパーに割当が集中する傾向（stdev 3.4倍悪化）
+- Phase 2の週次リバランスパスまたはAIエージェント方式で対応予定
+- サ責の手動調整で当面対応可能
 
-QAセカンドオピニオンを経て確定:
+### 参考: 本番規模スペック
+- 10,050オーダー/176ヘルパー → 2GB以内・5分以内で処理可能（推定）
+- Infeasible発生率 0%
 
-| 選択肢 | 判定 |
-|--------|------|
-| **LLM-as-retriever**（構造化ツール + 全ノート返却） | **採用（Phase 2a）** |
-| Firestore Vector Search | 待機（Phase 2b、必要時） |
-| Vertex AI Vector Search ($280+/月) | 却下 |
-| Vertex AI RAG Engine ($65+/月) | 却下 |
+## 次のアクション
 
-理由: データ規模（500ノート ≈ 25K-50Kトークン）がGeminiの1Mコンテキストに余裕で収まる。
-
-**QAが発見した重大な盲点:**
-1. CURAノートがFirestoreに永続化されていない（`notes`コレクション未設計）
-2. customer.notesフィールドがツールから未公開
-3. ヘルパー支援AIがケア観察データにアクセス不能
-
-## 次のアクション（優先度順）
-
-### Phase 2a: ノートアクセス基盤（#317 残作業）
-1. 既存 `notes` フィールドを `get_customer_detail` / `get_my_customer_info` に追加
-2. `notes` コレクション設計 + CURAノート永続化パイプライン
-3. `get_customer_notes(customer_id)` ツール追加
-4. ノート検索用ゴールデンセストテスト3-5件追加
-
-### Stage 1 準備（#324）
-5. Cloud Runデプロイ（agent/） + Cloud Logging設定
-6. チャットUIプロトタイプ
-
-### 既存タスク
-7. 本番テスト (#290): ノート取込を本番環境で検証
-
-## GitHub Issuesサマリー
-
-| # | タイトル | 状態 |
-|---|---------|------|
-| #290 | 本番環境でのノート取込動作確認 | Open [P1] |
-| #317 | RAGパイプライン設計 | Open [P1] — 方針確定済み、実装待ち |
-| #324 | 段階的ロールアウト計画（Stage 0-4） | Open [P1] — Stage 0完了 |
-
-**クローズ済み（本セッション）**: #322, #323
-
-## テスト結果サマリー（2026-03-30）
-
-- **Agent**: 32 passed, 12 skipped（LLMテストはCIスキップ）
-- **Optimizer**: 全パス
-- **Web (Next.js)**: 全パス
-- **Firestore Rules**: 全パス
-- **E2E**: 全パス
-- CI全5ジョブ SUCCESS
-
-## データアクセス方法
-
-```bash
-# 一括起動（推奨、ローカル Emulator）
-./scripts/dev-start.sh
-
-# LLMゴールデンセットテスト（Gemini API呼び出し）
-cd agent && GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=visitcare-shift-optimizer GOOGLE_CLOUD_LOCATION=asia-northeast1 .venv/bin/python -m pytest tests/test_llm_quality.py -v --run-llm
-
-# 最適化エンジン テスト
-cd optimizer && .venv/bin/pytest tests/ -v
-```
-
-## 重要なドキュメント
-
-- `docs/schema/firestore-schema.md` — データモデル定義
-- `docs/adr/ADR-018` — AIエージェント方式ピボット
-- `docs/adr/ADR-019` — LLMプロバイダ選定（Gemini 2.5 Flash）
-- `docs/adr/ADR-020` — エージェントアーキテクチャ
-- `agent/` — AIエージェント（ADK + FastAPI）
-- `optimizer/` — 最適化エンジン + API
-- `web/` — Next.js フロントエンド
+1. **本番デプロイ**: Cloud Runへの最新コードデプロイ
+2. **AIエージェント Phase 2a**: シフト管理AI RAG + 対話的生成
+3. **P1対応**: ワークロード偏り改善（Issue起票済み）
