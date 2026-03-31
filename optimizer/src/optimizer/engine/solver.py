@@ -17,6 +17,9 @@ from optimizer.models import (
 
 logger = logging.getLogger(__name__)
 
+# 未割当1人あたりのペナルティ（他重みの100倍以上）
+_COVERAGE_PENALTY = 1000
+
 
 @dataclass
 class SoftWeights:
@@ -181,6 +184,7 @@ def solve(
             for o in day_orders:
                 all_assignments.append(Assignment(order_id=o.id, staff_ids=[]))
                 total_unassigned += 1
+                total_objective += _COVERAGE_PENALTY * o.staff_count
             if _STATUS_PRIORITY.get("Feasible", 2) < _STATUS_PRIORITY.get(worst_status, 99):
                 worst_status = "Feasible"
             continue
@@ -250,7 +254,7 @@ def _solve_single(
         x[h_id, o_id] = pulp.LpVariable(f"x_{h_id}_{o_id}", cat="Binary")
 
     # --- 基本制約: カバレッジ（<= staff_count + ペナルティで緩和） ---
-    COVERAGE_PENALTY = 1000  # 未割当1人あたりのペナルティ（他重みの100倍以上）
+    COVERAGE_PENALTY = _COVERAGE_PENALTY  # ローカル参照
     unmet: dict[str, pulp.LpVariable] = {}  # order_id → 不足人数
     for o in orders:
         assigned_sum = pulp.lpSum(x.get((h.id, o.id), 0) for h in helpers)
