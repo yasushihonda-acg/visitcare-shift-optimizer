@@ -139,7 +139,7 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
             objective_value=result.objective_value,
             solve_time_seconds=result.solve_time_seconds,
             total_orders=len(inp.orders),
-            assigned_count=len(result.assignments),
+            assigned_count=len(result.assignments) - result.unassigned_count,
             parameters=params,
             assignments=assignments,
         )
@@ -158,7 +158,7 @@ def optimize(req: OptimizeRequest, _auth: dict | None = Depends(require_manager_
         status=result.status,
         orders_updated=orders_updated,
         total_orders=len(inp.orders),
-        assigned_count=len(result.assignments),
+        assigned_count=len(result.assignments) - result.unassigned_count,
         unassigned_count=result.unassigned_count,
         partial_count=result.partial_count,
     )

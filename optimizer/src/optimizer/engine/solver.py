@@ -188,7 +188,6 @@ def solve(
     unassigned_count = 0
     partial_count = 0
     if prob.status == pulp.constants.LpStatusOptimal:
-        order_map = {o.id: o for o in orders}
         for o in orders:
             staff_ids = [
                 h.id for h in helpers
@@ -197,7 +196,7 @@ def solve(
             assignments.append(Assignment(order_id=o.id, staff_ids=staff_ids))
             if len(staff_ids) == 0:
                 unassigned_count += 1
-            elif len(staff_ids) < order_map[o.id].staff_count:
+            elif len(staff_ids) < o.staff_count:
                 partial_count += 1
 
     return OptimizationResult(
